@@ -102,7 +102,7 @@
       }
 
       const items = loadItems();
-      items.unshift({ id: crypto.randomUUID(), name, qty });
+      items.unshift({ id: Date.now().toString() + Math.random().toString(16).slice(2), name, qty });
       saveItems(items);
 
       nameInput.value = "";
