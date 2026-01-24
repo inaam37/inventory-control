@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Inventory List</title>
+</head>
+<body>
+
+  <h1>Inventory</h1>
+
+  <input id="itemName" placeholder="Item name" />
+  <input id="itemQty" type="number" placeholder="Quantity" />
+  <button onclick="addItem()">Add</button>
+
+  <ul id="list"></ul>
+
+  <script>
+    function addItem() {
+      const name = document.getElementById("itemName").value;
+      const qty = document.getElementById("itemQty").value;
+
+      if (!name || !qty) return;
+
+      const li = document.createElement("li");
+      li.textContent = name + " — " + qty;
+      document.getElementById("list").appendChild(li);
+
+      document.getElementById("itemName").value = "";
+      document.getElementById("itemQty").value = "";
+    }
+  </script>
+
+</body>
+</html>
