@@ -5,37 +5,97 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Inventory List</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; margin: 0 auto; }
-    h1 { margin-bottom: 10px; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
-    input { padding: 10px; font-size: 16px; }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 950px; margin: 0 auto; }
+    h1 { margin: 0 0 12px; }
+    .card { border: 1px solid #ddd; border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+    input, select { padding: 10px; font-size: 16px; }
     button { padding: 10px 14px; font-size: 16px; cursor: pointer; }
-    ul { list-style: none; padding: 0; }
-    li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 10px; }
-    .meta { display: flex; gap: 12px; align-items: baseline; }
-    .qty { font-weight: bold; }
+    .muted { color: #666; font-size: 14px; }
+    .topbar { display:flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .totals { font-weight: bold; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+
+    ul { list-style: none; padding: 0; margin: 10px 0 0; }
+    li { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+         padding: 10px; border: 1px solid #eee; border-radius: 12px; margin-bottom: 10px; }
+    .meta { display: flex; flex-direction: column; gap: 4px; }
+    .line1 { display:flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+    .name { font-weight: 700; }
+    .pill { font-size: 12px; border: 1px solid #ddd; padding: 2px 8px; border-radius: 999px; }
+    .nums { display:flex; gap: 10px; flex-wrap: wrap; }
     .danger { border: 1px solid #f0b4b4; }
+    .primary { border: 1px solid #b4d4ff; }
+
+    .smallbtn { padding: 8px 10px; font-size: 14px; }
+    .right { display:flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .footer-note { margin-top: 8px; }
   </style>
 </head>
 <body>
 
-  <h1>Inventory</h1>
-
-  <div class="row">
-    <input id="itemName" placeholder="Item name (e.g., Milk)" />
-    <input id="itemQty" type="number" min="0" placeholder="Quantity (e.g., 10)" />
-    <button id="addBtn">Add</button>
+  <div class="topbar">
+    <h1>Inventory</h1>
+    <div class="totals" id="grandTotal">$0.00</div>
   </div>
 
-  <ul id="list"></ul>
+  <div class="card">
+    <div class="row">
+      <input id="itemName" placeholder="Item name (e.g., Milk)" />
+      <input id="itemQty" type="number" min="0" step="1" placeholder="Qty (e.g., 10)" />
+      <input id="itemPrice" type="number" min="0" step="0.01" placeholder="Price per unit (e.g., 3.99)" />
+      <select id="itemCategory"></select>
+      <button id="addBtn" class="primary">Add</button>
+    </div>
+
+    <div class="row">
+      <input id="search" placeholder="Search items..." />
+      <button id="clearBtn" class="danger">Clear All</button>
+    </div>
+
+    <div class="muted footer-note">
+      Tip: Price is <b>per unit</b>. Total value = Qty × Price.
+    </div>
+  </div>
+
+  <div class="grid" id="sections"></div>
 
   <script>
-    const STORAGE_KEY = "inventory_items_v1";
+    const STORAGE_KEY = "inventory_items_v2";
+
+    // Categories
+    const CATEGORIES = [
+      "Meat",
+      "Dairy",
+      "Vegetables",
+      "Dry Storage",
+      "Seafood",
+      "Frozen",
+      "Beverages",
+      "Spices/Condiments",
+      "Other"
+    ];
 
     const nameInput = document.getElementById("itemName");
     const qtyInput = document.getElementById("itemQty");
-    const listEl = document.getElementById("list");
+    const priceInput = document.getElementById("itemPrice");
+    const catSelect = document.getElementById("itemCategory");
     const addBtn = document.getElementById("addBtn");
+    const sectionsEl = document.getElementById("sections");
+    const searchEl = document.getElementById("search");
+    const clearBtn = document.getElementById("clearBtn");
+    const grandTotalEl = document.getElementById("grandTotal");
+
+    function initCategories() {
+      catSelect.innerHTML = "";
+      CATEGORIES.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c;
+        opt.textContent = c;
+        catSelect.appendChild(opt);
+      });
+    }
 
     function loadItems() {
       try {
@@ -49,64 +109,146 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     }
 
+    // CAD currency formatting
+    function money(n) {
+      const x = Number(n);
+      if (!Number.isFinite(x)) return "$0.00";
+      return x.toLocaleString("en-CA", { style: "currency", currency: "CAD" });
+    }
+
+    function itemTotal(item) {
+      const qty = Number(item.qty);
+      const price = Number(item.price);
+      if (!Number.isFinite(qty) || !Number.isFinite(price)) return 0;
+      return qty * price;
+    }
+
     function render() {
-      const items = loadItems();
-      listEl.innerHTML = "";
+      const q = searchEl.value.trim().toLowerCase();
+      const all = loadItems();
 
-      if (items.length === 0) {
-        const empty = document.createElement("p");
-        empty.textContent = "No items yet. Add your first item above.";
-        listEl.appendChild(empty);
-        return;
-      }
+      const items = q
+        ? all.filter(i =>
+            (i.name || "").toLowerCase().includes(q) ||
+            (i.category || "").toLowerCase().includes(q)
+          )
+        : all;
 
-      items.forEach((item) => {
-        const li = document.createElement("li");
+      const groups = {};
+      CATEGORIES.forEach(c => groups[c] = []);
+      items.forEach(i => {
+        const cat = CATEGORIES.includes(i.category) ? i.category : "Other";
+        groups[cat].push(i);
+      });
 
-        const left = document.createElement("div");
-        left.className = "meta";
+      const grand = all.reduce((sum, i) => sum + itemTotal(i), 0);
+      grandTotalEl.textContent = `Grand Total: ${money(grand)}`;
 
-        const name = document.createElement("div");
-        name.textContent = item.name;
+      sectionsEl.innerHTML = "";
 
-        const qty = document.createElement("div");
-        qty.className = "qty";
-        qty.textContent = `Qty: ${item.qty}`;
+      CATEGORIES.forEach(cat => {
+        const groupItems = groups[cat];
+        const card = document.createElement("div");
+        card.className = "card";
 
-        left.appendChild(name);
-        left.appendChild(qty);
+        const catTotal = groupItems.reduce((sum, i) => sum + itemTotal(i), 0);
 
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "Delete";
-        delBtn.className = "danger";
-        delBtn.onclick = () => deleteItem(item.id);
+        const header = document.createElement("div");
+        header.className = "topbar";
+        header.innerHTML = `
+          <div>
+            <div style="font-weight:800; font-size:18px;">${cat}</div>
+            <div class="muted">${groupItems.length} item(s)</div>
+          </div>
+          <div class="totals">${money(catTotal)}</div>
+        `;
+        card.appendChild(header);
 
-        li.appendChild(left);
-        li.appendChild(delBtn);
+        const ul = document.createElement("ul");
 
-        listEl.appendChild(li);
+        if (groupItems.length === 0) {
+          const p = document.createElement("div");
+          p.className = "muted";
+          p.textContent = "No items in this category.";
+          card.appendChild(p);
+        } else {
+          groupItems
+            .slice()
+            .sort((a,b) => (a.name || "").localeCompare(b.name || ""))
+            .forEach(item => {
+              const li = document.createElement("li");
+
+              const left = document.createElement("div");
+              left.className = "meta";
+
+              const line1 = document.createElement("div");
+              line1.className = "line1";
+              line1.innerHTML = `
+                <span class="name">${escapeHtml(item.name)}</span>
+                <span class="pill">${escapeHtml(item.category || "Other")}</span>
+              `;
+
+              const line2 = document.createElement("div");
+              line2.className = "nums muted";
+              const qty = Number(item.qty);
+              const price = Number(item.price);
+              const total = itemTotal(item);
+
+              line2.textContent =
+                `Qty: ${Number.isFinite(qty) ? qty : 0} • ` +
+                `Unit: ${money(Number.isFinite(price) ? price : 0)} • ` +
+                `Total: ${money(total)}`;
+
+              left.appendChild(line1);
+              left.appendChild(line2);
+
+              const right = document.createElement("div");
+              right.className = "right";
+
+              const editBtn = document.createElement("button");
+              editBtn.className = "smallbtn";
+              editBtn.textContent = "Edit";
+              editBtn.onclick = () => editItem(item.id);
+
+              const delBtn = document.createElement("button");
+              delBtn.className = "smallbtn danger";
+              delBtn.textContent = "Delete";
+              delBtn.onclick = () => deleteItem(item.id);
+
+              right.appendChild(editBtn);
+              right.appendChild(delBtn);
+
+              li.appendChild(left);
+              li.appendChild(right);
+              ul.appendChild(li);
+            });
+
+          card.appendChild(ul);
+        }
+
+        sectionsEl.appendChild(card);
       });
     }
 
     function addItem() {
       const name = nameInput.value.trim();
       const qty = Number(qtyInput.value);
+      const price = Number(priceInput.value);
+      const category = catSelect.value;
 
-      if (!name) {
-        alert("Please enter an item name.");
-        return;
-      }
-      if (!Number.isFinite(qty) || qty < 0) {
-        alert("Please enter a valid quantity (0 or more).");
-        return;
-      }
+      if (!name) { alert("Please enter an item name."); return; }
+      if (!Number.isFinite(qty) || qty < 0) { alert("Please enter a valid quantity (0 or more)."); return; }
+      if (!Number.isFinite(price) || price < 0) { alert("Please enter a valid price (0 or more)."); return; }
 
       const items = loadItems();
-      items.unshift({ id: Date.now().toString() + Math.random().toString(16).slice(2), name, qty });
+      const id = Date.now().toString() + Math.random().toString(16).slice(2);
+
+      items.unshift({ id, name, qty, price, category, updatedAt: Date.now() });
       saveItems(items);
 
       nameInput.value = "";
       qtyInput.value = "";
+      priceInput.value = "";
       nameInput.focus();
 
       render();
@@ -118,10 +260,65 @@
       render();
     }
 
+    function editItem(id) {
+      const items = loadItems();
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+
+      const newName = prompt("Item name:", item.name ?? "");
+      if (newName === null) return;
+
+      const newQtyStr = prompt("Quantity:", String(item.qty ?? 0));
+      if (newQtyStr === null) return;
+
+      const newPriceStr = prompt("Price per unit:", String(item.price ?? 0));
+      if (newPriceStr === null) return;
+
+      const newCat = prompt("Category (e.g., Meat, Dairy, Vegetables, Dry Storage...):", item.category ?? "Other");
+      if (newCat === null) return;
+
+      const newQty = Number(newQtyStr);
+      const newPrice = Number(newPriceStr);
+
+      if (!newName.trim()) { alert("Name cannot be empty."); return; }
+      if (!Number.isFinite(newQty) || newQty < 0) { alert("Invalid quantity."); return; }
+      if (!Number.isFinite(newPrice) || newPrice < 0) { alert("Invalid price."); return; }
+
+      item.name = newName.trim();
+      item.qty = newQty;
+      item.price = newPrice;
+      item.category = CATEGORIES.includes(newCat.trim()) ? newCat.trim() : "Other";
+      item.updatedAt = Date.now();
+
+      saveItems(items);
+      render();
+    }
+
+    function clearAll() {
+      const ok = confirm("Delete ALL inventory items? This cannot be undone.");
+      if (!ok) return;
+      localStorage.removeItem(STORAGE_KEY);
+      render();
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
     addBtn.addEventListener("click", addItem);
+    clearBtn.addEventListener("click", clearAll);
+    searchEl.addEventListener("input", render);
+
     nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
     qtyInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
+    priceInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
 
+    initCategories();
     render();
   </script>
 
