@@ -1,32 +1,128 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Inventory List</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; margin: 0 auto; }
+    h1 { margin-bottom: 10px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    input { padding: 10px; font-size: 16px; }
+    button { padding: 10px 14px; font-size: 16px; cursor: pointer; }
+    ul { list-style: none; padding: 0; }
+    li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 10px; }
+    .meta { display: flex; gap: 12px; align-items: baseline; }
+    .qty { font-weight: bold; }
+    .danger { border: 1px solid #f0b4b4; }
+  </style>
 </head>
 <body>
 
   <h1>Inventory</h1>
 
-  <input id="itemName" placeholder="Item name" />
-  <input id="itemQty" type="number" placeholder="Quantity" />
-  <button onclick="addItem()">Add</button>
+  <div class="row">
+    <input id="itemName" placeholder="Item name (e.g., Milk)" />
+    <input id="itemQty" type="number" min="0" placeholder="Quantity (e.g., 10)" />
+    <button id="addBtn">Add</button>
+  </div>
 
   <ul id="list"></ul>
 
   <script>
-    function addItem() {
-      const name = document.getElementById("itemName").value;
-      const qty = document.getElementById("itemQty").value;
+    const STORAGE_KEY = "inventory_items_v1";
 
-      if (!name || !qty) return;
+    const nameInput = document.getElementById("itemName");
+    const qtyInput = document.getElementById("itemQty");
+    const listEl = document.getElementById("list");
+    const addBtn = document.getElementById("addBtn");
 
-      const li = document.createElement("li");
-      li.textContent = name + " — " + qty;
-      document.getElementById("list").appendChild(li);
-
-      document.getElementById("itemName").value = "";
-      document.getElementById("itemQty").value = "";
+    function loadItems() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
     }
+
+    function saveItems(items) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    function render() {
+      const items = loadItems();
+      listEl.innerHTML = "";
+
+      if (items.length === 0) {
+        const empty = document.createElement("p");
+        empty.textContent = "No items yet. Add your first item above.";
+        listEl.appendChild(empty);
+        return;
+      }
+
+      items.forEach((item) => {
+        const li = document.createElement("li");
+
+        const left = document.createElement("div");
+        left.className = "meta";
+
+        const name = document.createElement("div");
+        name.textContent = item.name;
+
+        const qty = document.createElement("div");
+        qty.className = "qty";
+        qty.textContent = `Qty: ${item.qty}`;
+
+        left.appendChild(name);
+        left.appendChild(qty);
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Delete";
+        delBtn.className = "danger";
+        delBtn.onclick = () => deleteItem(item.id);
+
+        li.appendChild(left);
+        li.appendChild(delBtn);
+
+        listEl.appendChild(li);
+      });
+    }
+
+    function addItem() {
+      const name = nameInput.value.trim();
+      const qty = Number(qtyInput.value);
+
+      if (!name) {
+        alert("Please enter an item name.");
+        return;
+      }
+      if (!Number.isFinite(qty) || qty < 0) {
+        alert("Please enter a valid quantity (0 or more).");
+        return;
+      }
+
+      const items = loadItems();
+      items.unshift({ id: crypto.randomUUID(), name, qty });
+      saveItems(items);
+
+      nameInput.value = "";
+      qtyInput.value = "";
+      nameInput.focus();
+
+      render();
+    }
+
+    function deleteItem(id) {
+      const items = loadItems().filter(i => i.id !== id);
+      saveItems(items);
+      render();
+    }
+
+    addBtn.addEventListener("click", addItem);
+    nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
+    qtyInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
+
+    render();
   </script>
 
 </body>
