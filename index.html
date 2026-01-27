@@ -1,326 +1,1076 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Inventory List</title>
+  <title>PantryPilot — Inventory Control</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 950px; margin: 0 auto; }
-    h1 { margin: 0 0 12px; }
-    .card { border: 1px solid #ddd; border-radius: 14px; padding: 14px; margin-bottom: 14px; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
-    input, select { padding: 10px; font-size: 16px; }
-    button { padding: 10px 14px; font-size: 16px; cursor: pointer; }
-    .muted { color: #666; font-size: 14px; }
-    .topbar { display:flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-    .totals { font-weight: bold; }
-    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-    @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+    :root {
+      color-scheme: light;
+      --bg: #f5f6fb;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --ink: #101828;
+      --muted: #667085;
+      --primary: #2563eb;
+      --primary-soft: #e0e7ff;
+      --success: #16a34a;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
 
-    ul { list-style: none; padding: 0; margin: 10px 0 0; }
-    li { display: flex; justify-content: space-between; align-items: center; gap: 12px;
-         padding: 10px; border: 1px solid #eee; border-radius: 12px; margin-bottom: 10px; }
-    .meta { display: flex; flex-direction: column; gap: 4px; }
-    .line1 { display:flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
-    .name { font-weight: 700; }
-    .pill { font-size: 12px; border: 1px solid #ddd; padding: 2px 8px; border-radius: 999px; }
-    .nums { display:flex; gap: 10px; flex-wrap: wrap; }
-    .danger { border: 1px solid #f0b4b4; }
-    .primary { border: 1px solid #b4d4ff; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
 
-    .smallbtn { padding: 8px 10px; font-size: 14px; }
-    .right { display:flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-    .footer-note { margin-top: 8px; }
+    header {
+      background: linear-gradient(120deg, #1d4ed8, #1e40af);
+      color: #fff;
+      padding: 28px 22px;
+    }
+
+    header .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    header h1 { margin: 0; font-size: 28px; }
+    header p { margin: 0; opacity: 0.9; }
+
+    main {
+      max-width: 1200px;
+      margin: -24px auto 40px;
+      padding: 0 20px 40px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .nav button {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .nav button.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .stack { display: grid; gap: 16px; }
+    .grid-2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .grid-3 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+    label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      background: #fff;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid var(--primary-soft);
+      border-color: var(--primary);
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.ghost {
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.danger {
+      background: #fff1f2;
+      color: #b91c1c;
+      border: 1px solid #fecdd3;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .pill.ok { background: #ecfdf3; color: #15803d; }
+    .pill.warn { background: #fff7ed; color: #b45309; }
+    .pill.alert { background: #fef2f2; color: #b91c1c; }
+
+    .muted { color: var(--muted); }
+    .section-title { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .hidden { display: none; }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .file-input {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .footer-note { font-size: 12px; color: var(--muted); }
+
+    @media (max-width: 720px) {
+      header { text-align: center; }
+      .nav { justify-content: center; }
+    }
   </style>
 </head>
 <body>
+  <header>
+    <div class="wrap">
+      <h1>PantryPilot Inventory Control</h1>
+      <p>Phase 1 MVP — inventory catalog, par levels, reorder insights, vendor tracking, and count sheets.</p>
+    </div>
+  </header>
 
-  <div class="topbar">
-    <h1>Inventory</h1>
-    <div class="totals" id="grandTotal">$0.00</div>
-  </div>
-
-  <div class="card">
-    <div class="row">
-      <input id="itemName" placeholder="Item name (e.g., Milk)" />
-      <input id="itemQty" type="number" min="0" step="1" placeholder="Qty (e.g., 10)" />
-      <input id="itemPrice" type="number" min="0" step="0.01" placeholder="Price per unit (e.g., 3.99)" />
-      <select id="itemCategory"></select>
-      <button id="addBtn" class="primary">Add</button>
+  <main>
+    <div class="nav" id="nav">
+      <button class="active" data-view="dashboard">Dashboard</button>
+      <button data-view="inventory">Inventory</button>
+      <button data-view="counts">Count Sheets</button>
+      <button data-view="vendors">Vendors</button>
+      <button data-view="orders">Ordering Suggestions</button>
+      <button data-view="data">Data Tools</button>
     </div>
 
-    <div class="row">
-      <input id="search" placeholder="Search items..." />
-      <button id="clearBtn" class="danger">Clear All</button>
-    </div>
+    <section id="dashboard" class="stack">
+      <div class="grid-3">
+        <div class="card">
+          <div class="muted">Total inventory value</div>
+          <h2 id="summaryValue">$0.00</h2>
+          <div class="footer-note">On-hand × cost</div>
+        </div>
+        <div class="card">
+          <div class="muted">Items below reorder point</div>
+          <h2 id="summaryBelow">0</h2>
+          <div class="footer-note">Needs attention</div>
+        </div>
+        <div class="card">
+          <div class="muted">Suggested order value</div>
+          <h2 id="summaryOrder">$0.00</h2>
+          <div class="footer-note">To reach par levels</div>
+        </div>
+      </div>
 
-    <div class="muted footer-note">
-      Tip: Price is <b>per unit</b>. Total value = Qty × Price.
-    </div>
-  </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="section-title">
+            <h3>Reorder Alerts</h3>
+            <span class="muted" id="alertCount">0 alerts</span>
+          </div>
+          <div id="alertsList" class="stack"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">
+            <h3>Top Value Items</h3>
+            <span class="muted">Highest on-hand value</span>
+          </div>
+          <div id="topValueList" class="stack"></div>
+        </div>
+      </div>
+    </section>
 
-  <div class="grid" id="sections"></div>
+    <section id="inventory" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Inventory Items</h3>
+          <div class="toolbar">
+            <input id="inventorySearch" placeholder="Search by name, category, vendor" />
+            <button class="ghost" id="resetForm">Reset Form</button>
+          </div>
+        </div>
+
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="itemName">Item name</label>
+            <input id="itemName" placeholder="Roma tomatoes" />
+          </div>
+          <div>
+            <label for="itemCategory">Category</label>
+            <select id="itemCategory"></select>
+          </div>
+          <div>
+            <label for="itemUnit">Unit</label>
+            <select id="itemUnit">
+              <option value="each">Each</option>
+              <option value="lb">Pound (lb)</option>
+              <option value="kg">Kilogram (kg)</option>
+              <option value="case">Case</option>
+              <option value="pack">Pack</option>
+              <option value="liter">Liter</option>
+              <option value="gallon">Gallon</option>
+            </select>
+          </div>
+          <div>
+            <label for="itemOnHand">On-hand qty</label>
+            <input id="itemOnHand" type="number" min="0" step="0.1" placeholder="24" />
+          </div>
+          <div>
+            <label for="itemPar">Par level</label>
+            <input id="itemPar" type="number" min="0" step="0.1" placeholder="40" />
+          </div>
+          <div>
+            <label for="itemReorder">Reorder point</label>
+            <input id="itemReorder" type="number" min="0" step="0.1" placeholder="15" />
+          </div>
+          <div>
+            <label for="itemCost">Cost per unit</label>
+            <input id="itemCost" type="number" min="0" step="0.01" placeholder="1.25" />
+          </div>
+          <div>
+            <label for="itemVendor">Vendor</label>
+            <select id="itemVendor"></select>
+          </div>
+          <div>
+            <label for="itemLead">Lead time (days)</label>
+            <input id="itemLead" type="number" min="0" step="1" placeholder="2" />
+          </div>
+          <div>
+            <label for="itemUsage">Avg daily usage</label>
+            <input id="itemUsage" type="number" min="0" step="0.1" placeholder="8" />
+          </div>
+          <div>
+            <label for="itemSku">Internal SKU</label>
+            <input id="itemSku" placeholder="TOM-001" />
+          </div>
+        </div>
+
+        <div class="toolbar" style="margin-top: 16px;">
+          <button class="primary" id="saveItem">Save Item</button>
+          <button class="danger" id="deleteItem" disabled>Delete Item</button>
+          <span class="muted" id="formStatus">Add a new item</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Item List</h3>
+          <span class="muted" id="itemCount">0 items</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Category</th>
+                <th>Vendor</th>
+                <th>On-hand</th>
+                <th>Par</th>
+                <th>Reorder</th>
+                <th>Status</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody id="itemsTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="counts" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Count Sheet</h3>
+          <div class="toolbar">
+            <input id="countSearch" placeholder="Search items for counting" />
+            <button class="ghost" id="applyCounts">Apply Counts</button>
+          </div>
+        </div>
+        <div id="countList" class="stack" style="margin-top: 12px;"></div>
+        <div class="footer-note">Counts update the on-hand quantity and are stored locally.</div>
+      </div>
+    </section>
+
+    <section id="vendors" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Vendors</h3>
+          <span class="muted">Track suppliers and contact details</span>
+        </div>
+        <div class="grid-2" style="margin-top: 12px;">
+          <div>
+            <label for="vendorName">Vendor name</label>
+            <input id="vendorName" placeholder="Fresh Coast Produce" />
+          </div>
+          <div>
+            <label for="vendorPhone">Phone</label>
+            <input id="vendorPhone" placeholder="(555) 222-1111" />
+          </div>
+          <div>
+            <label for="vendorEmail">Email</label>
+            <input id="vendorEmail" placeholder="orders@freshcoast.com" />
+          </div>
+          <div>
+            <label for="vendorNotes">Notes</label>
+            <textarea id="vendorNotes" rows="2" placeholder="Order cutoff: 3pm"></textarea>
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveVendor">Save Vendor</button>
+          <button class="danger" id="deleteVendor" disabled>Delete Vendor</button>
+          <span class="muted" id="vendorStatus">Add a new vendor</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Vendor List</h3>
+          <span class="muted" id="vendorCount">0 vendors</span>
+        </div>
+        <div id="vendorList" class="stack"></div>
+      </div>
+    </section>
+
+    <section id="orders" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Ordering Suggestions</h3>
+          <div class="toolbar">
+            <input id="orderSearch" placeholder="Filter by vendor or category" />
+            <button class="ghost" id="refreshOrders">Refresh</button>
+          </div>
+        </div>
+        <div id="orderList" class="stack" style="margin-top: 12px;"></div>
+        <div class="footer-note">Suggestions are based on par levels, reorder points, and lead time coverage.</div>
+      </div>
+    </section>
+
+    <section id="data" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Data Tools</h3>
+          <span class="muted">Export or import your inventory data</span>
+        </div>
+        <div class="file-input" style="margin-top: 12px;">
+          <button class="ghost" id="exportJson">Export JSON</button>
+          <label class="ghost" style="cursor:pointer;">
+            Import JSON
+            <input type="file" id="importJson" accept="application/json" style="display:none;" />
+          </label>
+          <button class="danger" id="clearAll">Clear All Data</button>
+        </div>
+        <div class="footer-note" style="margin-top: 10px;">JSON export includes items, vendors, and settings stored locally in your browser.</div>
+      </div>
+    </section>
+  </main>
 
   <script>
-    const STORAGE_KEY = "inventory_items_v2";
+    const STORAGE_KEY = "pantrypilot_phase1";
 
-    // Categories
-    const CATEGORIES = [
+    const DEFAULT_CATEGORIES = [
+      "Produce",
       "Meat",
-      "Dairy",
-      "Vegetables",
-      "Dry Storage",
       "Seafood",
+      "Dairy",
+      "Dry Storage",
       "Frozen",
       "Beverages",
+      "Bakery",
       "Spices/Condiments",
       "Other"
     ];
 
-    const nameInput = document.getElementById("itemName");
-    const qtyInput = document.getElementById("itemQty");
-    const priceInput = document.getElementById("itemPrice");
-    const catSelect = document.getElementById("itemCategory");
-    const addBtn = document.getElementById("addBtn");
-    const sectionsEl = document.getElementById("sections");
-    const searchEl = document.getElementById("search");
-    const clearBtn = document.getElementById("clearBtn");
-    const grandTotalEl = document.getElementById("grandTotal");
+    const state = {
+      items: [],
+      vendors: [],
+      activeItemId: null,
+      activeVendorId: null
+    };
 
-    function initCategories() {
-      catSelect.innerHTML = "";
-      CATEGORIES.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c;
-        opt.textContent = c;
-        catSelect.appendChild(opt);
-      });
+    const nav = document.getElementById("nav");
+    const views = ["dashboard", "inventory", "counts", "vendors", "orders", "data"];
+
+    const itemForm = {
+      name: document.getElementById("itemName"),
+      category: document.getElementById("itemCategory"),
+      unit: document.getElementById("itemUnit"),
+      onHand: document.getElementById("itemOnHand"),
+      par: document.getElementById("itemPar"),
+      reorder: document.getElementById("itemReorder"),
+      cost: document.getElementById("itemCost"),
+      vendor: document.getElementById("itemVendor"),
+      lead: document.getElementById("itemLead"),
+      usage: document.getElementById("itemUsage"),
+      sku: document.getElementById("itemSku")
+    };
+
+    const itemCountEl = document.getElementById("itemCount");
+    const itemsTable = document.getElementById("itemsTable");
+    const inventorySearch = document.getElementById("inventorySearch");
+    const saveItemBtn = document.getElementById("saveItem");
+    const deleteItemBtn = document.getElementById("deleteItem");
+    const resetFormBtn = document.getElementById("resetForm");
+    const formStatus = document.getElementById("formStatus");
+
+    const vendorForm = {
+      name: document.getElementById("vendorName"),
+      phone: document.getElementById("vendorPhone"),
+      email: document.getElementById("vendorEmail"),
+      notes: document.getElementById("vendorNotes")
+    };
+
+    const saveVendorBtn = document.getElementById("saveVendor");
+    const deleteVendorBtn = document.getElementById("deleteVendor");
+    const vendorStatus = document.getElementById("vendorStatus");
+    const vendorList = document.getElementById("vendorList");
+    const vendorCount = document.getElementById("vendorCount");
+
+    const countList = document.getElementById("countList");
+    const countSearch = document.getElementById("countSearch");
+    const applyCountsBtn = document.getElementById("applyCounts");
+
+    const orderList = document.getElementById("orderList");
+    const orderSearch = document.getElementById("orderSearch");
+    const refreshOrdersBtn = document.getElementById("refreshOrders");
+
+    const summaryValue = document.getElementById("summaryValue");
+    const summaryBelow = document.getElementById("summaryBelow");
+    const summaryOrder = document.getElementById("summaryOrder");
+    const alertsList = document.getElementById("alertsList");
+    const alertCount = document.getElementById("alertCount");
+    const topValueList = document.getElementById("topValueList");
+
+    const exportJsonBtn = document.getElementById("exportJson");
+    const importJsonInput = document.getElementById("importJson");
+    const clearAllBtn = document.getElementById("clearAll");
+
+    function currency(value) {
+      const amount = Number(value);
+      if (!Number.isFinite(amount)) return "$0.00";
+      return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
     }
 
-    function loadItems() {
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        items: state.items,
+        vendors: state.vendors
+      }));
+    }
+
+    function loadState() {
       try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (raw) {
+          state.items = raw.items || [];
+          state.vendors = raw.vendors || [];
+        }
       } catch {
-        return [];
+        state.items = [];
+        state.vendors = [];
       }
     }
 
-    function saveItems(items) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    function setActiveView(viewId) {
+      views.forEach(view => {
+        document.getElementById(view).classList.toggle("hidden", view !== viewId);
+      });
+      nav.querySelectorAll("button").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.view === viewId);
+      });
     }
 
-    // CAD currency formatting
-    function money(n) {
-      const x = Number(n);
-      if (!Number.isFinite(x)) return "$0.00";
-      return x.toLocaleString("en-CA", { style: "currency", currency: "CAD" });
+    function buildCategoryOptions() {
+      itemForm.category.innerHTML = "";
+      DEFAULT_CATEGORIES.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        itemForm.category.appendChild(option);
+      });
     }
 
-    function itemTotal(item) {
-      const qty = Number(item.qty);
-      const price = Number(item.price);
-      if (!Number.isFinite(qty) || !Number.isFinite(price)) return 0;
-      return qty * price;
+    function buildVendorOptions() {
+      itemForm.vendor.innerHTML = "";
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "Unassigned";
+      itemForm.vendor.appendChild(defaultOption);
+      state.vendors.forEach(vendor => {
+        const option = document.createElement("option");
+        option.value = vendor.id;
+        option.textContent = vendor.name;
+        itemForm.vendor.appendChild(option);
+      });
     }
 
-    function render() {
-      const q = searchEl.value.trim().toLowerCase();
-      const all = loadItems();
+    function getVendorName(vendorId) {
+      if (!vendorId) return "Unassigned";
+      const vendor = state.vendors.find(v => v.id === vendorId);
+      return vendor ? vendor.name : "Unassigned";
+    }
 
-      const items = q
-        ? all.filter(i =>
-            (i.name || "").toLowerCase().includes(q) ||
-            (i.category || "").toLowerCase().includes(q)
-          )
-        : all;
+    function getItemValue(item) {
+      const onHand = Number(item.onHand);
+      const cost = Number(item.cost);
+      if (!Number.isFinite(onHand) || !Number.isFinite(cost)) return 0;
+      return onHand * cost;
+    }
 
-      const groups = {};
-      CATEGORIES.forEach(c => groups[c] = []);
-      items.forEach(i => {
-        const cat = CATEGORIES.includes(i.category) ? i.category : "Other";
-        groups[cat].push(i);
+    function getSuggestedOrderQty(item) {
+      const onHand = Number(item.onHand);
+      const par = Number(item.par);
+      if (!Number.isFinite(onHand) || !Number.isFinite(par)) return 0;
+      return Math.max(0, par - onHand);
+    }
+
+    function getStatus(item) {
+      const onHand = Number(item.onHand);
+      const reorder = Number(item.reorderPoint);
+      const usage = Number(item.usagePerDay);
+      const lead = Number(item.leadTimeDays);
+      if (Number.isFinite(onHand) && Number.isFinite(reorder) && onHand <= reorder) {
+        return { label: "Reorder Now", tone: "alert" };
+      }
+      if (Number.isFinite(onHand) && Number.isFinite(usage) && Number.isFinite(lead) && onHand <= usage * lead) {
+        return { label: "Low Soon", tone: "warn" };
+      }
+      return { label: "Stock OK", tone: "ok" };
+    }
+
+    function resetItemForm() {
+      state.activeItemId = null;
+      Object.values(itemForm).forEach(field => field.value = "");
+      itemForm.unit.value = "each";
+      buildCategoryOptions();
+      buildVendorOptions();
+      deleteItemBtn.disabled = true;
+      formStatus.textContent = "Add a new item";
+    }
+
+    function fillItemForm(item) {
+      itemForm.name.value = item.name;
+      itemForm.category.value = item.category;
+      itemForm.unit.value = item.unit;
+      itemForm.onHand.value = item.onHand;
+      itemForm.par.value = item.par;
+      itemForm.reorder.value = item.reorderPoint;
+      itemForm.cost.value = item.cost;
+      itemForm.vendor.value = item.vendorId || "";
+      itemForm.lead.value = item.leadTimeDays;
+      itemForm.usage.value = item.usagePerDay;
+      itemForm.sku.value = item.sku || "";
+      deleteItemBtn.disabled = false;
+      formStatus.textContent = "Editing item";
+    }
+
+    function validateItem() {
+      if (!itemForm.name.value.trim()) return "Item name is required.";
+      return null;
+    }
+
+    function saveItem() {
+      const error = validateItem();
+      if (error) {
+        alert(error);
+        return;
+      }
+
+      const itemData = {
+        id: state.activeItemId || crypto.randomUUID(),
+        name: itemForm.name.value.trim(),
+        category: itemForm.category.value,
+        unit: itemForm.unit.value,
+        onHand: Number(itemForm.onHand.value || 0),
+        par: Number(itemForm.par.value || 0),
+        reorderPoint: Number(itemForm.reorder.value || 0),
+        cost: Number(itemForm.cost.value || 0),
+        vendorId: itemForm.vendor.value,
+        leadTimeDays: Number(itemForm.lead.value || 0),
+        usagePerDay: Number(itemForm.usage.value || 0),
+        sku: itemForm.sku.value.trim(),
+        updatedAt: Date.now()
+      };
+
+      if (state.activeItemId) {
+        const index = state.items.findIndex(item => item.id === state.activeItemId);
+        if (index >= 0) state.items[index] = itemData;
+      } else {
+        state.items.unshift(itemData);
+      }
+
+      saveState();
+      resetItemForm();
+      renderAll();
+    }
+
+    function deleteItem() {
+      if (!state.activeItemId) return;
+      const item = state.items.find(i => i.id === state.activeItemId);
+      if (!item) return;
+      const ok = confirm(`Delete ${item.name}?`);
+      if (!ok) return;
+      state.items = state.items.filter(i => i.id !== item.id);
+      saveState();
+      resetItemForm();
+      renderAll();
+    }
+
+    function renderItems() {
+      const query = inventorySearch.value.trim().toLowerCase();
+      const filtered = state.items.filter(item => {
+        const vendorName = getVendorName(item.vendorId).toLowerCase();
+        return (
+          item.name.toLowerCase().includes(query) ||
+          item.category.toLowerCase().includes(query) ||
+          vendorName.includes(query)
+        );
       });
 
-      const grand = all.reduce((sum, i) => sum + itemTotal(i), 0);
-      grandTotalEl.textContent = `Grand Total: ${money(grand)}`;
+      itemCountEl.textContent = `${filtered.length} items`;
+      itemsTable.innerHTML = "";
 
-      sectionsEl.innerHTML = "";
+      filtered
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(item => {
+          const status = getStatus(item);
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>
+              <strong>${item.name}</strong><br />
+              <span class="muted">${item.unit} • ${item.sku || "No SKU"}</span>
+            </td>
+            <td>${item.category}</td>
+            <td>${getVendorName(item.vendorId)}</td>
+            <td>${item.onHand}</td>
+            <td>${item.par}</td>
+            <td>${item.reorderPoint}</td>
+            <td><span class="pill ${status.tone}">${status.label}</span></td>
+            <td>${currency(getItemValue(item))}</td>
+          `;
+          row.style.cursor = "pointer";
+          row.addEventListener("click", () => {
+            state.activeItemId = item.id;
+            fillItemForm(item);
+            setActiveView("inventory");
+          });
+          itemsTable.appendChild(row);
+        });
+    }
 
-      CATEGORIES.forEach(cat => {
-        const groupItems = groups[cat];
+    function renderCounts() {
+      const query = countSearch.value.trim().toLowerCase();
+      const filtered = state.items.filter(item => item.name.toLowerCase().includes(query));
+      countList.innerHTML = "";
+
+      if (!filtered.length) {
+        countList.innerHTML = "<div class='muted'>No items match this search.</div>";
+        return;
+      }
+
+      filtered.forEach(item => {
         const card = document.createElement("div");
         card.className = "card";
-
-        const catTotal = groupItems.reduce((sum, i) => sum + itemTotal(i), 0);
-
-        const header = document.createElement("div");
-        header.className = "topbar";
-        header.innerHTML = `
-          <div>
-            <div style="font-weight:800; font-size:18px;">${cat}</div>
-            <div class="muted">${groupItems.length} item(s)</div>
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${item.name}</strong>
+              <div class="muted">${item.category} • ${item.unit}</div>
+            </div>
+            <div class="muted">Current: ${item.onHand}</div>
           </div>
-          <div class="totals">${money(catTotal)}</div>
+          <div style="margin-top: 10px;">
+            <label>New count</label>
+            <input type="number" min="0" step="0.1" data-count-id="${item.id}" placeholder="${item.onHand}" />
+          </div>
         `;
-        card.appendChild(header);
-
-        const ul = document.createElement("ul");
-
-        if (groupItems.length === 0) {
-          const p = document.createElement("div");
-          p.className = "muted";
-          p.textContent = "No items in this category.";
-          card.appendChild(p);
-        } else {
-          groupItems
-            .slice()
-            .sort((a,b) => (a.name || "").localeCompare(b.name || ""))
-            .forEach(item => {
-              const li = document.createElement("li");
-
-              const left = document.createElement("div");
-              left.className = "meta";
-
-              const line1 = document.createElement("div");
-              line1.className = "line1";
-              line1.innerHTML = `
-                <span class="name">${escapeHtml(item.name)}</span>
-                <span class="pill">${escapeHtml(item.category || "Other")}</span>
-              `;
-
-              const line2 = document.createElement("div");
-              line2.className = "nums muted";
-              const qty = Number(item.qty);
-              const price = Number(item.price);
-              const total = itemTotal(item);
-
-              line2.textContent =
-                `Qty: ${Number.isFinite(qty) ? qty : 0} • ` +
-                `Unit: ${money(Number.isFinite(price) ? price : 0)} • ` +
-                `Total: ${money(total)}`;
-
-              left.appendChild(line1);
-              left.appendChild(line2);
-
-              const right = document.createElement("div");
-              right.className = "right";
-
-              const editBtn = document.createElement("button");
-              editBtn.className = "smallbtn";
-              editBtn.textContent = "Edit";
-              editBtn.onclick = () => editItem(item.id);
-
-              const delBtn = document.createElement("button");
-              delBtn.className = "smallbtn danger";
-              delBtn.textContent = "Delete";
-              delBtn.onclick = () => deleteItem(item.id);
-
-              right.appendChild(editBtn);
-              right.appendChild(delBtn);
-
-              li.appendChild(left);
-              li.appendChild(right);
-              ul.appendChild(li);
-            });
-
-          card.appendChild(ul);
-        }
-
-        sectionsEl.appendChild(card);
+        countList.appendChild(card);
       });
     }
 
-    function addItem() {
-      const name = nameInput.value.trim();
-      const qty = Number(qtyInput.value);
-      const price = Number(priceInput.value);
-      const category = catSelect.value;
+    function applyCounts() {
+      const inputs = countList.querySelectorAll("input[data-count-id]");
+      let updated = 0;
+      inputs.forEach(input => {
+        if (input.value === "") return;
+        const item = state.items.find(i => i.id === input.dataset.countId);
+        if (!item) return;
+        item.onHand = Number(input.value);
+        item.updatedAt = Date.now();
+        updated += 1;
+      });
 
-      if (!name) { alert("Please enter an item name."); return; }
-      if (!Number.isFinite(qty) || qty < 0) { alert("Please enter a valid quantity (0 or more)."); return; }
-      if (!Number.isFinite(price) || price < 0) { alert("Please enter a valid price (0 or more)."); return; }
-
-      const items = loadItems();
-      const id = Date.now().toString() + Math.random().toString(16).slice(2);
-
-      items.unshift({ id, name, qty, price, category, updatedAt: Date.now() });
-      saveItems(items);
-
-      nameInput.value = "";
-      qtyInput.value = "";
-      priceInput.value = "";
-      nameInput.focus();
-
-      render();
+      if (updated > 0) {
+        saveState();
+        renderAll();
+        alert(`Updated ${updated} item(s).`);
+      } else {
+        alert("No counts entered.");
+      }
     }
 
-    function deleteItem(id) {
-      const items = loadItems().filter(i => i.id !== id);
-      saveItems(items);
-      render();
+    function resetVendorForm() {
+      state.activeVendorId = null;
+      Object.values(vendorForm).forEach(field => field.value = "");
+      deleteVendorBtn.disabled = true;
+      vendorStatus.textContent = "Add a new vendor";
     }
 
-    function editItem(id) {
-      const items = loadItems();
-      const item = items.find(i => i.id === id);
-      if (!item) return;
+    function saveVendor() {
+      if (!vendorForm.name.value.trim()) {
+        alert("Vendor name is required.");
+        return;
+      }
 
-      const newName = prompt("Item name:", item.name ?? "");
-      if (newName === null) return;
+      const vendorData = {
+        id: state.activeVendorId || crypto.randomUUID(),
+        name: vendorForm.name.value.trim(),
+        phone: vendorForm.phone.value.trim(),
+        email: vendorForm.email.value.trim(),
+        notes: vendorForm.notes.value.trim(),
+        updatedAt: Date.now()
+      };
 
-      const newQtyStr = prompt("Quantity:", String(item.qty ?? 0));
-      if (newQtyStr === null) return;
+      if (state.activeVendorId) {
+        const index = state.vendors.findIndex(v => v.id === state.activeVendorId);
+        if (index >= 0) state.vendors[index] = vendorData;
+      } else {
+        state.vendors.unshift(vendorData);
+      }
 
-      const newPriceStr = prompt("Price per unit:", String(item.price ?? 0));
-      if (newPriceStr === null) return;
+      saveState();
+      resetVendorForm();
+      buildVendorOptions();
+      renderAll();
+    }
 
-      const newCat = prompt("Category (e.g., Meat, Dairy, Vegetables, Dry Storage...):", item.category ?? "Other");
-      if (newCat === null) return;
+    function deleteVendor() {
+      if (!state.activeVendorId) return;
+      const vendor = state.vendors.find(v => v.id === state.activeVendorId);
+      if (!vendor) return;
+      const ok = confirm(`Delete ${vendor.name}?`);
+      if (!ok) return;
+      state.vendors = state.vendors.filter(v => v.id !== vendor.id);
+      state.items = state.items.map(item => item.vendorId === vendor.id ? { ...item, vendorId: "" } : item);
+      saveState();
+      resetVendorForm();
+      buildVendorOptions();
+      renderAll();
+    }
 
-      const newQty = Number(newQtyStr);
-      const newPrice = Number(newPriceStr);
+    function renderVendors() {
+      vendorCount.textContent = `${state.vendors.length} vendors`;
+      vendorList.innerHTML = "";
 
-      if (!newName.trim()) { alert("Name cannot be empty."); return; }
-      if (!Number.isFinite(newQty) || newQty < 0) { alert("Invalid quantity."); return; }
-      if (!Number.isFinite(newPrice) || newPrice < 0) { alert("Invalid price."); return; }
+      if (!state.vendors.length) {
+        vendorList.innerHTML = "<div class='muted'>No vendors yet. Add your first supplier above.</div>";
+        return;
+      }
 
-      item.name = newName.trim();
-      item.qty = newQty;
-      item.price = newPrice;
-      item.category = CATEGORIES.includes(newCat.trim()) ? newCat.trim() : "Other";
-      item.updatedAt = Date.now();
+      state.vendors.forEach(vendor => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${vendor.name}</strong>
+              <div class="muted">${vendor.email || "No email"} • ${vendor.phone || "No phone"}</div>
+            </div>
+            <button class="ghost" data-vendor-id="${vendor.id}">Edit</button>
+          </div>
+          <div class="muted" style="margin-top: 8px;">${vendor.notes || "No notes"}</div>
+        `;
+        card.querySelector("button").addEventListener("click", () => {
+          state.activeVendorId = vendor.id;
+          vendorForm.name.value = vendor.name;
+          vendorForm.phone.value = vendor.phone;
+          vendorForm.email.value = vendor.email;
+          vendorForm.notes.value = vendor.notes;
+          deleteVendorBtn.disabled = false;
+          vendorStatus.textContent = "Editing vendor";
+          setActiveView("vendors");
+        });
+        vendorList.appendChild(card);
+      });
+    }
 
-      saveItems(items);
-      render();
+    function renderOrders() {
+      const query = orderSearch.value.trim().toLowerCase();
+      const suggestions = state.items
+        .map(item => {
+          const orderQty = getSuggestedOrderQty(item);
+          const status = getStatus(item);
+          return { item, orderQty, status };
+        })
+        .filter(s => s.orderQty > 0)
+        .filter(s => {
+          const vendorName = getVendorName(s.item.vendorId).toLowerCase();
+          return (
+            s.item.name.toLowerCase().includes(query) ||
+            s.item.category.toLowerCase().includes(query) ||
+            vendorName.includes(query)
+          );
+        });
+
+      orderList.innerHTML = "";
+      if (!suggestions.length) {
+        orderList.innerHTML = "<div class='muted'>No suggested orders right now. Your stock levels look healthy.</div>";
+        return;
+      }
+
+      suggestions.sort((a, b) => b.orderQty - a.orderQty).forEach(s => {
+        const item = s.item;
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${item.name}</strong>
+              <div class="muted">${item.category} • Vendor: ${getVendorName(item.vendorId)}</div>
+            </div>
+            <span class="pill ${s.status.tone}">${s.status.label}</span>
+          </div>
+          <div class="grid-2" style="margin-top: 10px;">
+            <div>
+              <div class="muted">On-hand</div>
+              <strong>${item.onHand} ${item.unit}</strong>
+            </div>
+            <div>
+              <div class="muted">Par level</div>
+              <strong>${item.par} ${item.unit}</strong>
+            </div>
+            <div>
+              <div class="muted">Suggested order</div>
+              <strong>${s.orderQty} ${item.unit}</strong>
+            </div>
+            <div>
+              <div class="muted">Estimated cost</div>
+              <strong>${currency(s.orderQty * Number(item.cost || 0))}</strong>
+            </div>
+          </div>
+        `;
+        orderList.appendChild(card);
+      });
+    }
+
+    function renderDashboard() {
+      const totalValue = state.items.reduce((sum, item) => sum + getItemValue(item), 0);
+      const belowCount = state.items.filter(item => Number(item.onHand) <= Number(item.reorderPoint || 0)).length;
+      const suggestedValue = state.items.reduce((sum, item) => sum + (getSuggestedOrderQty(item) * Number(item.cost || 0)), 0);
+
+      summaryValue.textContent = currency(totalValue);
+      summaryBelow.textContent = `${belowCount}`;
+      summaryOrder.textContent = currency(suggestedValue);
+
+      const alerts = state.items
+        .map(item => ({ item, status: getStatus(item) }))
+        .filter(({ status }) => status.tone !== "ok")
+        .sort((a, b) => getSuggestedOrderQty(b.item) - getSuggestedOrderQty(a.item));
+
+      alertCount.textContent = `${alerts.length} alerts`;
+      alertsList.innerHTML = "";
+
+      if (!alerts.length) {
+        alertsList.innerHTML = "<div class='muted'>No alerts — everything looks stocked.</div>";
+      } else {
+        alerts.forEach(({ item, status }) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="section-title">
+              <div>
+                <strong>${item.name}</strong>
+                <div class="muted">${item.category} • ${getVendorName(item.vendorId)}</div>
+              </div>
+              <span class="pill ${status.tone}">${status.label}</span>
+            </div>
+            <div class="muted" style="margin-top: 8px;">On-hand: ${item.onHand} • Reorder point: ${item.reorderPoint}</div>
+          `;
+          alertsList.appendChild(card);
+        });
+      }
+
+      const topItems = state.items
+        .map(item => ({ item, value: getItemValue(item) }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+
+      topValueList.innerHTML = "";
+      if (!topItems.length) {
+        topValueList.innerHTML = "<div class='muted'>Add items to see value insights.</div>";
+      } else {
+        topItems.forEach(({ item, value }) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="section-title">
+              <div>
+                <strong>${item.name}</strong>
+                <div class="muted">${item.category}</div>
+              </div>
+              <div>${currency(value)}</div>
+            </div>
+            <div class="muted" style="margin-top: 8px;">${item.onHand} ${item.unit} @ ${currency(item.cost)} / unit</div>
+          `;
+          topValueList.appendChild(card);
+        });
+      }
+    }
+
+    function renderAll() {
+      buildVendorOptions();
+      renderItems();
+      renderCounts();
+      renderVendors();
+      renderOrders();
+      renderDashboard();
+    }
+
+    function exportJson() {
+      const payload = JSON.stringify({
+        items: state.items,
+        vendors: state.vendors,
+        exportedAt: new Date().toISOString()
+      }, null, 2);
+      const blob = new Blob([payload], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `pantrypilot-export-${Date.now()}.json`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function importJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (!data.items || !data.vendors) {
+            alert("Invalid file format.");
+            return;
+          }
+          state.items = data.items;
+          state.vendors = data.vendors;
+          saveState();
+          resetItemForm();
+          resetVendorForm();
+          renderAll();
+          alert("Data imported successfully.");
+        } catch {
+          alert("Could not read that file.");
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = "";
     }
 
     function clearAll() {
-      const ok = confirm("Delete ALL inventory items? This cannot be undone.");
+      const ok = confirm("This will delete all items and vendors. Continue?");
       if (!ok) return;
-      localStorage.removeItem(STORAGE_KEY);
-      render();
+      state.items = [];
+      state.vendors = [];
+      saveState();
+      resetItemForm();
+      resetVendorForm();
+      renderAll();
     }
 
-    function escapeHtml(str) {
-      return String(str ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
+    nav.addEventListener("click", event => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      setActiveView(button.dataset.view);
+    });
 
-    addBtn.addEventListener("click", addItem);
-    clearBtn.addEventListener("click", clearAll);
-    searchEl.addEventListener("input", render);
+    saveItemBtn.addEventListener("click", saveItem);
+    deleteItemBtn.addEventListener("click", deleteItem);
+    resetFormBtn.addEventListener("click", resetItemForm);
+    inventorySearch.addEventListener("input", renderItems);
+    countSearch.addEventListener("input", renderCounts);
+    applyCountsBtn.addEventListener("click", applyCounts);
+    orderSearch.addEventListener("input", renderOrders);
+    refreshOrdersBtn.addEventListener("click", renderOrders);
 
-    nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
-    qtyInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
-    priceInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
+    saveVendorBtn.addEventListener("click", saveVendor);
+    deleteVendorBtn.addEventListener("click", deleteVendor);
 
-    initCategories();
-    render();
+    exportJsonBtn.addEventListener("click", exportJson);
+    importJsonInput.addEventListener("change", importJson);
+    clearAllBtn.addEventListener("click", clearAll);
+
+    loadState();
+    buildCategoryOptions();
+    buildVendorOptions();
+    resetItemForm();
+    resetVendorForm();
+    renderAll();
   </script>
-
 </body>
 </html>
