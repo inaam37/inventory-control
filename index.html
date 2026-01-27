@@ -5,64 +5,140 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Inventory List</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 950px; margin: 0 auto; }
-    h1 { margin: 0 0 12px; }
-    .card { border: 1px solid #ddd; border-radius: 14px; padding: 14px; margin-bottom: 14px; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
-    input, select { padding: 10px; font-size: 16px; }
-    button { padding: 10px 14px; font-size: 16px; cursor: pointer; }
-    .muted { color: #666; font-size: 14px; }
+    :root {
+      color-scheme: light;
+      --ink: #1c1c1c;
+      --muted: #5e5e5e;
+      --border: #e5e7eb;
+      --accent: #3b82f6;
+      --accent-soft: #eff6ff;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --card: #ffffff;
+      --bg: #f6f7fb;
+    }
+
+    * { box-sizing: border-box; }
+    body { font-family: "Inter", "Segoe UI", Arial, sans-serif; padding: 20px; max-width: 1100px; margin: 0 auto; background: var(--bg); color: var(--ink); }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    h2 { margin: 0 0 6px; font-size: 18px; }
+    .card { border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 14px; background: var(--card); box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06); }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+    .field { display: flex; flex-direction: column; gap: 6px; min-width: 160px; flex: 1; }
+    label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    input, select { padding: 10px 12px; font-size: 15px; border-radius: 10px; border: 1px solid var(--border); background: #fff; }
+    input:focus, select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+    button { padding: 10px 14px; font-size: 15px; cursor: pointer; border-radius: 10px; border: 1px solid transparent; background: var(--accent); color: #fff; font-weight: 600; }
+    button.secondary { background: #fff; color: var(--ink); border: 1px solid var(--border); }
+    button.danger { background: #fff0f0; border: 1px solid #f7c6c6; color: #b91c1c; }
+    .muted { color: var(--muted); font-size: 14px; }
     .topbar { display:flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-    .totals { font-weight: bold; }
+    .totals { font-weight: 700; font-size: 16px; }
     .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
     @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
 
     ul { list-style: none; padding: 0; margin: 10px 0 0; }
     li { display: flex; justify-content: space-between; align-items: center; gap: 12px;
-         padding: 10px; border: 1px solid #eee; border-radius: 12px; margin-bottom: 10px; }
+         padding: 12px; border: 1px solid var(--border); border-radius: 14px; margin-bottom: 10px; background: #fff; }
     .meta { display: flex; flex-direction: column; gap: 4px; }
     .line1 { display:flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
     .name { font-weight: 700; }
-    .pill { font-size: 12px; border: 1px solid #ddd; padding: 2px 8px; border-radius: 999px; }
+    .pill { font-size: 12px; border: 1px solid var(--border); padding: 2px 8px; border-radius: 999px; background: #f8fafc; }
     .nums { display:flex; gap: 10px; flex-wrap: wrap; }
-    .danger { border: 1px solid #f0b4b4; }
-    .primary { border: 1px solid #b4d4ff; }
+    .badge { font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 999px; }
+    .badge.ok { background: #ecfdf3; color: #047857; }
+    .badge.warn { background: #fff7ed; color: #b45309; }
+    .badge.alert { background: #fef2f2; color: #b91c1c; }
 
-    .smallbtn { padding: 8px 10px; font-size: 14px; }
+    .smallbtn { padding: 8px 10px; font-size: 14px; background: #fff; border: 1px solid var(--border); color: var(--ink); }
+    .smallbtn.danger { background: #fff0f0; border-color: #f7c6c6; color: #b91c1c; }
     .right { display:flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .footer-note { margin-top: 8px; }
+    .hint { font-size: 13px; color: var(--muted); }
+    .summary-box { display: flex; gap: 12px; flex-wrap: wrap; }
+    .summary { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 12px 16px; min-width: 200px; }
   </style>
 </head>
 <body>
 
   <div class="topbar">
-    <h1>Inventory</h1>
+    <div>
+      <h1>Inventory Control Dashboard</h1>
+      <div class="muted">Track stock levels, reorder points, and ordering suggestions.</div>
+    </div>
     <div class="totals" id="grandTotal">$0.00</div>
   </div>
 
   <div class="card">
+    <h2>Add Inventory Item</h2>
     <div class="row">
-      <input id="itemName" placeholder="Item name (e.g., Milk)" />
-      <input id="itemQty" type="number" min="0" step="1" placeholder="Qty (e.g., 10)" />
-      <input id="itemPrice" type="number" min="0" step="0.01" placeholder="Price per unit (e.g., 3.99)" />
-      <select id="itemCategory"></select>
-      <button id="addBtn" class="primary">Add</button>
+      <div class="field">
+        <label for="itemName">Item name</label>
+        <input id="itemName" placeholder="Milk" />
+      </div>
+      <div class="field">
+        <label for="itemQty">On-hand qty</label>
+        <input id="itemQty" type="number" min="0" step="1" placeholder="10" />
+      </div>
+      <div class="field">
+        <label for="itemPrice">Price per unit</label>
+        <input id="itemPrice" type="number" min="0" step="0.01" placeholder="3.99" />
+      </div>
+      <div class="field">
+        <label for="itemCategory">Category</label>
+        <select id="itemCategory"></select>
+      </div>
     </div>
 
     <div class="row">
-      <input id="search" placeholder="Search items..." />
+      <div class="field">
+        <label for="itemReorder">Reorder point</label>
+        <input id="itemReorder" type="number" min="0" step="1" placeholder="5" />
+      </div>
+      <div class="field">
+        <label for="itemTarget">Target level (par)</label>
+        <input id="itemTarget" type="number" min="0" step="1" placeholder="20" />
+      </div>
+      <div class="field">
+        <label for="itemUsage">Avg daily usage</label>
+        <input id="itemUsage" type="number" min="0" step="0.1" placeholder="2.5" />
+      </div>
+      <div class="field">
+        <label for="itemLead">Lead time (days)</label>
+        <input id="itemLead" type="number" min="0" step="1" placeholder="3" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field" style="flex: 2;">
+        <label for="search">Search inventory</label>
+        <input id="search" placeholder="Search items or categories..." />
+      </div>
+      <button id="addBtn">Add Item</button>
       <button id="clearBtn" class="danger">Clear All</button>
     </div>
 
     <div class="muted footer-note">
-      Tip: Price is <b>per unit</b>. Total value = Qty × Price.
+      Tip: Reorder point is the minimum safe level. Target level is the ideal stock after ordering.
+    </div>
+  </div>
+
+  <div class="summary-box">
+    <div class="summary">
+      <div class="muted">Items below reorder point</div>
+      <div class="totals" id="reorderCount">0</div>
+    </div>
+    <div class="summary">
+      <div class="muted">Suggested order value</div>
+      <div class="totals" id="suggestedValue">$0.00</div>
     </div>
   </div>
 
   <div class="grid" id="sections"></div>
 
   <script>
-    const STORAGE_KEY = "inventory_items_v2";
+    const STORAGE_KEY = "inventory_items_v3";
 
     // Categories
     const CATEGORIES = [
@@ -81,11 +157,17 @@
     const qtyInput = document.getElementById("itemQty");
     const priceInput = document.getElementById("itemPrice");
     const catSelect = document.getElementById("itemCategory");
+    const reorderInput = document.getElementById("itemReorder");
+    const targetInput = document.getElementById("itemTarget");
+    const usageInput = document.getElementById("itemUsage");
+    const leadInput = document.getElementById("itemLead");
     const addBtn = document.getElementById("addBtn");
     const sectionsEl = document.getElementById("sections");
     const searchEl = document.getElementById("search");
     const clearBtn = document.getElementById("clearBtn");
     const grandTotalEl = document.getElementById("grandTotal");
+    const reorderCountEl = document.getElementById("reorderCount");
+    const suggestedValueEl = document.getElementById("suggestedValue");
 
     function initCategories() {
       catSelect.innerHTML = "";
@@ -123,6 +205,20 @@
       return qty * price;
     }
 
+    function getReorderQty(item) {
+      const qty = Number(item.qty);
+      const target = Number(item.targetLevel);
+      if (!Number.isFinite(qty) || !Number.isFinite(target)) return 0;
+      return Math.max(0, target - qty);
+    }
+
+    function getDaysCover(item) {
+      const qty = Number(item.qty);
+      const usage = Number(item.usagePerDay);
+      if (!Number.isFinite(qty) || !Number.isFinite(usage) || usage <= 0) return null;
+      return qty / usage;
+    }
+
     function render() {
       const q = searchEl.value.trim().toLowerCase();
       const all = loadItems();
@@ -143,6 +239,17 @@
 
       const grand = all.reduce((sum, i) => sum + itemTotal(i), 0);
       grandTotalEl.textContent = `Grand Total: ${money(grand)}`;
+
+      const reorderCount = all.filter(i => Number(i.qty) <= Number(i.reorderPoint || 0)).length;
+      reorderCountEl.textContent = reorderCount.toString();
+
+      const suggestedValue = all.reduce((sum, i) => {
+        const reorderQty = getReorderQty(i);
+        const price = Number(i.price);
+        if (!Number.isFinite(reorderQty) || !Number.isFinite(price)) return sum;
+        return sum + reorderQty * price;
+      }, 0);
+      suggestedValueEl.textContent = money(suggestedValue);
 
       sectionsEl.innerHTML = "";
 
@@ -193,6 +300,12 @@
               const qty = Number(item.qty);
               const price = Number(item.price);
               const total = itemTotal(item);
+              const reorderPoint = Number(item.reorderPoint || 0);
+              const targetLevel = Number(item.targetLevel || 0);
+              const usagePerDay = Number(item.usagePerDay || 0);
+              const leadTime = Number(item.leadTimeDays || 0);
+              const daysCover = getDaysCover(item);
+              const reorderQty = getReorderQty(item);
 
               line2.textContent =
                 `Qty: ${Number.isFinite(qty) ? qty : 0} • ` +
@@ -202,8 +315,36 @@
               left.appendChild(line1);
               left.appendChild(line2);
 
+              const line3 = document.createElement("div");
+              line3.className = "nums";
+              line3.innerHTML = `
+                <span class="pill">Reorder: ${Number.isFinite(reorderPoint) ? reorderPoint : 0}</span>
+                <span class="pill">Target: ${Number.isFinite(targetLevel) ? targetLevel : 0}</span>
+                <span class="pill">Daily use: ${Number.isFinite(usagePerDay) ? usagePerDay : 0}</span>
+                <span class="pill">Lead: ${Number.isFinite(leadTime) ? leadTime : 0}d</span>
+              `;
+              left.appendChild(line3);
+
+              const suggestion = document.createElement("div");
+              suggestion.className = "hint";
+              const daysText = daysCover === null ? "N/A" : `${daysCover.toFixed(1)} days cover`;
+              const suggestionText = reorderQty > 0
+                ? `Suggestion: Order ${reorderQty} unit(s) to reach target.`
+                : "Suggestion: On target or above.";
+              suggestion.textContent = `${daysText} • ${suggestionText}`;
+              left.appendChild(suggestion);
+
               const right = document.createElement("div");
               right.className = "right";
+
+              const status = document.createElement("span");
+              const isBelow = Number.isFinite(qty) && qty <= reorderPoint;
+              const isLowSoon = Number.isFinite(qty) && Number.isFinite(usagePerDay) && Number.isFinite(leadTime)
+                ? qty <= usagePerDay * leadTime
+                : false;
+              status.className = `badge ${isBelow ? "alert" : isLowSoon ? "warn" : "ok"}`;
+              status.textContent = isBelow ? "Reorder Now" : isLowSoon ? "Low Soon" : "Stock OK";
+              right.appendChild(status);
 
               const editBtn = document.createElement("button");
               editBtn.className = "smallbtn";
@@ -235,20 +376,43 @@
       const qty = Number(qtyInput.value);
       const price = Number(priceInput.value);
       const category = catSelect.value;
+      const reorderPoint = Number(reorderInput.value);
+      const targetLevel = Number(targetInput.value);
+      const usagePerDay = Number(usageInput.value);
+      const leadTimeDays = Number(leadInput.value);
 
       if (!name) { alert("Please enter an item name."); return; }
       if (!Number.isFinite(qty) || qty < 0) { alert("Please enter a valid quantity (0 or more)."); return; }
       if (!Number.isFinite(price) || price < 0) { alert("Please enter a valid price (0 or more)."); return; }
+      if (!Number.isFinite(reorderPoint) || reorderPoint < 0) { alert("Please enter a valid reorder point (0 or more)."); return; }
+      if (!Number.isFinite(targetLevel) || targetLevel < 0) { alert("Please enter a valid target level (0 or more)."); return; }
+      if (!Number.isFinite(usagePerDay) || usagePerDay < 0) { alert("Please enter a valid usage rate (0 or more)."); return; }
+      if (!Number.isFinite(leadTimeDays) || leadTimeDays < 0) { alert("Please enter a valid lead time (0 or more)."); return; }
 
       const items = loadItems();
       const id = Date.now().toString() + Math.random().toString(16).slice(2);
 
-      items.unshift({ id, name, qty, price, category, updatedAt: Date.now() });
+      items.unshift({
+        id,
+        name,
+        qty,
+        price,
+        category,
+        reorderPoint,
+        targetLevel,
+        usagePerDay,
+        leadTimeDays,
+        updatedAt: Date.now()
+      });
       saveItems(items);
 
       nameInput.value = "";
       qtyInput.value = "";
       priceInput.value = "";
+      reorderInput.value = "";
+      targetInput.value = "";
+      usageInput.value = "";
+      leadInput.value = "";
       nameInput.focus();
 
       render();
@@ -277,17 +441,41 @@
       const newCat = prompt("Category (e.g., Meat, Dairy, Vegetables, Dry Storage...):", item.category ?? "Other");
       if (newCat === null) return;
 
+      const newReorderStr = prompt("Reorder point:", String(item.reorderPoint ?? 0));
+      if (newReorderStr === null) return;
+
+      const newTargetStr = prompt("Target level (par):", String(item.targetLevel ?? 0));
+      if (newTargetStr === null) return;
+
+      const newUsageStr = prompt("Avg daily usage:", String(item.usagePerDay ?? 0));
+      if (newUsageStr === null) return;
+
+      const newLeadStr = prompt("Lead time (days):", String(item.leadTimeDays ?? 0));
+      if (newLeadStr === null) return;
+
       const newQty = Number(newQtyStr);
       const newPrice = Number(newPriceStr);
+      const newReorder = Number(newReorderStr);
+      const newTarget = Number(newTargetStr);
+      const newUsage = Number(newUsageStr);
+      const newLead = Number(newLeadStr);
 
       if (!newName.trim()) { alert("Name cannot be empty."); return; }
       if (!Number.isFinite(newQty) || newQty < 0) { alert("Invalid quantity."); return; }
       if (!Number.isFinite(newPrice) || newPrice < 0) { alert("Invalid price."); return; }
+      if (!Number.isFinite(newReorder) || newReorder < 0) { alert("Invalid reorder point."); return; }
+      if (!Number.isFinite(newTarget) || newTarget < 0) { alert("Invalid target level."); return; }
+      if (!Number.isFinite(newUsage) || newUsage < 0) { alert("Invalid usage rate."); return; }
+      if (!Number.isFinite(newLead) || newLead < 0) { alert("Invalid lead time."); return; }
 
       item.name = newName.trim();
       item.qty = newQty;
       item.price = newPrice;
       item.category = CATEGORIES.includes(newCat.trim()) ? newCat.trim() : "Other";
+      item.reorderPoint = newReorder;
+      item.targetLevel = newTarget;
+      item.usagePerDay = newUsage;
+      item.leadTimeDays = newLead;
       item.updatedAt = Date.now();
 
       saveItems(items);
@@ -317,6 +505,10 @@
     nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
     qtyInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
     priceInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
+    reorderInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
+    targetInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
+    usageInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
+    leadInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
 
     initCategories();
     render();
