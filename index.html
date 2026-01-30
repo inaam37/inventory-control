@@ -193,6 +193,12 @@
       align-items: end;
     }
 
+    .two-column {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
     @media (max-width: 720px) {
       header { text-align: center; }
       .nav { justify-content: center; }
@@ -204,7 +210,7 @@
   <header>
     <div class="wrap">
       <h1>PantryPilot Inventory Control</h1>
-      <p>Phase 2 — inventory, vendors, count sheets, ordering insights, recipe costing, and usage variance.</p>
+      <p>Phase 3+ — inventory, vendors, purchasing, recipes, usage, variance, and stakeholder-ready workflows.</p>
     </div>
   </header>
 
@@ -215,8 +221,12 @@
       <button data-view="counts">Count Sheets</button>
       <button data-view="vendors">Vendors</button>
       <button data-view="orders">Ordering Suggestions</button>
+      <button data-view="purchaseOrders">Purchase Orders</button>
       <button data-view="recipes">Recipes</button>
       <button data-view="usage">Usage & Variance</button>
+      <button data-view="pricing">Price History</button>
+      <button data-view="accounts">Accounts & Roles</button>
+      <button data-view="reports">Reports</button>
       <button data-view="data">Data Tools</button>
     </div>
 
@@ -263,6 +273,13 @@
             <span class="muted">Highest on-hand value</span>
           </div>
           <div id="topValueList" class="stack"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">
+            <h3>Notification Queue</h3>
+            <span class="muted" id="notificationCount">0 messages</span>
+          </div>
+          <div id="notificationList" class="stack"></div>
         </div>
       </div>
     </section>
@@ -377,6 +394,36 @@
         <div id="countList" class="stack" style="margin-top: 12px;"></div>
         <div class="footer-note">Counts update the on-hand quantity and are stored locally.</div>
       </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Count Scheduling</h3>
+          <span class="muted">Plan weekly / monthly counts</span>
+        </div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="scheduleName">Schedule name</label>
+            <input id="scheduleName" placeholder="Weekly dry storage" />
+          </div>
+          <div>
+            <label for="scheduleFrequency">Frequency</label>
+            <select id="scheduleFrequency">
+              <option value="weekly">Weekly</option>
+              <option value="biweekly">Bi-weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+          <div>
+            <label for="scheduleNext">Next count date</label>
+            <input id="scheduleNext" type="date" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveSchedule">Save Schedule</button>
+          <button class="ghost" id="clearSchedules">Clear Schedules</button>
+        </div>
+        <div id="scheduleList" class="stack" style="margin-top: 12px;"></div>
+      </div>
     </section>
 
     <section id="vendors" class="stack hidden">
@@ -433,13 +480,51 @@
       </div>
     </section>
 
+    <section id="purchaseOrders" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Create Purchase Orders</h3>
+          <span class="muted">Group suggested orders by vendor</span>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="createPo">Generate PO Drafts</button>
+          <button class="ghost" id="clearPos">Clear PO Drafts</button>
+        </div>
+        <div class="footer-note" style="margin-top: 10px;">Drafts are generated from current ordering suggestions.</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>PO Drafts</h3>
+          <span class="muted" id="poCount">0 drafts</span>
+        </div>
+        <div id="poList" class="stack"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Invoice Capture (Mock)</h3>
+          <span class="muted">Attach invoices for reconciliation</span>
+        </div>
+        <div class="file-input" style="margin-top: 12px;">
+          <label class="ghost" style="cursor:pointer;">
+            Upload Invoice (PDF/Image)
+            <input type="file" id="invoiceUpload" accept="application/pdf,image/*" style="display:none;" />
+          </label>
+          <button class="ghost" id="clearInvoices">Clear Invoices</button>
+        </div>
+        <div id="invoiceList" class="stack" style="margin-top: 12px;"></div>
+        <div class="footer-note">OCR and invoice parsing require a backend service.</div>
+      </div>
+    </section>
+
     <section id="recipes" class="stack hidden">
       <div class="card">
         <div class="section-title">
           <h3>Recipe Costing</h3>
           <span class="muted">Build recipes and calculate cost per serving</span>
         </div>
-        <div class="grid-2" style="margin-top: 12px;">
+        <div class="grid-3" style="margin-top: 12px;">
           <div>
             <label for="recipeName">Recipe name</label>
             <input id="recipeName" placeholder="Marinara sauce" />
@@ -447,6 +532,10 @@
           <div>
             <label for="recipeYield">Yield (servings)</label>
             <input id="recipeYield" type="number" min="1" step="1" placeholder="20" />
+          </div>
+          <div>
+            <label for="recipePrice">Menu price (per serving)</label>
+            <input id="recipePrice" type="number" min="0" step="0.01" placeholder="14.00" />
           </div>
           <div style="grid-column: 1 / -1;">
             <label for="recipeNotes">Notes</label>
@@ -561,6 +650,157 @@
           </table>
         </div>
       </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Waste Highlights</h3>
+          <span class="muted">Top waste categories</span>
+        </div>
+        <div id="wasteSummary" class="stack" style="margin-top: 12px;"></div>
+      </div>
+    </section>
+
+    <section id="pricing" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Vendor Price History</h3>
+          <span class="muted">Track cost changes per item</span>
+        </div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="priceItem">Item</label>
+            <select id="priceItem"></select>
+          </div>
+          <div>
+            <label for="priceVendor">Vendor</label>
+            <select id="priceVendor"></select>
+          </div>
+          <div>
+            <label for="priceAmount">New price</label>
+            <input id="priceAmount" type="number" min="0" step="0.01" placeholder="2.45" />
+          </div>
+          <div>
+            <label for="priceDate">Effective date</label>
+            <input id="priceDate" type="date" />
+          </div>
+          <div style="grid-column: 2 / -1;">
+            <label for="priceNote">Notes</label>
+            <input id="priceNote" placeholder="Seasonal increase" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="savePrice">Log Price</button>
+          <button class="ghost" id="clearPrices">Clear History</button>
+        </div>
+        <div id="priceHistoryList" class="stack" style="margin-top: 12px;"></div>
+      </div>
+    </section>
+
+    <section id="accounts" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Accounts & Roles</h3>
+          <span class="muted">Add employees and assign permissions</span>
+        </div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="userName">Full name</label>
+            <input id="userName" placeholder="Alex Johnson" />
+          </div>
+          <div>
+            <label for="userRole">Role</label>
+            <select id="userRole">
+              <option value="manager">Manager</option>
+              <option value="chef">Chef</option>
+              <option value="buyer">Buyer</option>
+              <option value="admin">Admin</option>
+              <option value="staff">Staff</option>
+            </select>
+          </div>
+          <div>
+            <label for="userEmail">Email</label>
+            <input id="userEmail" placeholder="alex@restaurant.com" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveUser">Save User</button>
+          <button class="ghost" id="clearUsers">Clear Users</button>
+        </div>
+        <div id="userList" class="stack" style="margin-top: 12px;"></div>
+        <div class="footer-note">Authentication and secure access require a backend.</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Notification Preferences</h3>
+          <span class="muted">Who gets reorder alerts?</span>
+        </div>
+        <div class="grid-2" style="margin-top: 12px;">
+          <div>
+            <label for="notifyEmail">Manager email</label>
+            <input id="notifyEmail" placeholder="gm@restaurant.com" />
+          </div>
+          <div>
+            <label for="notifyPhone">Manager phone</label>
+            <input id="notifyPhone" placeholder="(555) 123-4567" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveNotifications">Save Notification Settings</button>
+        </div>
+        <div class="footer-note">Email/SMS delivery requires a messaging service.</div>
+      </div>
+    </section>
+
+    <section id="reports" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Food Cost & Profitability</h3>
+          <span class="muted">Recipe margin snapshots</span>
+        </div>
+        <div id="profitReport" class="stack" style="margin-top: 12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Vendor Spend Summary</h3>
+          <span class="muted">Ordering recommendations by vendor</span>
+        </div>
+        <div id="vendorSpend" class="stack" style="margin-top: 12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Stakeholder Feedback Log</h3>
+          <span class="muted">Capture feedback from managers, buyers, staff</span>
+        </div>
+        <div class="grid-2" style="margin-top: 12px;">
+          <div>
+            <label for="feedbackFrom">From</label>
+            <select id="feedbackFrom">
+              <option value="manager">Manager</option>
+              <option value="chef">Chef</option>
+              <option value="buyer">Buyer</option>
+              <option value="owner">Owner</option>
+              <option value="staff">Staff</option>
+              <option value="vendor">Vendor</option>
+            </select>
+          </div>
+          <div>
+            <label for="feedbackTopic">Topic</label>
+            <input id="feedbackTopic" placeholder="Ordering UI" />
+          </div>
+          <div style="grid-column: 1 / -1;">
+            <label for="feedbackNote">Feedback</label>
+            <textarea id="feedbackNote" rows="3" placeholder="We need PO confirmation for vendor reps."></textarea>
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveFeedback">Save Feedback</button>
+          <button class="ghost" id="clearFeedback">Clear Feedback</button>
+        </div>
+        <div id="feedbackList" class="stack" style="margin-top: 12px;"></div>
+      </div>
     </section>
 
     <section id="data" class="stack hidden">
@@ -586,13 +826,39 @@
             Suggested par level = avg daily usage × (lead time + safety days).
           </div>
         </div>
-        <div class="footer-note" style="margin-top: 10px;">JSON export includes items, vendors, recipes, sales, and usage stored locally in your browser.</div>
+        <div class="two-column" style="margin-top: 16px;">
+          <div class="card">
+            <div class="section-title">
+              <h4>POS Integration (Mock)</h4>
+              <span class="muted">Import sales data</span>
+            </div>
+            <div class="file-input" style="margin-top: 10px;">
+              <label class="ghost" style="cursor:pointer;">
+                Upload POS CSV
+                <input type="file" id="posUpload" accept=".csv" style="display:none;" />
+              </label>
+              <button class="ghost" id="clearPosUploads">Clear Uploads</button>
+            </div>
+            <div id="posList" class="stack" style="margin-top: 10px;"></div>
+            <div class="footer-note">Automated POS sync needs API credentials.</div>
+          </div>
+          <div class="card">
+            <div class="section-title">
+              <h4>Sync Status</h4>
+              <span class="muted">Local-only in browser</span>
+            </div>
+            <div class="muted" style="margin-top: 10px;">
+              Cloud sync, multi-location, and audit logs require a backend database.
+            </div>
+          </div>
+        </div>
+        <div class="footer-note" style="margin-top: 10px;">JSON export includes items, vendors, recipes, sales, usage logs, PO drafts, prices, schedules, users, and feedback.</div>
       </div>
     </section>
   </main>
 
   <script>
-    const STORAGE_KEY = "pantrypilot_phase2";
+    const STORAGE_KEY = "pantrypilot_phase3";
 
     const DEFAULT_CATEGORIES = [
       "Produce",
@@ -613,14 +879,38 @@
       recipes: [],
       sales: [],
       usageLogs: [],
-      settings: { safetyDays: 2 },
+      priceHistory: [],
+      poDrafts: [],
+      invoices: [],
+      schedules: [],
+      users: [],
+      feedback: [],
+      posUploads: [],
+      settings: {
+        safetyDays: 2,
+        notifyEmail: "",
+        notifyPhone: ""
+      },
       activeItemId: null,
       activeVendorId: null,
       activeRecipeId: null
     };
 
     const nav = document.getElementById("nav");
-    const views = ["dashboard", "inventory", "counts", "vendors", "orders", "recipes", "usage", "data"];
+    const views = [
+      "dashboard",
+      "inventory",
+      "counts",
+      "vendors",
+      "orders",
+      "purchaseOrders",
+      "recipes",
+      "usage",
+      "pricing",
+      "accounts",
+      "reports",
+      "data"
+    ];
 
     const itemForm = {
       name: document.getElementById("itemName"),
@@ -673,6 +963,8 @@
     const managerList = document.getElementById("managerList");
     const managerCount = document.getElementById("managerCount");
     const topValueList = document.getElementById("topValueList");
+    const notificationCount = document.getElementById("notificationCount");
+    const notificationList = document.getElementById("notificationList");
 
     const exportJsonBtn = document.getElementById("exportJson");
     const importJsonInput = document.getElementById("importJson");
@@ -682,6 +974,7 @@
     const recipeForm = {
       name: document.getElementById("recipeName"),
       yield: document.getElementById("recipeYield"),
+      price: document.getElementById("recipePrice"),
       notes: document.getElementById("recipeNotes")
     };
     const addIngredientBtn = document.getElementById("addIngredient");
@@ -710,6 +1003,56 @@
     const usageList = document.getElementById("usageList");
     const usageStatus = document.getElementById("usageStatus");
     const varianceTable = document.getElementById("varianceTable");
+    const wasteSummary = document.getElementById("wasteSummary");
+
+    const priceItem = document.getElementById("priceItem");
+    const priceVendor = document.getElementById("priceVendor");
+    const priceAmount = document.getElementById("priceAmount");
+    const priceDate = document.getElementById("priceDate");
+    const priceNote = document.getElementById("priceNote");
+    const savePriceBtn = document.getElementById("savePrice");
+    const clearPricesBtn = document.getElementById("clearPrices");
+    const priceHistoryList = document.getElementById("priceHistoryList");
+
+    const createPoBtn = document.getElementById("createPo");
+    const clearPosBtn = document.getElementById("clearPos");
+    const poList = document.getElementById("poList");
+    const poCount = document.getElementById("poCount");
+
+    const invoiceUpload = document.getElementById("invoiceUpload");
+    const clearInvoicesBtn = document.getElementById("clearInvoices");
+    const invoiceList = document.getElementById("invoiceList");
+
+    const scheduleName = document.getElementById("scheduleName");
+    const scheduleFrequency = document.getElementById("scheduleFrequency");
+    const scheduleNext = document.getElementById("scheduleNext");
+    const saveScheduleBtn = document.getElementById("saveSchedule");
+    const clearSchedulesBtn = document.getElementById("clearSchedules");
+    const scheduleList = document.getElementById("scheduleList");
+
+    const userName = document.getElementById("userName");
+    const userRole = document.getElementById("userRole");
+    const userEmail = document.getElementById("userEmail");
+    const saveUserBtn = document.getElementById("saveUser");
+    const clearUsersBtn = document.getElementById("clearUsers");
+    const userList = document.getElementById("userList");
+
+    const notifyEmail = document.getElementById("notifyEmail");
+    const notifyPhone = document.getElementById("notifyPhone");
+    const saveNotificationsBtn = document.getElementById("saveNotifications");
+
+    const profitReport = document.getElementById("profitReport");
+    const vendorSpend = document.getElementById("vendorSpend");
+    const feedbackFrom = document.getElementById("feedbackFrom");
+    const feedbackTopic = document.getElementById("feedbackTopic");
+    const feedbackNote = document.getElementById("feedbackNote");
+    const saveFeedbackBtn = document.getElementById("saveFeedback");
+    const clearFeedbackBtn = document.getElementById("clearFeedback");
+    const feedbackList = document.getElementById("feedbackList");
+
+    const posUpload = document.getElementById("posUpload");
+    const clearPosUploadsBtn = document.getElementById("clearPosUploads");
+    const posList = document.getElementById("posList");
 
     function currency(value) {
       const amount = Number(value);
@@ -724,9 +1067,14 @@
         recipes: state.recipes,
         sales: state.sales,
         usageLogs: state.usageLogs,
-        settings: {
-          safetyDays: state.settings.safetyDays
-        }
+        priceHistory: state.priceHistory,
+        poDrafts: state.poDrafts,
+        invoices: state.invoices,
+        schedules: state.schedules,
+        users: state.users,
+        feedback: state.feedback,
+        posUploads: state.posUploads,
+        settings: state.settings
       }));
     }
 
@@ -739,8 +1087,17 @@
           state.recipes = raw.recipes || [];
           state.sales = raw.sales || [];
           state.usageLogs = raw.usageLogs || [];
+          state.priceHistory = raw.priceHistory || [];
+          state.poDrafts = raw.poDrafts || [];
+          state.invoices = raw.invoices || [];
+          state.schedules = raw.schedules || [];
+          state.users = raw.users || [];
+          state.feedback = raw.feedback || [];
+          state.posUploads = raw.posUploads || [];
           state.settings = {
-            safetyDays: Number(raw.settings?.safetyDays ?? 2)
+            safetyDays: Number(raw.settings?.safetyDays ?? 2),
+            notifyEmail: raw.settings?.notifyEmail || "",
+            notifyPhone: raw.settings?.notifyPhone || ""
           };
         }
       } catch {
@@ -749,7 +1106,18 @@
         state.recipes = [];
         state.sales = [];
         state.usageLogs = [];
-        state.settings = { safetyDays: 2 };
+        state.priceHistory = [];
+        state.poDrafts = [];
+        state.invoices = [];
+        state.schedules = [];
+        state.users = [];
+        state.feedback = [];
+        state.posUploads = [];
+        state.settings = {
+          safetyDays: 2,
+          notifyEmail: "",
+          notifyPhone: ""
+        };
       }
     }
 
@@ -784,6 +1152,18 @@
         option.textContent = vendor.name;
         itemForm.vendor.appendChild(option);
       });
+
+      priceVendor.innerHTML = "";
+      const priceDefault = document.createElement("option");
+      priceDefault.value = "";
+      priceDefault.textContent = "Select vendor";
+      priceVendor.appendChild(priceDefault);
+      state.vendors.forEach(vendor => {
+        const option = document.createElement("option");
+        option.value = vendor.id;
+        option.textContent = vendor.name;
+        priceVendor.appendChild(option);
+      });
     }
 
     function buildRecipeOptions() {
@@ -811,6 +1191,18 @@
         option.value = item.id;
         option.textContent = item.name;
         usageItem.appendChild(option);
+      });
+
+      priceItem.innerHTML = "";
+      const priceDefault = document.createElement("option");
+      priceDefault.value = "";
+      priceDefault.textContent = "Select item";
+      priceItem.appendChild(priceDefault);
+      state.items.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = item.name;
+        priceItem.appendChild(option);
       });
     }
 
@@ -1028,6 +1420,53 @@
       }
     }
 
+    function saveSchedule() {
+      if (!scheduleName.value.trim()) {
+        alert("Schedule name is required.");
+        return;
+      }
+      state.schedules.unshift({
+        id: crypto.randomUUID(),
+        name: scheduleName.value.trim(),
+        frequency: scheduleFrequency.value,
+        nextDate: scheduleNext.value,
+        createdAt: Date.now()
+      });
+      scheduleName.value = "";
+      scheduleNext.value = "";
+      saveState();
+      renderSchedules();
+    }
+
+    function clearSchedules() {
+      const ok = confirm("Clear all schedules?");
+      if (!ok) return;
+      state.schedules = [];
+      saveState();
+      renderSchedules();
+    }
+
+    function renderSchedules() {
+      scheduleList.innerHTML = "";
+      if (!state.schedules.length) {
+        scheduleList.innerHTML = "<div class='muted'>No schedules yet.</div>";
+        return;
+      }
+      state.schedules.forEach(schedule => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${schedule.name}</strong>
+              <div class="muted">${schedule.frequency} • Next: ${schedule.nextDate || "TBD"}</div>
+            </div>
+          </div>
+        `;
+        scheduleList.appendChild(card);
+      });
+    }
+
     function resetVendorForm() {
       state.activeVendorId = null;
       Object.values(vendorForm).forEach(field => field.value = "");
@@ -1176,6 +1615,117 @@
       });
     }
 
+    function generatePoDrafts() {
+      const suggestions = state.items
+        .map(item => ({
+          item,
+          orderQty: getSuggestedOrderQty(item)
+        }))
+        .filter(entry => entry.orderQty > 0);
+
+      const grouped = {};
+      suggestions.forEach(entry => {
+        const vendorId = entry.item.vendorId || "unassigned";
+        if (!grouped[vendorId]) grouped[vendorId] = [];
+        grouped[vendorId].push(entry);
+      });
+
+      state.poDrafts = Object.entries(grouped).map(([vendorId, entries]) => {
+        const vendorName = vendorId === "unassigned" ? "Unassigned" : getVendorName(vendorId);
+        return {
+          id: crypto.randomUUID(),
+          vendorId,
+          vendorName,
+          createdAt: new Date().toISOString(),
+          status: "Draft",
+          items: entries.map(entry => ({
+            itemId: entry.item.id,
+            name: entry.item.name,
+            unit: entry.item.unit,
+            qty: entry.orderQty,
+            cost: Number(entry.item.cost || 0)
+          }))
+        };
+      });
+
+      saveState();
+      renderPoDrafts();
+    }
+
+    function clearPoDrafts() {
+      const ok = confirm("Clear all PO drafts?");
+      if (!ok) return;
+      state.poDrafts = [];
+      saveState();
+      renderPoDrafts();
+    }
+
+    function renderPoDrafts() {
+      poCount.textContent = `${state.poDrafts.length} drafts`;
+      poList.innerHTML = "";
+      if (!state.poDrafts.length) {
+        poList.innerHTML = "<div class='muted'>No PO drafts yet.</div>";
+        return;
+      }
+      state.poDrafts.forEach(po => {
+        const total = po.items.reduce((sum, item) => sum + item.qty * item.cost, 0);
+        const itemsHtml = po.items.map(item => `<div class="muted">${item.name}: ${item.qty} ${item.unit}</div>`).join("");
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${po.vendorName}</strong>
+              <div class="muted">${po.status} • ${new Date(po.createdAt).toLocaleDateString()}</div>
+            </div>
+            <div><strong>${currency(total)}</strong></div>
+          </div>
+          <div style="margin-top: 8px;">${itemsHtml}</div>
+        `;
+        poList.appendChild(card);
+      });
+    }
+
+    function logInvoice(file) {
+      if (!file) return;
+      state.invoices.unshift({
+        id: crypto.randomUUID(),
+        name: file.name,
+        uploadedAt: new Date().toISOString()
+      });
+      saveState();
+      renderInvoices();
+    }
+
+    function clearInvoices() {
+      const ok = confirm("Clear invoices?");
+      if (!ok) return;
+      state.invoices = [];
+      saveState();
+      renderInvoices();
+    }
+
+    function renderInvoices() {
+      invoiceList.innerHTML = "";
+      if (!state.invoices.length) {
+        invoiceList.innerHTML = "<div class='muted'>No invoices uploaded.</div>";
+        return;
+      }
+      state.invoices.forEach(invoice => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${invoice.name}</strong>
+              <div class="muted">Uploaded ${new Date(invoice.uploadedAt).toLocaleString()}</div>
+            </div>
+          </div>
+        `;
+        invoiceList.appendChild(card);
+      });
+    }
+
     function renderDashboard() {
       const totalValue = state.items.reduce((sum, item) => sum + getItemValue(item), 0);
       const belowCount = state.items.filter(item => Number(item.onHand) <= Number(item.reorderPoint || 0)).length;
@@ -1246,6 +1796,14 @@
           managerList.appendChild(card);
         });
       }
+
+      const notifications = managerAlerts.map(({ item, suggestedPar }) => (
+        `${item.name}: raise par to ${suggestedPar.toFixed(1)} ${item.unit}`
+      ));
+      notificationCount.textContent = `${notifications.length} messages`;
+      notificationList.innerHTML = notifications.length
+        ? notifications.map(msg => `<div class="card">${msg}</div>`).join("")
+        : "<div class='muted'>No notifications queued.</div>";
 
       const topItems = state.items
         .map(item => ({ item, value: getItemValue(item) }))
@@ -1318,6 +1876,7 @@
       state.activeRecipeId = null;
       recipeForm.name.value = "";
       recipeForm.yield.value = "";
+      recipeForm.price.value = "";
       recipeForm.notes.value = "";
       ingredientsList.innerHTML = "";
       addIngredientRow();
@@ -1352,6 +1911,7 @@
     function fillRecipeForm(recipe) {
       recipeForm.name.value = recipe.name;
       recipeForm.yield.value = recipe.yield;
+      recipeForm.price.value = recipe.menuPrice || "";
       recipeForm.notes.value = recipe.notes;
       ingredientsList.innerHTML = "";
       recipe.ingredients.forEach(ingredient => {
@@ -1376,6 +1936,7 @@
         id: state.activeRecipeId || crypto.randomUUID(),
         name: recipeForm.name.value.trim(),
         yield: Number(recipeForm.yield.value || 1),
+        menuPrice: Number(recipeForm.price.value || 0),
         notes: recipeForm.notes.value.trim(),
         ingredients,
         updatedAt: Date.now()
@@ -1417,6 +1978,7 @@
       state.recipes.forEach(recipe => {
         const cost = calculateRecipeCost(recipe);
         const perServing = recipe.yield ? cost / recipe.yield : cost;
+        const margin = recipe.menuPrice ? ((recipe.menuPrice - perServing) / recipe.menuPrice) * 100 : 0;
         const card = document.createElement("div");
         card.className = "card";
         const ingredientsHtml = recipe.ingredients.map(ingredient => {
@@ -1431,7 +1993,7 @@
             </div>
             <button class="ghost" data-recipe-id="${recipe.id}">Edit</button>
           </div>
-          <div class="grid-2" style="margin-top: 10px;">
+          <div class="grid-3" style="margin-top: 10px;">
             <div>
               <div class="muted">Batch cost</div>
               <strong>${currency(cost)}</strong>
@@ -1439,6 +2001,10 @@
             <div>
               <div class="muted">Cost per serving</div>
               <strong>${currency(perServing)}</strong>
+            </div>
+            <div>
+              <div class="muted">Food cost %</div>
+              <strong>${recipe.menuPrice ? `${(100 - margin).toFixed(1)}%` : "N/A"}</strong>
             </div>
           </div>
           <div style="margin-top: 8px;">${ingredientsHtml}</div>
@@ -1619,18 +2185,303 @@
       });
     }
 
+    function renderWasteSummary() {
+      const actual = calculateActualUsage();
+      const entries = Object.entries(actual.wasteTotals)
+        .map(([itemId, qty]) => {
+          const item = state.items.find(i => i.id === itemId);
+          return item ? { name: item.name, qty } : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.qty - a.qty)
+        .slice(0, 5);
+
+      wasteSummary.innerHTML = "";
+      if (!entries.length) {
+        wasteSummary.innerHTML = "<div class='muted'>No waste logged yet.</div>";
+        return;
+      }
+      entries.forEach(entry => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${entry.name}</strong>
+              <div class="muted">Waste: ${entry.qty.toFixed(2)}</div>
+            </div>
+          </div>
+        `;
+        wasteSummary.appendChild(card);
+      });
+    }
+
+    function logPrice() {
+      if (!priceItem.value || !priceVendor.value || !priceAmount.value) {
+        alert("Select item, vendor, and price.");
+        return;
+      }
+      state.priceHistory.unshift({
+        id: crypto.randomUUID(),
+        itemId: priceItem.value,
+        vendorId: priceVendor.value,
+        amount: Number(priceAmount.value),
+        date: priceDate.value || new Date().toISOString().slice(0, 10),
+        note: priceNote.value.trim()
+      });
+      priceAmount.value = "";
+      priceDate.value = "";
+      priceNote.value = "";
+      saveState();
+      renderPriceHistory();
+    }
+
+    function clearPrices() {
+      const ok = confirm("Clear price history?");
+      if (!ok) return;
+      state.priceHistory = [];
+      saveState();
+      renderPriceHistory();
+    }
+
+    function renderPriceHistory() {
+      priceHistoryList.innerHTML = "";
+      if (!state.priceHistory.length) {
+        priceHistoryList.innerHTML = "<div class='muted'>No price history logged.</div>";
+        return;
+      }
+      state.priceHistory.slice(0, 10).forEach(entry => {
+        const item = state.items.find(i => i.id === entry.itemId);
+        const vendor = getVendorName(entry.vendorId);
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${item ? item.name : "Unknown item"}</strong>
+              <div class="muted">${vendor} • ${entry.date}</div>
+            </div>
+            <div><strong>${currency(entry.amount)}</strong></div>
+          </div>
+          <div class="muted" style="margin-top: 8px;">${entry.note || "No notes"}</div>
+        `;
+        priceHistoryList.appendChild(card);
+      });
+    }
+
+    function saveUser() {
+      if (!userName.value.trim()) {
+        alert("User name is required.");
+        return;
+      }
+      state.users.unshift({
+        id: crypto.randomUUID(),
+        name: userName.value.trim(),
+        role: userRole.value,
+        email: userEmail.value.trim(),
+        createdAt: Date.now()
+      });
+      userName.value = "";
+      userEmail.value = "";
+      saveState();
+      renderUsers();
+    }
+
+    function clearUsers() {
+      const ok = confirm("Clear all users?");
+      if (!ok) return;
+      state.users = [];
+      saveState();
+      renderUsers();
+    }
+
+    function renderUsers() {
+      userList.innerHTML = "";
+      if (!state.users.length) {
+        userList.innerHTML = "<div class='muted'>No users added.</div>";
+        return;
+      }
+      state.users.forEach(user => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${user.name}</strong>
+              <div class="muted">${user.role} • ${user.email || "No email"}</div>
+            </div>
+          </div>
+        `;
+        userList.appendChild(card);
+      });
+    }
+
+    function saveNotificationSettings() {
+      state.settings.notifyEmail = notifyEmail.value.trim();
+      state.settings.notifyPhone = notifyPhone.value.trim();
+      saveState();
+      alert("Notification settings saved.");
+    }
+
+    function renderReports() {
+      profitReport.innerHTML = "";
+      if (!state.recipes.length) {
+        profitReport.innerHTML = "<div class='muted'>Add recipes to view profitability.</div>";
+      } else {
+        state.recipes.forEach(recipe => {
+          const cost = calculateRecipeCost(recipe);
+          const perServing = recipe.yield ? cost / recipe.yield : cost;
+          const price = recipe.menuPrice || 0;
+          const margin = price ? ((price - perServing) / price) * 100 : 0;
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="section-title">
+              <div>
+                <strong>${recipe.name}</strong>
+                <div class="muted">Menu: ${price ? currency(price) : "N/A"}</div>
+              </div>
+              <div>${price ? `${margin.toFixed(1)}% margin` : "N/A"}</div>
+            </div>
+            <div class="muted" style="margin-top: 8px;">Cost per serving: ${currency(perServing)}</div>
+          `;
+          profitReport.appendChild(card);
+        });
+      }
+
+      const vendorTotals = {};
+      state.items.forEach(item => {
+        const vendor = getVendorName(item.vendorId);
+        const total = getSuggestedOrderQty(item) * Number(item.cost || 0);
+        vendorTotals[vendor] = (vendorTotals[vendor] || 0) + total;
+      });
+
+      vendorSpend.innerHTML = "";
+      Object.entries(vendorTotals).forEach(([vendor, total]) => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${vendor}</strong>
+              <div class="muted">Suggested spend</div>
+            </div>
+            <div>${currency(total)}</div>
+          </div>
+        `;
+        vendorSpend.appendChild(card);
+      });
+    }
+
+    function saveFeedback() {
+      if (!feedbackTopic.value.trim()) {
+        alert("Feedback topic required.");
+        return;
+      }
+      state.feedback.unshift({
+        id: crypto.randomUUID(),
+        from: feedbackFrom.value,
+        topic: feedbackTopic.value.trim(),
+        note: feedbackNote.value.trim(),
+        createdAt: new Date().toISOString()
+      });
+      feedbackTopic.value = "";
+      feedbackNote.value = "";
+      saveState();
+      renderFeedback();
+    }
+
+    function clearFeedback() {
+      const ok = confirm("Clear all feedback?");
+      if (!ok) return;
+      state.feedback = [];
+      saveState();
+      renderFeedback();
+    }
+
+    function renderFeedback() {
+      feedbackList.innerHTML = "";
+      if (!state.feedback.length) {
+        feedbackList.innerHTML = "<div class='muted'>No feedback captured yet.</div>";
+        return;
+      }
+      state.feedback.forEach(entry => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${entry.topic}</strong>
+              <div class="muted">${entry.from} • ${new Date(entry.createdAt).toLocaleDateString()}</div>
+            </div>
+          </div>
+          <div class="muted" style="margin-top: 8px;">${entry.note || "No notes"}</div>
+        `;
+        feedbackList.appendChild(card);
+      });
+    }
+
+    function logPosUpload(file) {
+      if (!file) return;
+      state.posUploads.unshift({
+        id: crypto.randomUUID(),
+        name: file.name,
+        uploadedAt: new Date().toISOString()
+      });
+      saveState();
+      renderPosUploads();
+    }
+
+    function clearPosUploads() {
+      const ok = confirm("Clear POS uploads?");
+      if (!ok) return;
+      state.posUploads = [];
+      saveState();
+      renderPosUploads();
+    }
+
+    function renderPosUploads() {
+      posList.innerHTML = "";
+      if (!state.posUploads.length) {
+        posList.innerHTML = "<div class='muted'>No POS uploads yet.</div>";
+        return;
+      }
+      state.posUploads.forEach(entry => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${entry.name}</strong>
+              <div class="muted">${new Date(entry.uploadedAt).toLocaleString()}</div>
+            </div>
+          </div>
+        `;
+        posList.appendChild(card);
+      });
+    }
+
     function renderAll() {
       buildVendorOptions();
       buildRecipeOptions();
       buildUsageItemOptions();
       renderItems();
       renderCounts();
+      renderSchedules();
       renderVendors();
       renderOrders();
+      renderPoDrafts();
+      renderInvoices();
       renderRecipes();
       renderSales();
       renderUsageLogs();
       renderVariance();
+      renderWasteSummary();
+      renderPriceHistory();
+      renderUsers();
+      renderReports();
+      renderFeedback();
+      renderPosUploads();
       renderDashboard();
     }
 
@@ -1641,6 +2492,13 @@
         recipes: state.recipes,
         sales: state.sales,
         usageLogs: state.usageLogs,
+        priceHistory: state.priceHistory,
+        poDrafts: state.poDrafts,
+        invoices: state.invoices,
+        schedules: state.schedules,
+        users: state.users,
+        feedback: state.feedback,
+        posUploads: state.posUploads,
         settings: state.settings,
         exportedAt: new Date().toISOString()
       }, null, 2);
@@ -1668,8 +2526,17 @@
           state.recipes = data.recipes || [];
           state.sales = data.sales || [];
           state.usageLogs = data.usageLogs || [];
+          state.priceHistory = data.priceHistory || [];
+          state.poDrafts = data.poDrafts || [];
+          state.invoices = data.invoices || [];
+          state.schedules = data.schedules || [];
+          state.users = data.users || [];
+          state.feedback = data.feedback || [];
+          state.posUploads = data.posUploads || [];
           state.settings = {
-            safetyDays: Number(data.settings?.safetyDays ?? 2)
+            safetyDays: Number(data.settings?.safetyDays ?? 2),
+            notifyEmail: data.settings?.notifyEmail || "",
+            notifyPhone: data.settings?.notifyPhone || ""
           };
           saveState();
           resetItemForm();
@@ -1686,14 +2553,25 @@
     }
 
     function clearAll() {
-      const ok = confirm("This will delete all items, vendors, recipes, and logs. Continue?");
+      const ok = confirm("This will delete all items, vendors, recipes, logs, and settings. Continue?");
       if (!ok) return;
       state.items = [];
       state.vendors = [];
       state.recipes = [];
       state.sales = [];
       state.usageLogs = [];
-      state.settings = { safetyDays: 2 };
+      state.priceHistory = [];
+      state.poDrafts = [];
+      state.invoices = [];
+      state.schedules = [];
+      state.users = [];
+      state.feedback = [];
+      state.posUploads = [];
+      state.settings = {
+        safetyDays: 2,
+        notifyEmail: "",
+        notifyPhone: ""
+      };
       saveState();
       resetItemForm();
       resetVendorForm();
@@ -1713,11 +2591,22 @@
     inventorySearch.addEventListener("input", renderItems);
     countSearch.addEventListener("input", renderCounts);
     applyCountsBtn.addEventListener("click", applyCounts);
+    saveScheduleBtn.addEventListener("click", saveSchedule);
+    clearSchedulesBtn.addEventListener("click", clearSchedules);
     orderSearch.addEventListener("input", renderOrders);
     refreshOrdersBtn.addEventListener("click", renderOrders);
 
     saveVendorBtn.addEventListener("click", saveVendor);
     deleteVendorBtn.addEventListener("click", deleteVendor);
+
+    createPoBtn.addEventListener("click", generatePoDrafts);
+    clearPosBtn.addEventListener("click", clearPoDrafts);
+
+    invoiceUpload.addEventListener("change", event => {
+      logInvoice(event.target.files[0]);
+      event.target.value = "";
+    });
+    clearInvoicesBtn.addEventListener("click", clearInvoices);
 
     addIngredientBtn.addEventListener("click", addIngredientRow);
     saveRecipeBtn.addEventListener("click", saveRecipe);
@@ -1727,6 +2616,22 @@
     clearSalesBtn.addEventListener("click", clearSales);
     saveUsageBtn.addEventListener("click", logUsage);
     clearUsageBtn.addEventListener("click", clearUsage);
+
+    savePriceBtn.addEventListener("click", logPrice);
+    clearPricesBtn.addEventListener("click", clearPrices);
+
+    saveUserBtn.addEventListener("click", saveUser);
+    clearUsersBtn.addEventListener("click", clearUsers);
+    saveNotificationsBtn.addEventListener("click", saveNotificationSettings);
+
+    saveFeedbackBtn.addEventListener("click", saveFeedback);
+    clearFeedbackBtn.addEventListener("click", clearFeedback);
+
+    posUpload.addEventListener("change", event => {
+      logPosUpload(event.target.files[0]);
+      event.target.value = "";
+    });
+    clearPosUploadsBtn.addEventListener("click", clearPosUploads);
 
     exportJsonBtn.addEventListener("click", exportJson);
     importJsonInput.addEventListener("change", importJson);
@@ -1738,15 +2643,14 @@
     });
 
     loadState();
-    if (!state.settings) {
-      state.settings = { safetyDays: 2 };
-    }
     buildCategoryOptions();
     buildVendorOptions();
     resetItemForm();
     resetVendorForm();
     resetRecipeForm();
     safetyDaysInput.value = state.settings.safetyDays ?? 2;
+    notifyEmail.value = state.settings.notifyEmail || "";
+    notifyPhone.value = state.settings.notifyPhone || "";
     renderAll();
   </script>
 </body>
