@@ -249,6 +249,16 @@
         </div>
         <div class="card">
           <div class="section-title">
+            <h3>Manager Notifications</h3>
+            <span class="muted" id="managerCount">0 alerts</span>
+          </div>
+          <div id="managerList" class="stack"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="section-title">
             <h3>Top Value Items</h3>
             <span class="muted">Highest on-hand value</span>
           </div>
@@ -343,6 +353,7 @@
                 <th>Vendor</th>
                 <th>On-hand</th>
                 <th>Par</th>
+                <th>Suggested Par</th>
                 <th>Reorder</th>
                 <th>Status</th>
                 <th>Value</th>
@@ -566,6 +577,15 @@
           </label>
           <button class="danger" id="clearAll">Clear All Data</button>
         </div>
+        <div class="grid-2" style="margin-top: 16px;">
+          <div>
+            <label for="safetyDays">Safety stock buffer (days)</label>
+            <input id="safetyDays" type="number" min="0" step="1" placeholder="2" />
+          </div>
+          <div class="footer-note" style="align-self: end;">
+            Suggested par level = avg daily usage × (lead time + safety days).
+          </div>
+        </div>
         <div class="footer-note" style="margin-top: 10px;">JSON export includes items, vendors, recipes, sales, and usage stored locally in your browser.</div>
       </div>
     </section>
@@ -593,6 +613,7 @@
       recipes: [],
       sales: [],
       usageLogs: [],
+      settings: { safetyDays: 2 },
       activeItemId: null,
       activeVendorId: null,
       activeRecipeId: null
@@ -649,11 +670,14 @@
     const summaryOrder = document.getElementById("summaryOrder");
     const alertsList = document.getElementById("alertsList");
     const alertCount = document.getElementById("alertCount");
+    const managerList = document.getElementById("managerList");
+    const managerCount = document.getElementById("managerCount");
     const topValueList = document.getElementById("topValueList");
 
     const exportJsonBtn = document.getElementById("exportJson");
     const importJsonInput = document.getElementById("importJson");
     const clearAllBtn = document.getElementById("clearAll");
+    const safetyDaysInput = document.getElementById("safetyDays");
 
     const recipeForm = {
       name: document.getElementById("recipeName"),
@@ -699,7 +723,10 @@
         vendors: state.vendors,
         recipes: state.recipes,
         sales: state.sales,
-        usageLogs: state.usageLogs
+        usageLogs: state.usageLogs,
+        settings: {
+          safetyDays: state.settings.safetyDays
+        }
       }));
     }
 
@@ -712,6 +739,9 @@
           state.recipes = raw.recipes || [];
           state.sales = raw.sales || [];
           state.usageLogs = raw.usageLogs || [];
+          state.settings = {
+            safetyDays: Number(raw.settings?.safetyDays ?? 2)
+          };
         }
       } catch {
         state.items = [];
@@ -719,6 +749,7 @@
         state.recipes = [];
         state.sales = [];
         state.usageLogs = [];
+        state.settings = { safetyDays: 2 };
       }
     }
 
@@ -801,6 +832,14 @@
       const par = Number(item.par);
       if (!Number.isFinite(onHand) || !Number.isFinite(par)) return 0;
       return Math.max(0, par - onHand);
+    }
+
+    function getSuggestedPar(item) {
+      const usage = Number(item.usagePerDay);
+      const lead = Number(item.leadTimeDays);
+      const safetyDays = Number(state.settings.safetyDays || 0);
+      if (!Number.isFinite(usage) || !Number.isFinite(lead)) return Number(item.par) || 0;
+      return Math.max(0, usage * (lead + safetyDays));
     }
 
     function getStatus(item) {
@@ -923,6 +962,7 @@
             <td>${getVendorName(item.vendorId)}</td>
             <td>${item.onHand}</td>
             <td>${item.par}</td>
+            <td>${getSuggestedPar(item).toFixed(1)}</td>
             <td>${item.reorderPoint}</td>
             <td><span class="pill ${status.tone}">${status.label}</span></td>
             <td>${currency(getItemValue(item))}</td>
@@ -1119,6 +1159,10 @@
               <strong>${item.par} ${item.unit}</strong>
             </div>
             <div>
+              <div class="muted">Suggested par</div>
+              <strong>${getSuggestedPar(item).toFixed(1)} ${item.unit}</strong>
+            </div>
+            <div>
               <div class="muted">Suggested order</div>
               <strong>${s.orderQty} ${item.unit}</strong>
             </div>
@@ -1166,6 +1210,40 @@
             <div class="muted" style="margin-top: 8px;">On-hand: ${item.onHand} • Reorder point: ${item.reorderPoint}</div>
           `;
           alertsList.appendChild(card);
+        });
+      }
+
+      const managerAlerts = state.items
+        .map(item => {
+          const suggestedPar = getSuggestedPar(item);
+          const currentPar = Number(item.par || 0);
+          if (!Number.isFinite(suggestedPar) || suggestedPar <= 0) return null;
+          if (currentPar >= suggestedPar) return null;
+          return { item, suggestedPar };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.suggestedPar - a.suggestedPar);
+
+      managerCount.textContent = `${managerAlerts.length} alerts`;
+      managerList.innerHTML = "";
+
+      if (!managerAlerts.length) {
+        managerList.innerHTML = "<div class='muted'>No par changes needed right now.</div>";
+      } else {
+        managerAlerts.slice(0, 6).forEach(({ item, suggestedPar }) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="section-title">
+              <div>
+                <strong>${item.name}</strong>
+                <div class="muted">Current par: ${item.par} • Suggested: ${suggestedPar.toFixed(1)} ${item.unit}</div>
+              </div>
+              <span class="pill warn">Raise par</span>
+            </div>
+            <div class="muted" style="margin-top: 8px;">Usage: ${item.usagePerDay || 0} / day • Lead: ${item.leadTimeDays || 0} days</div>
+          `;
+          managerList.appendChild(card);
         });
       }
 
@@ -1563,6 +1641,7 @@
         recipes: state.recipes,
         sales: state.sales,
         usageLogs: state.usageLogs,
+        settings: state.settings,
         exportedAt: new Date().toISOString()
       }, null, 2);
       const blob = new Blob([payload], { type: "application/json" });
@@ -1589,6 +1668,9 @@
           state.recipes = data.recipes || [];
           state.sales = data.sales || [];
           state.usageLogs = data.usageLogs || [];
+          state.settings = {
+            safetyDays: Number(data.settings?.safetyDays ?? 2)
+          };
           saveState();
           resetItemForm();
           resetVendorForm();
@@ -1611,6 +1693,7 @@
       state.recipes = [];
       state.sales = [];
       state.usageLogs = [];
+      state.settings = { safetyDays: 2 };
       saveState();
       resetItemForm();
       resetVendorForm();
@@ -1648,13 +1731,22 @@
     exportJsonBtn.addEventListener("click", exportJson);
     importJsonInput.addEventListener("change", importJson);
     clearAllBtn.addEventListener("click", clearAll);
+    safetyDaysInput.addEventListener("input", () => {
+      state.settings.safetyDays = Number(safetyDaysInput.value || 0);
+      saveState();
+      renderAll();
+    });
 
     loadState();
+    if (!state.settings) {
+      state.settings = { safetyDays: 2 };
+    }
     buildCategoryOptions();
     buildVendorOptions();
     resetItemForm();
     resetVendorForm();
     resetRecipeForm();
+    safetyDaysInput.value = state.settings.safetyDays ?? 2;
     renderAll();
   </script>
 </body>
