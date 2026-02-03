@@ -1,3 +1,14 @@
+# Consultant Prompt for GPT
+
+Use this prompt when requesting a fresh Next.js + Tailwind + Python backend build:
+
+```
+hey gpt let’s build a web application using NextJS, tailwind, CSS and Python for backend. Assume I have no experience with building the scaffolding or setting up the repository. Let’s start from the scratch. I have an idea that I haves added to this index.html that I want to build out. <insert you work so far>
+```
+
+Below is the latest HTML (paste this after the prompt when starting from scratch):
+
+```
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -561,57 +572,6 @@
 
       <div class="card">
         <div class="section-title">
-          <h3>PO Status Update</h3>
-          <span class="muted">Track draft → sent → received</span>
-        </div>
-        <div class="grid-3" style="margin-top: 12px;">
-          <div>
-            <label for="poSelect">Purchase order</label>
-            <select id="poSelect"></select>
-          </div>
-          <div>
-            <label for="poStatusSelect">Status</label>
-            <select id="poStatusSelect">
-              <option value="Draft">Draft</option>
-              <option value="Sent">Sent</option>
-              <option value="Received">Received</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
-          <div style="align-self: end;">
-            <button class="primary" id="updatePoStatus">Update Status</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">
-          <h3>Receiving Log</h3>
-          <span class="muted">Confirm deliveries and costs</span>
-        </div>
-        <div class="grid-3" style="margin-top: 12px;">
-          <div>
-            <label for="receivePoSelect">PO to receive</label>
-            <select id="receivePoSelect"></select>
-          </div>
-          <div>
-            <label for="receiveDate">Received date</label>
-            <input id="receiveDate" type="date" />
-          </div>
-          <div>
-            <label for="receiveNote">Receiving notes</label>
-            <input id="receiveNote" placeholder="Shorted 2 cases of tomatoes" />
-          </div>
-        </div>
-        <div class="toolbar" style="margin-top: 12px;">
-          <button class="primary" id="markReceived">Mark Received</button>
-          <button class="ghost" id="clearReceipts">Clear Receipts</button>
-        </div>
-        <div id="receivingList" class="stack" style="margin-top: 12px;"></div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">
           <h3>Invoice Capture (Mock)</h3>
           <span class="muted">Attach invoices for reconciliation</span>
         </div>
@@ -991,7 +951,6 @@
       priceHistory: [],
       poDrafts: [],
       invoices: [],
-      receivingLogs: [],
       schedules: [],
       users: [],
       feedback: [],
@@ -1132,15 +1091,6 @@
     const clearPosBtn = document.getElementById("clearPos");
     const poList = document.getElementById("poList");
     const poCount = document.getElementById("poCount");
-    const poSelect = document.getElementById("poSelect");
-    const poStatusSelect = document.getElementById("poStatusSelect");
-    const updatePoStatusBtn = document.getElementById("updatePoStatus");
-    const receivePoSelect = document.getElementById("receivePoSelect");
-    const receiveDate = document.getElementById("receiveDate");
-    const receiveNote = document.getElementById("receiveNote");
-    const markReceivedBtn = document.getElementById("markReceived");
-    const clearReceiptsBtn = document.getElementById("clearReceipts");
-    const receivingList = document.getElementById("receivingList");
 
     const invoiceUpload = document.getElementById("invoiceUpload");
     const clearInvoicesBtn = document.getElementById("clearInvoices");
@@ -1193,7 +1143,6 @@
         priceHistory: state.priceHistory,
         poDrafts: state.poDrafts,
         invoices: state.invoices,
-        receivingLogs: state.receivingLogs,
         schedules: state.schedules,
         users: state.users,
         feedback: state.feedback,
@@ -1214,7 +1163,6 @@
           state.priceHistory = raw.priceHistory || [];
           state.poDrafts = raw.poDrafts || [];
           state.invoices = raw.invoices || [];
-          state.receivingLogs = raw.receivingLogs || [];
           state.schedules = raw.schedules || [];
           state.users = raw.users || [];
           state.feedback = raw.feedback || [];
@@ -1234,7 +1182,6 @@
         state.priceHistory = [];
         state.poDrafts = [];
         state.invoices = [];
-        state.receivingLogs = [];
         state.schedules = [];
         state.users = [];
         state.feedback = [];
@@ -1802,7 +1749,6 @@
       state.poDrafts.forEach(po => {
         const total = po.items.reduce((sum, item) => sum + item.qty * item.cost, 0);
         const itemsHtml = po.items.map(item => `<div class="muted">${item.name}: ${item.qty} ${item.unit}</div>`).join("");
-        const statusTone = po.status === "Received" ? "ok" : po.status === "Sent" ? "warn" : "alert";
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `
@@ -1811,99 +1757,11 @@
               <strong>${po.vendorName}</strong>
               <div class="muted">${po.status} • ${new Date(po.createdAt).toLocaleDateString()}</div>
             </div>
-            <div>
-              <span class="pill ${statusTone}">${po.status}</span>
-              <strong style="margin-left: 8px;">${currency(total)}</strong>
-            </div>
+            <div><strong>${currency(total)}</strong></div>
           </div>
           <div style="margin-top: 8px;">${itemsHtml}</div>
         `;
         poList.appendChild(card);
-      });
-    }
-
-    function renderPoSelectors() {
-      poSelect.innerHTML = "";
-      receivePoSelect.innerHTML = "";
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = "Select PO";
-      poSelect.appendChild(placeholder.cloneNode(true));
-      receivePoSelect.appendChild(placeholder);
-
-      state.poDrafts.forEach(po => {
-        const option = document.createElement("option");
-        option.value = po.id;
-        option.textContent = `${po.vendorName} (${po.status})`;
-        poSelect.appendChild(option.cloneNode(true));
-        receivePoSelect.appendChild(option);
-      });
-    }
-
-    function updatePoStatus() {
-      if (!poSelect.value) {
-        alert("Select a purchase order.");
-        return;
-      }
-      const po = state.poDrafts.find(entry => entry.id === poSelect.value);
-      if (!po) return;
-      po.status = poStatusSelect.value;
-      po.updatedAt = new Date().toISOString();
-      saveState();
-      renderAll();
-    }
-
-    function markReceived() {
-      if (!receivePoSelect.value) {
-        alert("Select a purchase order.");
-        return;
-      }
-      const po = state.poDrafts.find(entry => entry.id === receivePoSelect.value);
-      if (!po) return;
-      po.status = "Received";
-      po.updatedAt = new Date().toISOString();
-      state.receivingLogs.unshift({
-        id: crypto.randomUUID(),
-        poId: po.id,
-        vendorName: po.vendorName,
-        receivedDate: receiveDate.value || new Date().toISOString().slice(0, 10),
-        note: receiveNote.value.trim(),
-        total: po.items.reduce((sum, item) => sum + item.qty * item.cost, 0)
-      });
-      receiveDate.value = "";
-      receiveNote.value = "";
-      saveState();
-      renderAll();
-    }
-
-    function clearReceipts() {
-      const ok = confirm("Clear receiving logs?");
-      if (!ok) return;
-      state.receivingLogs = [];
-      saveState();
-      renderAll();
-    }
-
-    function renderReceivingLogs() {
-      receivingList.innerHTML = "";
-      if (!state.receivingLogs.length) {
-        receivingList.innerHTML = "<div class='muted'>No receipts logged yet.</div>";
-        return;
-      }
-      state.receivingLogs.slice(0, 10).forEach(entry => {
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <div class="section-title">
-            <div>
-              <strong>${entry.vendorName}</strong>
-              <div class="muted">Received: ${entry.receivedDate}</div>
-            </div>
-            <div><strong>${currency(entry.total)}</strong></div>
-          </div>
-          <div class="muted" style="margin-top: 8px;">${entry.note || "No notes"}</div>
-        `;
-        receivingList.appendChild(card);
       });
     }
 
@@ -2735,8 +2593,6 @@
       renderVendors();
       renderOrders();
       renderPoDrafts();
-      renderPoSelectors();
-      renderReceivingLogs();
       renderInvoices();
       renderRecipes();
       renderSales();
@@ -2761,7 +2617,6 @@
         priceHistory: state.priceHistory,
         poDrafts: state.poDrafts,
         invoices: state.invoices,
-        receivingLogs: state.receivingLogs,
         schedules: state.schedules,
         users: state.users,
         feedback: state.feedback,
@@ -2796,7 +2651,6 @@
           state.priceHistory = data.priceHistory || [];
           state.poDrafts = data.poDrafts || [];
           state.invoices = data.invoices || [];
-          state.receivingLogs = data.receivingLogs || [];
           state.schedules = data.schedules || [];
           state.users = data.users || [];
           state.feedback = data.feedback || [];
@@ -2831,7 +2685,6 @@
       state.priceHistory = [];
       state.poDrafts = [];
       state.invoices = [];
-      state.receivingLogs = [];
       state.schedules = [];
       state.users = [];
       state.feedback = [];
@@ -2879,9 +2732,6 @@
 
     createPoBtn.addEventListener("click", generatePoDrafts);
     clearPosBtn.addEventListener("click", clearPoDrafts);
-    updatePoStatusBtn.addEventListener("click", updatePoStatus);
-    markReceivedBtn.addEventListener("click", markReceived);
-    clearReceiptsBtn.addEventListener("click", clearReceipts);
 
     invoiceUpload.addEventListener("change", event => {
       logInvoice(event.target.files[0]);
@@ -2937,3 +2787,4 @@
   </script>
 </body>
 </html>
+```
