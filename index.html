@@ -452,6 +452,79 @@
           </table>
         </div>
       </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Close Inventory Period</h3>
+          <span class="muted">Save a weekly or monthly snapshot for your accountant</span>
+        </div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="snapshotPeriod">Period type</label>
+            <select id="snapshotPeriod">
+              <option value="Weekly">Weekly close</option>
+              <option value="Monthly">Monthly close</option>
+            </select>
+          </div>
+          <div>
+            <label for="snapshotDate">Close date</label>
+            <input id="snapshotDate" type="date" />
+          </div>
+          <div>
+            <label for="snapshotLabel">Notes</label>
+            <input id="snapshotLabel" placeholder="End of month count" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="closeInventory">Save Snapshot</button>
+          <button class="ghost" id="exportCurrentPdf">Export current inventory (PDF)</button>
+        </div>
+        <div class="footer-note" style="margin-top: 8px;">
+          Snapshots store item quantities and total value at that moment. Use PDF export to share with your accountant.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Inventory Snapshots</h3>
+          <span class="muted" id="snapshotCount">0 snapshots</span>
+        </div>
+        <div id="snapshotList" class="stack" style="margin-top: 12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Compare Inventory Periods</h3>
+          <span class="muted">Side-by-side monthly or weekly changes</span>
+        </div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="compareLeft">First period</label>
+            <select id="compareLeft"></select>
+          </div>
+          <div>
+            <label for="compareRight">Second period</label>
+            <select id="compareRight"></select>
+          </div>
+          <div style="align-self: end;">
+            <button class="ghost" id="compareBtn">Compare</button>
+          </div>
+        </div>
+        <div id="compareSummary" class="muted" style="margin-top: 10px;"></div>
+        <div style="overflow-x:auto; margin-top: 12px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th id="compareLeftLabel">Period A</th>
+                <th id="compareRightLabel">Period B</th>
+                <th>Difference</th>
+              </tr>
+            </thead>
+            <tbody id="compareTable"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <section id="counts" class="stack hidden">
@@ -938,7 +1011,6 @@
             Import JSON
             <input type="file" id="importJson" accept="application/json" style="display:none;" />
           </label>
-          <button class="danger" id="clearAll">Clear All Data</button>
         </div>
         <div class="grid-2" style="margin-top: 16px;">
           <div>
@@ -1006,6 +1078,7 @@
       poDrafts: [],
       invoices: [],
       receivingLogs: [],
+      inventorySnapshots: [],
       schedules: [],
       users: [],
       feedback: [],
@@ -1057,6 +1130,20 @@
     const deleteItemBtn = document.getElementById("deleteItem");
     const resetFormBtn = document.getElementById("resetForm");
     const formStatus = document.getElementById("formStatus");
+    const snapshotPeriod = document.getElementById("snapshotPeriod");
+    const snapshotDate = document.getElementById("snapshotDate");
+    const snapshotLabel = document.getElementById("snapshotLabel");
+    const closeInventoryBtn = document.getElementById("closeInventory");
+    const exportCurrentPdfBtn = document.getElementById("exportCurrentPdf");
+    const snapshotList = document.getElementById("snapshotList");
+    const snapshotCount = document.getElementById("snapshotCount");
+    const compareLeft = document.getElementById("compareLeft");
+    const compareRight = document.getElementById("compareRight");
+    const compareBtn = document.getElementById("compareBtn");
+    const compareTable = document.getElementById("compareTable");
+    const compareSummary = document.getElementById("compareSummary");
+    const compareLeftLabel = document.getElementById("compareLeftLabel");
+    const compareRightLabel = document.getElementById("compareRightLabel");
 
     const vendorForm = {
       name: document.getElementById("vendorName"),
@@ -1098,7 +1185,6 @@
 
     const exportJsonBtn = document.getElementById("exportJson");
     const importJsonInput = document.getElementById("importJson");
-    const clearAllBtn = document.getElementById("clearAll");
     const safetyDaysInput = document.getElementById("safetyDays");
 
     const recipeForm = {
@@ -1210,6 +1296,7 @@
         poDrafts: state.poDrafts,
         invoices: state.invoices,
         receivingLogs: state.receivingLogs,
+        inventorySnapshots: state.inventorySnapshots,
         schedules: state.schedules,
         users: state.users,
         feedback: state.feedback,
@@ -1231,6 +1318,7 @@
           state.poDrafts = raw.poDrafts || [];
           state.invoices = raw.invoices || [];
           state.receivingLogs = raw.receivingLogs || [];
+          state.inventorySnapshots = raw.inventorySnapshots || [];
           state.schedules = raw.schedules || [];
           state.users = raw.users || [];
           state.feedback = raw.feedback || [];
@@ -1251,6 +1339,7 @@
         state.poDrafts = [];
         state.invoices = [];
         state.receivingLogs = [];
+        state.inventorySnapshots = [];
         state.schedules = [];
         state.users = [];
         state.feedback = [];
@@ -1517,6 +1606,225 @@
           });
           itemsTable.appendChild(row);
         });
+    }
+
+    function buildInventorySnapshot(periodType, dateString, labelText) {
+      const snapshotItems = state.items.map(item => ({
+        id: item.id,
+        name: item.name,
+        unit: item.unit,
+        onHand: Number(item.onHand || 0),
+        value: getItemValue(item)
+      }));
+      const totalValue = snapshotItems.reduce((sum, item) => sum + item.value, 0);
+      return {
+        id: crypto.randomUUID(),
+        periodType,
+        date: dateString,
+        label: labelText,
+        totalValue,
+        createdAt: Date.now(),
+        items: snapshotItems
+      };
+    }
+
+    function renderSnapshots() {
+      snapshotCount.textContent = `${state.inventorySnapshots.length} snapshots`;
+      snapshotList.innerHTML = "";
+      if (!state.inventorySnapshots.length) {
+        snapshotList.innerHTML = "<div class='muted'>No snapshots saved yet.</div>";
+        return;
+      }
+      state.inventorySnapshots.forEach(snapshot => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${snapshot.periodType} close • ${snapshot.date}</strong>
+              <div class="muted">${snapshot.label || "No notes"}</div>
+            </div>
+            <div><strong>${currency(snapshot.totalValue)}</strong></div>
+          </div>
+          <div class="toolbar" style="margin-top: 8px;">
+            <button class="ghost" data-export-snapshot="${snapshot.id}">Export PDF</button>
+          </div>
+        `;
+        snapshotList.appendChild(card);
+      });
+
+      snapshotList.querySelectorAll("[data-export-snapshot]").forEach(button => {
+        button.addEventListener("click", () => {
+          const snapshot = state.inventorySnapshots.find(entry => entry.id === button.dataset.exportSnapshot);
+          if (!snapshot) return;
+          exportInventoryPdf(
+            `${snapshot.periodType} Inventory Close (${snapshot.date})`,
+            snapshot.items,
+            snapshot.totalValue
+          );
+        });
+      });
+    }
+
+    function renderComparisonOptions() {
+      const buildOptions = (selectEl) => {
+        selectEl.innerHTML = "";
+        const currentOption = document.createElement("option");
+        currentOption.value = "current";
+        currentOption.textContent = "Current inventory";
+        selectEl.appendChild(currentOption);
+
+        state.inventorySnapshots.forEach(snapshot => {
+          const option = document.createElement("option");
+          option.value = snapshot.id;
+          option.textContent = `${snapshot.periodType} • ${snapshot.date}`;
+          selectEl.appendChild(option);
+        });
+      };
+
+      buildOptions(compareLeft);
+      buildOptions(compareRight);
+    }
+
+    function getComparisonData(selection) {
+      if (selection === "current") {
+        return {
+          label: "Current inventory",
+          items: state.items.map(item => ({
+            name: item.name,
+            unit: item.unit,
+            onHand: Number(item.onHand || 0)
+          }))
+        };
+      }
+      const snapshot = state.inventorySnapshots.find(entry => entry.id === selection);
+      if (!snapshot) return null;
+      return {
+        label: `${snapshot.periodType} • ${snapshot.date}`,
+        items: snapshot.items.map(item => ({
+          name: item.name,
+          unit: item.unit,
+          onHand: Number(item.onHand || 0)
+        }))
+      };
+    }
+
+    function renderComparison() {
+      const leftData = getComparisonData(compareLeft.value);
+      const rightData = getComparisonData(compareRight.value);
+      compareTable.innerHTML = "";
+
+      if (!leftData || !rightData) {
+        compareSummary.textContent = "Select two inventory periods to compare.";
+        return;
+      }
+
+      compareLeftLabel.textContent = leftData.label;
+      compareRightLabel.textContent = rightData.label;
+      compareSummary.textContent = `Comparing ${leftData.label} vs ${rightData.label}.`;
+
+      const allItems = new Map();
+      leftData.items.forEach(item => allItems.set(item.name, { left: item, right: null }));
+      rightData.items.forEach(item => {
+        const entry = allItems.get(item.name) || { left: null, right: null };
+        entry.right = item;
+        allItems.set(item.name, entry);
+      });
+
+      [...allItems.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([name, entry]) => {
+        const leftQty = entry.left ? entry.left.onHand : 0;
+        const rightQty = entry.right ? entry.right.onHand : 0;
+        const unit = entry.left?.unit || entry.right?.unit || "";
+        const diff = rightQty - leftQty;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${name}</td>
+          <td>${leftQty.toFixed(2)} ${unit}</td>
+          <td>${rightQty.toFixed(2)} ${unit}</td>
+          <td>${diff.toFixed(2)} ${unit}</td>
+        `;
+        compareTable.appendChild(row);
+      });
+    }
+
+    function closeInventoryPeriod() {
+      const dateString = snapshotDate.value || new Date().toISOString().slice(0, 10);
+      const labelText = snapshotLabel.value.trim();
+      const snapshot = buildInventorySnapshot(snapshotPeriod.value, dateString, labelText);
+      state.inventorySnapshots.unshift(snapshot);
+      snapshotLabel.value = "";
+      snapshotDate.value = "";
+      saveState();
+      renderAll();
+    }
+
+    function exportCurrentInventoryPdf() {
+      const items = state.items.map(item => ({
+        name: item.name,
+        unit: item.unit,
+        onHand: Number(item.onHand || 0),
+        value: getItemValue(item)
+      }));
+      const totalValue = items.reduce((sum, item) => sum + item.value, 0);
+      exportInventoryPdf("Current Inventory Snapshot", items, totalValue);
+    }
+
+    function exportInventoryPdf(title, items, totalValue) {
+      const rows = items.map(item => `
+        <tr>
+          <td>${item.name}</td>
+          <td style="text-align:right;">${item.onHand.toFixed(2)}</td>
+          <td>${item.unit}</td>
+          <td style="text-align:right;">${currency(item.value)}</td>
+        </tr>
+      `).join("");
+      const html = `
+        <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+            h1 { font-size: 20px; margin-bottom: 4px; }
+            p { color: #555; margin-top: 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+            th, td { border-bottom: 1px solid #ddd; padding: 8px; font-size: 13px; }
+            th { text-align: left; background: #f5f5f5; }
+            tfoot td { font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          <p>Generated from PantryPilot inventory</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th style="text-align:right;">Qty</th>
+                <th>Unit</th>
+                <th style="text-align:right;">Value</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3">Total inventory value</td>
+                <td style="text-align:right;">${currency(totalValue)}</td>
+              </tr>
+            </tfoot>
+          </table>
+          <p style="margin-top: 16px;">Use your browser’s Print dialog to save as PDF.</p>
+        </body>
+        </html>
+      `;
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        alert("Popup blocked. Allow popups to export PDF.");
+        return;
+      }
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
     }
 
     function renderCounts() {
@@ -2765,6 +3073,9 @@
       buildRecipeOptions();
       buildUsageItemOptions();
       renderItems();
+      renderSnapshots();
+      renderComparisonOptions();
+      renderComparison();
       renderCounts();
       renderSchedules();
       renderVendors();
@@ -2797,6 +3108,7 @@
         poDrafts: state.poDrafts,
         invoices: state.invoices,
         receivingLogs: state.receivingLogs,
+        inventorySnapshots: state.inventorySnapshots,
         schedules: state.schedules,
         users: state.users,
         feedback: state.feedback,
@@ -2832,6 +3144,7 @@
           state.poDrafts = data.poDrafts || [];
           state.invoices = data.invoices || [];
           state.receivingLogs = data.receivingLogs || [];
+          state.inventorySnapshots = data.inventorySnapshots || [];
           state.schedules = data.schedules || [];
           state.users = data.users || [];
           state.feedback = data.feedback || [];
@@ -2867,6 +3180,7 @@
       state.poDrafts = [];
       state.invoices = [];
       state.receivingLogs = [];
+      state.inventorySnapshots = [];
       state.schedules = [];
       state.users = [];
       state.feedback = [];
@@ -2902,6 +3216,9 @@
     deleteItemBtn.addEventListener("click", deleteItem);
     resetFormBtn.addEventListener("click", resetItemForm);
     inventorySearch.addEventListener("input", renderItems);
+    closeInventoryBtn.addEventListener("click", closeInventoryPeriod);
+    exportCurrentPdfBtn.addEventListener("click", exportCurrentInventoryPdf);
+    compareBtn.addEventListener("click", renderComparison);
     countSearch.addEventListener("input", renderCounts);
     applyCountsBtn.addEventListener("click", applyCounts);
     saveScheduleBtn.addEventListener("click", saveSchedule);
@@ -2951,7 +3268,6 @@
 
     exportJsonBtn.addEventListener("click", exportJson);
     importJsonInput.addEventListener("change", importJson);
-    clearAllBtn.addEventListener("click", clearAll);
     safetyDaysInput.addEventListener("input", () => {
       state.settings.safetyDays = Number(safetyDaysInput.value || 0);
       saveState();
@@ -2968,6 +3284,7 @@
     safetyDaysInput.value = state.settings.safetyDays ?? 2;
     notifyEmail.value = state.settings.notifyEmail || "";
     notifyPhone.value = state.settings.notifyPhone || "";
+    snapshotDate.value = new Date().toISOString().slice(0, 10);
     renderRoleSummary();
     renderAll();
   </script>
