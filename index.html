@@ -238,6 +238,19 @@
           <div class="footer-note">On-hand × cost</div>
         </div>
         <div class="card">
+          <div class="muted">Inventory value on date</div>
+          <h2 id="summaryValueOnDate">$0.00</h2>
+          <div class="grid-2" style="margin-top: 8px;">
+            <div>
+              <label for="valueDate">Select date</label>
+              <input id="valueDate" type="date" />
+            </div>
+            <div class="footer-note" style="align-self: end;">
+              Uses items added on or before the date.
+            </div>
+          </div>
+        </div>
+        <div class="card">
           <div class="muted">Items below reorder point</div>
           <h2 id="summaryBelow">0</h2>
           <div class="footer-note">Needs attention</div>
@@ -429,6 +442,7 @@
                 <th>Par</th>
                 <th>Suggested Par</th>
                 <th>Reorder</th>
+                <th>Added</th>
                 <th>Status</th>
                 <th>Data</th>
                 <th>Value</th>
@@ -1066,6 +1080,8 @@
     const refreshOrdersBtn = document.getElementById("refreshOrders");
 
     const summaryValue = document.getElementById("summaryValue");
+    const summaryValueOnDate = document.getElementById("summaryValueOnDate");
+    const valueDateInput = document.getElementById("valueDate");
     const summaryBelow = document.getElementById("summaryBelow");
     const summaryOrder = document.getElementById("summaryOrder");
     const alertsList = document.getElementById("alertsList");
@@ -1425,6 +1441,7 @@
         leadTimeDays: Number(itemForm.lead.value || 0),
         usagePerDay: Number(itemForm.usage.value || 0),
         sku: itemForm.sku.value.trim(),
+        createdAt: state.activeItemId ? (state.items.find(item => item.id === state.activeItemId)?.createdAt || Date.now()) : Date.now(),
         updatedAt: Date.now()
       };
 
@@ -1487,6 +1504,7 @@
             <td>${item.par}</td>
             <td>${getSuggestedPar(item).toFixed(1)}</td>
             <td>${item.reorderPoint}</td>
+            <td>${formatDate(item.createdAt)}</td>
             <td><span class="pill ${status.tone}">${status.label}</span></td>
             <td><span class="pill ${dataIssues === 0 ? "ok" : "warn"}">${dataLabel}</span></td>
             <td>${currency(getItemValue(item))}</td>
@@ -1949,10 +1967,20 @@
 
     function renderDashboard() {
       const totalValue = state.items.reduce((sum, item) => sum + getItemValue(item), 0);
+      const valueDate = valueDateInput.value ? new Date(valueDateInput.value + "T23:59:59") : null;
+      const valueOnDate = valueDate
+        ? state.items
+            .filter(item => {
+              const created = item.createdAt ? new Date(item.createdAt) : null;
+              return created ? created <= valueDate : true;
+            })
+            .reduce((sum, item) => sum + getItemValue(item), 0)
+        : totalValue;
       const belowCount = state.items.filter(item => Number(item.onHand) <= Number(item.reorderPoint || 0)).length;
       const suggestedValue = state.items.reduce((sum, item) => sum + (getSuggestedOrderQty(item) * Number(item.cost || 0)), 0);
 
       summaryValue.textContent = currency(totalValue);
+      summaryValueOnDate.textContent = currency(valueOnDate);
       summaryBelow.textContent = `${belowCount}`;
       summaryOrder.textContent = currency(suggestedValue);
 
@@ -2094,6 +2122,13 @@
         vendor: "Vendors: review PO drafts and ensure price history is current."
       };
       roleSummary.textContent = roleMessages[roleView.value] || roleMessages.manager;
+    }
+
+    function formatDate(timestamp) {
+      if (!timestamp) return "—";
+      const date = new Date(timestamp);
+      if (Number.isNaN(date.getTime())) return "—";
+      return date.toLocaleDateString();
     }
 
     function createIngredientRow(ingredient = { itemId: "", qty: "" }) {
@@ -2922,6 +2957,7 @@
       saveState();
       renderAll();
     });
+    valueDateInput.addEventListener("change", renderDashboard);
 
     loadState();
     buildCategoryOptions();
