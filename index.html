@@ -431,6 +431,21 @@
           <h3>Item List</h3>
           <span class="muted" id="itemCount">0 items</span>
         </div>
+        <div class="toolbar" style="margin: 10px 0;">
+          <div>
+            <label for="addedDateFilter" class="muted">Added on</label>
+            <input id="addedDateFilter" type="date" />
+          </div>
+          <div>
+            <label for="addedDateSort" class="muted">Sort by</label>
+            <select id="addedDateSort">
+              <option value="name">Name (A → Z)</option>
+              <option value="newest">Date added (newest)</option>
+              <option value="oldest">Date added (oldest)</option>
+            </select>
+          </div>
+          <button class="ghost" id="clearAddedDate">Clear date</button>
+        </div>
         <div style="overflow-x:auto;">
           <table>
             <thead>
@@ -1126,6 +1141,9 @@
     const itemCountEl = document.getElementById("itemCount");
     const itemsTable = document.getElementById("itemsTable");
     const inventorySearch = document.getElementById("inventorySearch");
+    const addedDateFilter = document.getElementById("addedDateFilter");
+    const addedDateSort = document.getElementById("addedDateSort");
+    const clearAddedDateBtn = document.getElementById("clearAddedDate");
     const saveItemBtn = document.getElementById("saveItem");
     const deleteItemBtn = document.getElementById("deleteItem");
     const resetFormBtn = document.getElementById("resetForm");
@@ -1560,21 +1578,38 @@
 
     function renderItems() {
       const query = inventorySearch.value.trim().toLowerCase();
+      const dateFilter = addedDateFilter.value;
+      let startDate = null;
+      let endDate = null;
+      if (dateFilter) {
+        startDate = new Date(`${dateFilter}T00:00:00`);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 1);
+      }
       const filtered = state.items.filter(item => {
         const vendorName = getVendorName(item.vendorId).toLowerCase();
-        return (
+        const matchesQuery = (
           item.name.toLowerCase().includes(query) ||
           item.category.toLowerCase().includes(query) ||
           vendorName.includes(query)
         );
+        if (!matchesQuery) return false;
+        if (!startDate || !endDate) return true;
+        const createdAt = new Date(item.createdAt || 0);
+        return createdAt >= startDate && createdAt < endDate;
       });
 
       itemCountEl.textContent = `${filtered.length} items`;
       itemsTable.innerHTML = "";
 
-      filtered
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .forEach(item => {
+      const sortMode = addedDateSort.value;
+      const sorted = [...filtered].sort((a, b) => {
+        if (sortMode === "newest") return (b.createdAt || 0) - (a.createdAt || 0);
+        if (sortMode === "oldest") return (a.createdAt || 0) - (b.createdAt || 0);
+        return a.name.localeCompare(b.name);
+      });
+
+      sorted.forEach(item => {
           const status = getStatus(item);
           const missingCost = Number(item.cost) <= 0;
           const missingVendor = !item.vendorId;
@@ -3259,6 +3294,12 @@
     deleteItemBtn.addEventListener("click", deleteItem);
     resetFormBtn.addEventListener("click", resetItemForm);
     inventorySearch.addEventListener("input", renderItems);
+    addedDateFilter.addEventListener("change", renderItems);
+    addedDateSort.addEventListener("change", renderItems);
+    clearAddedDateBtn.addEventListener("click", () => {
+      addedDateFilter.value = "";
+      renderItems();
+    });
     closeInventoryBtn.addEventListener("click", closeInventoryPeriod);
     exportCurrentPdfBtn.addEventListener("click", exportCurrentInventoryPdf);
     compareBtn.addEventListener("click", renderComparison);
