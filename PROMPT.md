@@ -1,0 +1,2790 @@
+# Consultant Prompt for GPT
+
+Use this prompt when requesting a fresh Next.js + Tailwind + Python backend build:
+
+```
+hey gpt let’s build a web application using NextJS, tailwind, CSS and Python for backend. Assume I have no experience with building the scaffolding or setting up the repository. Let’s start from the scratch. I have an idea that I haves added to this index.html that I want to build out. <insert you work so far>
+```
+
+Below is the latest HTML (paste this after the prompt when starting from scratch):
+
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PantryPilot — Inventory Control</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f6fb;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --ink: #101828;
+      --muted: #667085;
+      --primary: #2563eb;
+      --primary-soft: #e0e7ff;
+      --success: #16a34a;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    header {
+      background: linear-gradient(120deg, #1d4ed8, #1e40af);
+      color: #fff;
+      padding: 28px 22px;
+    }
+
+    header .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    header h1 { margin: 0; font-size: 28px; }
+    header p { margin: 0; opacity: 0.9; }
+
+    main {
+      max-width: 1200px;
+      margin: -24px auto 40px;
+      padding: 0 20px 40px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .nav button {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .nav button.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .stack { display: grid; gap: 16px; }
+    .grid-2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .grid-3 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+    label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      background: #fff;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid var(--primary-soft);
+      border-color: var(--primary);
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.ghost {
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.danger {
+      background: #fff1f2;
+      color: #b91c1c;
+      border: 1px solid #fecdd3;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .pill.ok { background: #ecfdf3; color: #15803d; }
+    .pill.warn { background: #fff7ed; color: #b45309; }
+    .pill.alert { background: #fef2f2; color: #b91c1c; }
+
+    .muted { color: var(--muted); }
+    .section-title { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .hidden { display: none; }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .file-input {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .footer-note { font-size: 12px; color: var(--muted); }
+
+    .ingredient-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .two-column {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 720px) {
+      header { text-align: center; }
+      .nav { justify-content: center; }
+      .ingredient-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>PantryPilot Inventory Control</h1>
+      <p>Phase 3+ — inventory, vendors, purchasing, recipes, usage, variance, and stakeholder-ready workflows.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="nav" id="nav">
+      <button class="active" data-view="dashboard">Dashboard</button>
+      <button data-view="inventory">Inventory</button>
+      <button data-view="counts">Count Sheets</button>
+      <button data-view="vendors">Vendors</button>
+      <button data-view="orders">Ordering Suggestions</button>
+      <button data-view="purchaseOrders">Purchase Orders</button>
+      <button data-view="recipes">Recipes</button>
+      <button data-view="usage">Usage & Variance</button>
+      <button data-view="pricing">Price History</button>
+      <button data-view="accounts">Accounts & Roles</button>
+      <button data-view="reports">Reports</button>
+      <button data-view="data">Data Tools</button>
+    </div>
+
+    <section id="dashboard" class="stack">
+      <div class="grid-3">
+        <div class="card">
+          <div class="muted">Total inventory value</div>
+          <h2 id="summaryValue">$0.00</h2>
+          <div class="footer-note">On-hand × cost</div>
+        </div>
+        <div class="card">
+          <div class="muted">Items below reorder point</div>
+          <h2 id="summaryBelow">0</h2>
+          <div class="footer-note">Needs attention</div>
+        </div>
+        <div class="card">
+          <div class="muted">Suggested order value</div>
+          <h2 id="summaryOrder">$0.00</h2>
+          <div class="footer-note">To reach par levels</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="section-title">
+            <h3>Reorder Alerts</h3>
+            <span class="muted" id="alertCount">0 alerts</span>
+          </div>
+          <div id="alertsList" class="stack"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">
+            <h3>Manager Notifications</h3>
+            <span class="muted" id="managerCount">0 alerts</span>
+          </div>
+          <div id="managerList" class="stack"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="section-title">
+            <h3>Daily Tasks</h3>
+            <span class="muted">Quick actions</span>
+          </div>
+          <div class="stack" style="margin-top: 10px;">
+            <button class="primary" data-jump="counts">Start count sheet</button>
+            <button class="ghost" data-jump="orders">Review reorder list</button>
+            <button class="ghost" data-jump="purchaseOrders">Create PO drafts</button>
+            <button class="ghost" data-jump="reports">View food cost report</button>
+          </div>
+          <div class="footer-note" style="margin-top: 10px;">Designed for managers, buyers, and chefs.</div>
+        </div>
+        <div class="card">
+          <div class="section-title">
+            <h3>Top Value Items</h3>
+            <span class="muted">Highest on-hand value</span>
+          </div>
+          <div id="topValueList" class="stack"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="section-title">
+            <h3>Data Quality</h3>
+            <span class="muted" id="dataQualityCount">0 issues</span>
+          </div>
+          <div id="dataQualityList" class="stack"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">
+            <h3>Notification Queue</h3>
+            <span class="muted" id="notificationCount">0 messages</span>
+          </div>
+          <div id="notificationList" class="stack"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="section-title">
+            <h3>Stakeholder View</h3>
+            <span class="muted">Role-based guidance</span>
+          </div>
+          <div style="margin-top: 10px;">
+            <label for="roleView">Current role</label>
+            <select id="roleView">
+              <option value="manager">Manager</option>
+              <option value="buyer">Buyer</option>
+              <option value="chef">Chef</option>
+              <option value="owner">Owner</option>
+              <option value="vendor">Vendor</option>
+            </select>
+          </div>
+          <div class="muted" id="roleSummary" style="margin-top: 10px;">
+            Managers: review reorder alerts, data quality issues, and approve PO drafts.
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title">
+            <h3>Workflow Guide</h3>
+            <span class="muted">Phase 1 checklist</span>
+          </div>
+          <ol class="muted" style="margin: 10px 0 0 16px; line-height: 1.6;">
+            <li>Complete missing item data (cost, vendor, par).</li>
+            <li>Run a count sheet for high-variance categories.</li>
+            <li>Review reorder suggestions and draft POs.</li>
+            <li>Log sales and usage to keep variance accurate.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="inventory" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Inventory Items</h3>
+          <div class="toolbar">
+            <input id="inventorySearch" placeholder="Search by name, category, vendor" />
+            <button class="ghost" id="resetForm">Reset Form</button>
+          </div>
+        </div>
+
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="itemName">Item name</label>
+            <input id="itemName" placeholder="Roma tomatoes" />
+          </div>
+          <div>
+            <label for="itemCategory">Category</label>
+            <select id="itemCategory"></select>
+          </div>
+          <div>
+            <label for="itemUnit">Unit</label>
+            <select id="itemUnit">
+              <option value="each">Each</option>
+              <option value="lb">Pound (lb)</option>
+              <option value="kg">Kilogram (kg)</option>
+              <option value="case">Case</option>
+              <option value="pack">Pack</option>
+              <option value="liter">Liter</option>
+              <option value="gallon">Gallon</option>
+            </select>
+          </div>
+          <div>
+            <label for="itemOnHand">On-hand qty</label>
+            <input id="itemOnHand" type="number" min="0" step="0.1" placeholder="24" />
+          </div>
+          <div>
+            <label for="itemPar">Par level</label>
+            <input id="itemPar" type="number" min="0" step="0.1" placeholder="40" />
+          </div>
+          <div>
+            <label for="itemReorder">Reorder point</label>
+            <input id="itemReorder" type="number" min="0" step="0.1" placeholder="15" />
+          </div>
+          <div>
+            <label for="itemCost">Cost per unit</label>
+            <input id="itemCost" type="number" min="0" step="0.01" placeholder="1.25" />
+          </div>
+          <div>
+            <label for="itemVendor">Vendor</label>
+            <select id="itemVendor"></select>
+          </div>
+          <div>
+            <label for="itemLead">Lead time (days)</label>
+            <input id="itemLead" type="number" min="0" step="1" placeholder="2" />
+          </div>
+          <div>
+            <label for="itemUsage">Avg daily usage</label>
+            <input id="itemUsage" type="number" min="0" step="0.1" placeholder="8" />
+          </div>
+          <div>
+            <label for="itemSku">Internal SKU</label>
+            <input id="itemSku" placeholder="TOM-001" />
+          </div>
+        </div>
+
+        <div class="toolbar" style="margin-top: 16px;">
+          <button class="primary" id="saveItem">Save Item</button>
+          <button class="danger" id="deleteItem" disabled>Delete Item</button>
+          <span class="muted" id="formStatus">Add a new item</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Item List</h3>
+          <span class="muted" id="itemCount">0 items</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Category</th>
+                <th>Vendor</th>
+                <th>On-hand</th>
+                <th>Par</th>
+                <th>Suggested Par</th>
+                <th>Reorder</th>
+                <th>Status</th>
+                <th>Data</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody id="itemsTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="counts" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Count Sheet</h3>
+          <div class="toolbar">
+            <input id="countSearch" placeholder="Search items for counting" />
+            <button class="ghost" id="applyCounts">Apply Counts</button>
+          </div>
+        </div>
+        <div id="countList" class="stack" style="margin-top: 12px;"></div>
+        <div class="footer-note">Counts update the on-hand quantity and are stored locally.</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Count Scheduling</h3>
+          <span class="muted">Plan weekly / monthly counts</span>
+        </div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="scheduleName">Schedule name</label>
+            <input id="scheduleName" placeholder="Weekly dry storage" />
+          </div>
+          <div>
+            <label for="scheduleFrequency">Frequency</label>
+            <select id="scheduleFrequency">
+              <option value="weekly">Weekly</option>
+              <option value="biweekly">Bi-weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+          <div>
+            <label for="scheduleNext">Next count date</label>
+            <input id="scheduleNext" type="date" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveSchedule">Save Schedule</button>
+          <button class="ghost" id="clearSchedules">Clear Schedules</button>
+        </div>
+        <div id="scheduleList" class="stack" style="margin-top: 12px;"></div>
+      </div>
+    </section>
+
+    <section id="vendors" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Vendors</h3>
+          <span class="muted">Track suppliers and contact details</span>
+        </div>
+        <div class="grid-2" style="margin-top: 12px;">
+          <div>
+            <label for="vendorName">Vendor name</label>
+            <input id="vendorName" placeholder="Fresh Coast Produce" />
+          </div>
+          <div>
+            <label for="vendorPhone">Phone</label>
+            <input id="vendorPhone" placeholder="(555) 222-1111" />
+          </div>
+          <div>
+            <label for="vendorEmail">Email</label>
+            <input id="vendorEmail" placeholder="orders@freshcoast.com" />
+          </div>
+          <div>
+            <label for="vendorNotes">Notes</label>
+            <textarea id="vendorNotes" rows="2" placeholder="Order cutoff: 3pm"></textarea>
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveVendor">Save Vendor</button>
+          <button class="danger" id="deleteVendor" disabled>Delete Vendor</button>
+          <span class="muted" id="vendorStatus">Add a new vendor</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Vendor List</h3>
+          <span class="muted" id="vendorCount">0 vendors</span>
+        </div>
+        <div id="vendorList" class="stack"></div>
+      </div>
+    </section>
+
+    <section id="orders" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Ordering Suggestions</h3>
+          <div class="toolbar">
+            <input id="orderSearch" placeholder="Filter by vendor or category" />
+            <button class="ghost" id="refreshOrders">Refresh</button>
+          </div>
+        </div>
+        <div id="orderList" class="stack" style="margin-top: 12px;"></div>
+        <div class="footer-note">Suggestions are based on par levels, reorder points, and lead time coverage.</div>
+      </div>
+    </section>
+
+    <section id="purchaseOrders" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Create Purchase Orders</h3>
+          <span class="muted">Group suggested orders by vendor</span>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="createPo">Generate PO Drafts</button>
+          <button class="ghost" id="clearPos">Clear PO Drafts</button>
+        </div>
+        <div class="footer-note" style="margin-top: 10px;">Drafts are generated from current ordering suggestions.</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>PO Drafts</h3>
+          <span class="muted" id="poCount">0 drafts</span>
+        </div>
+        <div id="poList" class="stack"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Invoice Capture (Mock)</h3>
+          <span class="muted">Attach invoices for reconciliation</span>
+        </div>
+        <div class="file-input" style="margin-top: 12px;">
+          <label class="ghost" style="cursor:pointer;">
+            Upload Invoice (PDF/Image)
+            <input type="file" id="invoiceUpload" accept="application/pdf,image/*" style="display:none;" />
+          </label>
+          <button class="ghost" id="clearInvoices">Clear Invoices</button>
+        </div>
+        <div id="invoiceList" class="stack" style="margin-top: 12px;"></div>
+        <div class="footer-note">OCR and invoice parsing require a backend service.</div>
+      </div>
+    </section>
+
+    <section id="recipes" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Recipe Costing</h3>
+          <span class="muted">Build recipes and calculate cost per serving</span>
+        </div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="recipeName">Recipe name</label>
+            <input id="recipeName" placeholder="Marinara sauce" />
+          </div>
+          <div>
+            <label for="recipeYield">Yield (servings)</label>
+            <input id="recipeYield" type="number" min="1" step="1" placeholder="20" />
+          </div>
+          <div>
+            <label for="recipePrice">Menu price (per serving)</label>
+            <input id="recipePrice" type="number" min="0" step="0.01" placeholder="14.00" />
+          </div>
+          <div style="grid-column: 1 / -1;">
+            <label for="recipeNotes">Notes</label>
+            <textarea id="recipeNotes" rows="2" placeholder="Batch size and prep notes"></textarea>
+          </div>
+        </div>
+
+        <div class="stack" style="margin-top: 16px;">
+          <div class="section-title">
+            <strong>Ingredients</strong>
+            <button class="ghost" id="addIngredient">Add Ingredient</button>
+          </div>
+          <div id="ingredientsList" class="stack"></div>
+        </div>
+
+        <div class="toolbar" style="margin-top: 16px;">
+          <button class="primary" id="saveRecipe">Save Recipe</button>
+          <button class="danger" id="deleteRecipe" disabled>Delete Recipe</button>
+          <span class="muted" id="recipeStatus">Add a new recipe</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Recipes</h3>
+          <span class="muted" id="recipeCount">0 recipes</span>
+        </div>
+        <div id="recipeList" class="stack"></div>
+      </div>
+    </section>
+
+    <section id="usage" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Recipe Sales Log</h3>
+          <span class="muted">Track servings sold for theoretical usage</span>
+        </div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="saleRecipe">Recipe</label>
+            <select id="saleRecipe"></select>
+          </div>
+          <div>
+            <label for="saleServings">Servings sold</label>
+            <input id="saleServings" type="number" min="0" step="1" placeholder="45" />
+          </div>
+          <div>
+            <label for="saleDate">Date</label>
+            <input id="saleDate" type="date" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveSale">Log Sales</button>
+          <button class="ghost" id="clearSales">Clear Sales</button>
+          <span class="muted" id="saleStatus">Track recipe sales</span>
+        </div>
+        <div id="salesList" class="stack" style="margin-top: 12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Actual Usage & Waste</h3>
+          <span class="muted">Record actual item usage and waste</span>
+        </div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="usageItem">Item</label>
+            <select id="usageItem"></select>
+          </div>
+          <div>
+            <label for="usageQty">Actual used</label>
+            <input id="usageQty" type="number" min="0" step="0.1" placeholder="12" />
+          </div>
+          <div>
+            <label for="usageDate">Date</label>
+            <input id="usageDate" type="date" />
+          </div>
+          <div>
+            <label for="wasteQty">Waste qty</label>
+            <input id="wasteQty" type="number" min="0" step="0.1" placeholder="1.5" />
+          </div>
+          <div style="grid-column: 2 / -1;">
+            <label for="wasteReason">Waste reason</label>
+            <input id="wasteReason" placeholder="Spoilage" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveUsage">Log Usage</button>
+          <button class="ghost" id="clearUsage">Clear Usage</button>
+          <span class="muted" id="usageStatus">Record actual usage and waste</span>
+        </div>
+        <div id="usageList" class="stack" style="margin-top: 12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Variance Summary</h3>
+          <span class="muted">Actual usage vs theoretical from recipes</span>
+        </div>
+        <div style="overflow-x:auto; margin-top: 12px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Theoretical</th>
+                <th>Actual</th>
+                <th>Waste</th>
+                <th>Variance</th>
+              </tr>
+            </thead>
+            <tbody id="varianceTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Waste Highlights</h3>
+          <span class="muted">Top waste categories</span>
+        </div>
+        <div id="wasteSummary" class="stack" style="margin-top: 12px;"></div>
+      </div>
+    </section>
+
+    <section id="pricing" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Vendor Price History</h3>
+          <span class="muted">Track cost changes per item</span>
+        </div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="priceItem">Item</label>
+            <select id="priceItem"></select>
+          </div>
+          <div>
+            <label for="priceVendor">Vendor</label>
+            <select id="priceVendor"></select>
+          </div>
+          <div>
+            <label for="priceAmount">New price</label>
+            <input id="priceAmount" type="number" min="0" step="0.01" placeholder="2.45" />
+          </div>
+          <div>
+            <label for="priceDate">Effective date</label>
+            <input id="priceDate" type="date" />
+          </div>
+          <div style="grid-column: 2 / -1;">
+            <label for="priceNote">Notes</label>
+            <input id="priceNote" placeholder="Seasonal increase" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="savePrice">Log Price</button>
+          <button class="ghost" id="clearPrices">Clear History</button>
+        </div>
+        <div id="priceHistoryList" class="stack" style="margin-top: 12px;"></div>
+      </div>
+    </section>
+
+    <section id="accounts" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Accounts & Roles</h3>
+          <span class="muted">Add employees and assign permissions</span>
+        </div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="userName">Full name</label>
+            <input id="userName" placeholder="Alex Johnson" />
+          </div>
+          <div>
+            <label for="userRole">Role</label>
+            <select id="userRole">
+              <option value="manager">Manager</option>
+              <option value="chef">Chef</option>
+              <option value="buyer">Buyer</option>
+              <option value="admin">Admin</option>
+              <option value="staff">Staff</option>
+            </select>
+          </div>
+          <div>
+            <label for="userEmail">Email</label>
+            <input id="userEmail" placeholder="alex@restaurant.com" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveUser">Save User</button>
+          <button class="ghost" id="clearUsers">Clear Users</button>
+        </div>
+        <div id="userList" class="stack" style="margin-top: 12px;"></div>
+        <div class="footer-note">Authentication and secure access require a backend.</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Notification Preferences</h3>
+          <span class="muted">Who gets reorder alerts?</span>
+        </div>
+        <div class="grid-2" style="margin-top: 12px;">
+          <div>
+            <label for="notifyEmail">Manager email</label>
+            <input id="notifyEmail" placeholder="gm@restaurant.com" />
+          </div>
+          <div>
+            <label for="notifyPhone">Manager phone</label>
+            <input id="notifyPhone" placeholder="(555) 123-4567" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveNotifications">Save Notification Settings</button>
+        </div>
+        <div class="footer-note">Email/SMS delivery requires a messaging service.</div>
+      </div>
+    </section>
+
+    <section id="reports" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Food Cost & Profitability</h3>
+          <span class="muted">Recipe margin snapshots</span>
+        </div>
+        <div id="profitReport" class="stack" style="margin-top: 12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Vendor Spend Summary</h3>
+          <span class="muted">Ordering recommendations by vendor</span>
+        </div>
+        <div id="vendorSpend" class="stack" style="margin-top: 12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Stakeholder Feedback Log</h3>
+          <span class="muted">Capture feedback from managers, buyers, staff</span>
+        </div>
+        <div class="grid-2" style="margin-top: 12px;">
+          <div>
+            <label for="feedbackFrom">From</label>
+            <select id="feedbackFrom">
+              <option value="manager">Manager</option>
+              <option value="chef">Chef</option>
+              <option value="buyer">Buyer</option>
+              <option value="owner">Owner</option>
+              <option value="staff">Staff</option>
+              <option value="vendor">Vendor</option>
+            </select>
+          </div>
+          <div>
+            <label for="feedbackTopic">Topic</label>
+            <input id="feedbackTopic" placeholder="Ordering UI" />
+          </div>
+          <div style="grid-column: 1 / -1;">
+            <label for="feedbackNote">Feedback</label>
+            <textarea id="feedbackNote" rows="3" placeholder="We need PO confirmation for vendor reps."></textarea>
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveFeedback">Save Feedback</button>
+          <button class="ghost" id="clearFeedback">Clear Feedback</button>
+        </div>
+        <div id="feedbackList" class="stack" style="margin-top: 12px;"></div>
+      </div>
+    </section>
+
+    <section id="data" class="stack hidden">
+      <div class="card">
+        <div class="section-title">
+          <h3>Data Tools</h3>
+          <span class="muted">Export or import your inventory data</span>
+        </div>
+        <div class="file-input" style="margin-top: 12px;">
+          <button class="ghost" id="exportJson">Export JSON</button>
+          <label class="ghost" style="cursor:pointer;">
+            Import JSON
+            <input type="file" id="importJson" accept="application/json" style="display:none;" />
+          </label>
+          <button class="danger" id="clearAll">Clear All Data</button>
+        </div>
+        <div class="grid-2" style="margin-top: 16px;">
+          <div>
+            <label for="safetyDays">Safety stock buffer (days)</label>
+            <input id="safetyDays" type="number" min="0" step="1" placeholder="2" />
+          </div>
+          <div class="footer-note" style="align-self: end;">
+            Suggested par level = avg daily usage × (lead time + safety days).
+          </div>
+        </div>
+        <div class="two-column" style="margin-top: 16px;">
+          <div class="card">
+            <div class="section-title">
+              <h4>POS Integration (Mock)</h4>
+              <span class="muted">Import sales data</span>
+            </div>
+            <div class="file-input" style="margin-top: 10px;">
+              <label class="ghost" style="cursor:pointer;">
+                Upload POS CSV
+                <input type="file" id="posUpload" accept=".csv" style="display:none;" />
+              </label>
+              <button class="ghost" id="clearPosUploads">Clear Uploads</button>
+            </div>
+            <div id="posList" class="stack" style="margin-top: 10px;"></div>
+            <div class="footer-note">Automated POS sync needs API credentials.</div>
+          </div>
+          <div class="card">
+            <div class="section-title">
+              <h4>Sync Status</h4>
+              <span class="muted">Local-only in browser</span>
+            </div>
+            <div class="muted" style="margin-top: 10px;">
+              Cloud sync, multi-location, and audit logs require a backend database.
+            </div>
+          </div>
+        </div>
+        <div class="footer-note" style="margin-top: 10px;">JSON export includes items, vendors, recipes, sales, usage logs, PO drafts, prices, schedules, users, and feedback.</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "pantrypilot_phase3";
+
+    const DEFAULT_CATEGORIES = [
+      "Produce",
+      "Meat",
+      "Seafood",
+      "Dairy",
+      "Dry Storage",
+      "Frozen",
+      "Beverages",
+      "Bakery",
+      "Spices/Condiments",
+      "Other"
+    ];
+
+    const state = {
+      items: [],
+      vendors: [],
+      recipes: [],
+      sales: [],
+      usageLogs: [],
+      priceHistory: [],
+      poDrafts: [],
+      invoices: [],
+      schedules: [],
+      users: [],
+      feedback: [],
+      posUploads: [],
+      settings: {
+        safetyDays: 2,
+        notifyEmail: "",
+        notifyPhone: ""
+      },
+      activeItemId: null,
+      activeVendorId: null,
+      activeRecipeId: null
+    };
+
+    const nav = document.getElementById("nav");
+    const views = [
+      "dashboard",
+      "inventory",
+      "counts",
+      "vendors",
+      "orders",
+      "purchaseOrders",
+      "recipes",
+      "usage",
+      "pricing",
+      "accounts",
+      "reports",
+      "data"
+    ];
+
+    const itemForm = {
+      name: document.getElementById("itemName"),
+      category: document.getElementById("itemCategory"),
+      unit: document.getElementById("itemUnit"),
+      onHand: document.getElementById("itemOnHand"),
+      par: document.getElementById("itemPar"),
+      reorder: document.getElementById("itemReorder"),
+      cost: document.getElementById("itemCost"),
+      vendor: document.getElementById("itemVendor"),
+      lead: document.getElementById("itemLead"),
+      usage: document.getElementById("itemUsage"),
+      sku: document.getElementById("itemSku")
+    };
+
+    const itemCountEl = document.getElementById("itemCount");
+    const itemsTable = document.getElementById("itemsTable");
+    const inventorySearch = document.getElementById("inventorySearch");
+    const saveItemBtn = document.getElementById("saveItem");
+    const deleteItemBtn = document.getElementById("deleteItem");
+    const resetFormBtn = document.getElementById("resetForm");
+    const formStatus = document.getElementById("formStatus");
+
+    const vendorForm = {
+      name: document.getElementById("vendorName"),
+      phone: document.getElementById("vendorPhone"),
+      email: document.getElementById("vendorEmail"),
+      notes: document.getElementById("vendorNotes")
+    };
+
+    const saveVendorBtn = document.getElementById("saveVendor");
+    const deleteVendorBtn = document.getElementById("deleteVendor");
+    const vendorStatus = document.getElementById("vendorStatus");
+    const vendorList = document.getElementById("vendorList");
+    const vendorCount = document.getElementById("vendorCount");
+
+    const countList = document.getElementById("countList");
+    const countSearch = document.getElementById("countSearch");
+    const applyCountsBtn = document.getElementById("applyCounts");
+
+    const orderList = document.getElementById("orderList");
+    const orderSearch = document.getElementById("orderSearch");
+    const refreshOrdersBtn = document.getElementById("refreshOrders");
+
+    const summaryValue = document.getElementById("summaryValue");
+    const summaryBelow = document.getElementById("summaryBelow");
+    const summaryOrder = document.getElementById("summaryOrder");
+    const alertsList = document.getElementById("alertsList");
+    const alertCount = document.getElementById("alertCount");
+    const managerList = document.getElementById("managerList");
+    const managerCount = document.getElementById("managerCount");
+    const topValueList = document.getElementById("topValueList");
+    const notificationCount = document.getElementById("notificationCount");
+    const notificationList = document.getElementById("notificationList");
+    const dataQualityCount = document.getElementById("dataQualityCount");
+    const dataQualityList = document.getElementById("dataQualityList");
+    const roleView = document.getElementById("roleView");
+    const roleSummary = document.getElementById("roleSummary");
+
+    const exportJsonBtn = document.getElementById("exportJson");
+    const importJsonInput = document.getElementById("importJson");
+    const clearAllBtn = document.getElementById("clearAll");
+    const safetyDaysInput = document.getElementById("safetyDays");
+
+    const recipeForm = {
+      name: document.getElementById("recipeName"),
+      yield: document.getElementById("recipeYield"),
+      price: document.getElementById("recipePrice"),
+      notes: document.getElementById("recipeNotes")
+    };
+    const addIngredientBtn = document.getElementById("addIngredient");
+    const ingredientsList = document.getElementById("ingredientsList");
+    const saveRecipeBtn = document.getElementById("saveRecipe");
+    const deleteRecipeBtn = document.getElementById("deleteRecipe");
+    const recipeStatus = document.getElementById("recipeStatus");
+    const recipeList = document.getElementById("recipeList");
+    const recipeCount = document.getElementById("recipeCount");
+
+    const saleRecipe = document.getElementById("saleRecipe");
+    const saleServings = document.getElementById("saleServings");
+    const saleDate = document.getElementById("saleDate");
+    const saveSaleBtn = document.getElementById("saveSale");
+    const clearSalesBtn = document.getElementById("clearSales");
+    const salesList = document.getElementById("salesList");
+    const saleStatus = document.getElementById("saleStatus");
+
+    const usageItem = document.getElementById("usageItem");
+    const usageQty = document.getElementById("usageQty");
+    const usageDate = document.getElementById("usageDate");
+    const wasteQty = document.getElementById("wasteQty");
+    const wasteReason = document.getElementById("wasteReason");
+    const saveUsageBtn = document.getElementById("saveUsage");
+    const clearUsageBtn = document.getElementById("clearUsage");
+    const usageList = document.getElementById("usageList");
+    const usageStatus = document.getElementById("usageStatus");
+    const varianceTable = document.getElementById("varianceTable");
+    const wasteSummary = document.getElementById("wasteSummary");
+
+    const priceItem = document.getElementById("priceItem");
+    const priceVendor = document.getElementById("priceVendor");
+    const priceAmount = document.getElementById("priceAmount");
+    const priceDate = document.getElementById("priceDate");
+    const priceNote = document.getElementById("priceNote");
+    const savePriceBtn = document.getElementById("savePrice");
+    const clearPricesBtn = document.getElementById("clearPrices");
+    const priceHistoryList = document.getElementById("priceHistoryList");
+
+    const createPoBtn = document.getElementById("createPo");
+    const clearPosBtn = document.getElementById("clearPos");
+    const poList = document.getElementById("poList");
+    const poCount = document.getElementById("poCount");
+
+    const invoiceUpload = document.getElementById("invoiceUpload");
+    const clearInvoicesBtn = document.getElementById("clearInvoices");
+    const invoiceList = document.getElementById("invoiceList");
+
+    const scheduleName = document.getElementById("scheduleName");
+    const scheduleFrequency = document.getElementById("scheduleFrequency");
+    const scheduleNext = document.getElementById("scheduleNext");
+    const saveScheduleBtn = document.getElementById("saveSchedule");
+    const clearSchedulesBtn = document.getElementById("clearSchedules");
+    const scheduleList = document.getElementById("scheduleList");
+
+    const userName = document.getElementById("userName");
+    const userRole = document.getElementById("userRole");
+    const userEmail = document.getElementById("userEmail");
+    const saveUserBtn = document.getElementById("saveUser");
+    const clearUsersBtn = document.getElementById("clearUsers");
+    const userList = document.getElementById("userList");
+
+    const notifyEmail = document.getElementById("notifyEmail");
+    const notifyPhone = document.getElementById("notifyPhone");
+    const saveNotificationsBtn = document.getElementById("saveNotifications");
+
+    const profitReport = document.getElementById("profitReport");
+    const vendorSpend = document.getElementById("vendorSpend");
+    const feedbackFrom = document.getElementById("feedbackFrom");
+    const feedbackTopic = document.getElementById("feedbackTopic");
+    const feedbackNote = document.getElementById("feedbackNote");
+    const saveFeedbackBtn = document.getElementById("saveFeedback");
+    const clearFeedbackBtn = document.getElementById("clearFeedback");
+    const feedbackList = document.getElementById("feedbackList");
+
+    const posUpload = document.getElementById("posUpload");
+    const clearPosUploadsBtn = document.getElementById("clearPosUploads");
+    const posList = document.getElementById("posList");
+
+    function currency(value) {
+      const amount = Number(value);
+      if (!Number.isFinite(amount)) return "$0.00";
+      return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        items: state.items,
+        vendors: state.vendors,
+        recipes: state.recipes,
+        sales: state.sales,
+        usageLogs: state.usageLogs,
+        priceHistory: state.priceHistory,
+        poDrafts: state.poDrafts,
+        invoices: state.invoices,
+        schedules: state.schedules,
+        users: state.users,
+        feedback: state.feedback,
+        posUploads: state.posUploads,
+        settings: state.settings
+      }));
+    }
+
+    function loadState() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (raw) {
+          state.items = raw.items || [];
+          state.vendors = raw.vendors || [];
+          state.recipes = raw.recipes || [];
+          state.sales = raw.sales || [];
+          state.usageLogs = raw.usageLogs || [];
+          state.priceHistory = raw.priceHistory || [];
+          state.poDrafts = raw.poDrafts || [];
+          state.invoices = raw.invoices || [];
+          state.schedules = raw.schedules || [];
+          state.users = raw.users || [];
+          state.feedback = raw.feedback || [];
+          state.posUploads = raw.posUploads || [];
+          state.settings = {
+            safetyDays: Number(raw.settings?.safetyDays ?? 2),
+            notifyEmail: raw.settings?.notifyEmail || "",
+            notifyPhone: raw.settings?.notifyPhone || ""
+          };
+        }
+      } catch {
+        state.items = [];
+        state.vendors = [];
+        state.recipes = [];
+        state.sales = [];
+        state.usageLogs = [];
+        state.priceHistory = [];
+        state.poDrafts = [];
+        state.invoices = [];
+        state.schedules = [];
+        state.users = [];
+        state.feedback = [];
+        state.posUploads = [];
+        state.settings = {
+          safetyDays: 2,
+          notifyEmail: "",
+          notifyPhone: ""
+        };
+      }
+    }
+
+    function setActiveView(viewId) {
+      views.forEach(view => {
+        document.getElementById(view).classList.toggle("hidden", view !== viewId);
+      });
+      nav.querySelectorAll("button").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.view === viewId);
+      });
+    }
+
+    function buildCategoryOptions() {
+      itemForm.category.innerHTML = "";
+      DEFAULT_CATEGORIES.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        itemForm.category.appendChild(option);
+      });
+    }
+
+    function buildVendorOptions() {
+      itemForm.vendor.innerHTML = "";
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "Unassigned";
+      itemForm.vendor.appendChild(defaultOption);
+      state.vendors.forEach(vendor => {
+        const option = document.createElement("option");
+        option.value = vendor.id;
+        option.textContent = vendor.name;
+        itemForm.vendor.appendChild(option);
+      });
+
+      priceVendor.innerHTML = "";
+      const priceDefault = document.createElement("option");
+      priceDefault.value = "";
+      priceDefault.textContent = "Select vendor";
+      priceVendor.appendChild(priceDefault);
+      state.vendors.forEach(vendor => {
+        const option = document.createElement("option");
+        option.value = vendor.id;
+        option.textContent = vendor.name;
+        priceVendor.appendChild(option);
+      });
+    }
+
+    function buildRecipeOptions() {
+      saleRecipe.innerHTML = "";
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "Select recipe";
+      saleRecipe.appendChild(defaultOption);
+      state.recipes.forEach(recipe => {
+        const option = document.createElement("option");
+        option.value = recipe.id;
+        option.textContent = recipe.name;
+        saleRecipe.appendChild(option);
+      });
+    }
+
+    function buildUsageItemOptions() {
+      usageItem.innerHTML = "";
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "Select item";
+      usageItem.appendChild(defaultOption);
+      state.items.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = item.name;
+        usageItem.appendChild(option);
+      });
+
+      priceItem.innerHTML = "";
+      const priceDefault = document.createElement("option");
+      priceDefault.value = "";
+      priceDefault.textContent = "Select item";
+      priceItem.appendChild(priceDefault);
+      state.items.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = item.name;
+        priceItem.appendChild(option);
+      });
+    }
+
+    function getVendorName(vendorId) {
+      if (!vendorId) return "Unassigned";
+      const vendor = state.vendors.find(v => v.id === vendorId);
+      return vendor ? vendor.name : "Unassigned";
+    }
+
+    function getItemValue(item) {
+      const onHand = Number(item.onHand);
+      const cost = Number(item.cost);
+      if (!Number.isFinite(onHand) || !Number.isFinite(cost)) return 0;
+      return onHand * cost;
+    }
+
+    function getSuggestedOrderQty(item) {
+      const onHand = Number(item.onHand);
+      const par = Number(item.par);
+      if (!Number.isFinite(onHand) || !Number.isFinite(par)) return 0;
+      return Math.max(0, par - onHand);
+    }
+
+    function getSuggestedPar(item) {
+      const usage = Number(item.usagePerDay);
+      const lead = Number(item.leadTimeDays);
+      const safetyDays = Number(state.settings.safetyDays || 0);
+      if (!Number.isFinite(usage) || !Number.isFinite(lead)) return Number(item.par) || 0;
+      return Math.max(0, usage * (lead + safetyDays));
+    }
+
+    function getStatus(item) {
+      const onHand = Number(item.onHand);
+      const reorder = Number(item.reorderPoint);
+      const usage = Number(item.usagePerDay);
+      const lead = Number(item.leadTimeDays);
+      if (Number.isFinite(onHand) && Number.isFinite(reorder) && onHand <= reorder) {
+        return { label: "Reorder Now", tone: "alert" };
+      }
+      if (Number.isFinite(onHand) && Number.isFinite(usage) && Number.isFinite(lead) && onHand <= usage * lead) {
+        return { label: "Low Soon", tone: "warn" };
+      }
+      return { label: "Stock OK", tone: "ok" };
+    }
+
+    function resetItemForm() {
+      state.activeItemId = null;
+      Object.values(itemForm).forEach(field => field.value = "");
+      itemForm.unit.value = "each";
+      buildCategoryOptions();
+      buildVendorOptions();
+      deleteItemBtn.disabled = true;
+      formStatus.textContent = "Add a new item";
+    }
+
+    function fillItemForm(item) {
+      itemForm.name.value = item.name;
+      itemForm.category.value = item.category;
+      itemForm.unit.value = item.unit;
+      itemForm.onHand.value = item.onHand;
+      itemForm.par.value = item.par;
+      itemForm.reorder.value = item.reorderPoint;
+      itemForm.cost.value = item.cost;
+      itemForm.vendor.value = item.vendorId || "";
+      itemForm.lead.value = item.leadTimeDays;
+      itemForm.usage.value = item.usagePerDay;
+      itemForm.sku.value = item.sku || "";
+      deleteItemBtn.disabled = false;
+      formStatus.textContent = "Editing item";
+    }
+
+    function validateItem() {
+      if (!itemForm.name.value.trim()) return "Item name is required.";
+      return null;
+    }
+
+    function saveItem() {
+      const error = validateItem();
+      if (error) {
+        alert(error);
+        return;
+      }
+
+      const itemData = {
+        id: state.activeItemId || crypto.randomUUID(),
+        name: itemForm.name.value.trim(),
+        category: itemForm.category.value,
+        unit: itemForm.unit.value,
+        onHand: Number(itemForm.onHand.value || 0),
+        par: Number(itemForm.par.value || 0),
+        reorderPoint: Number(itemForm.reorder.value || 0),
+        cost: Number(itemForm.cost.value || 0),
+        vendorId: itemForm.vendor.value,
+        leadTimeDays: Number(itemForm.lead.value || 0),
+        usagePerDay: Number(itemForm.usage.value || 0),
+        sku: itemForm.sku.value.trim(),
+        updatedAt: Date.now()
+      };
+
+      if (state.activeItemId) {
+        const index = state.items.findIndex(item => item.id === state.activeItemId);
+        if (index >= 0) state.items[index] = itemData;
+      } else {
+        state.items.unshift(itemData);
+      }
+
+      saveState();
+      resetItemForm();
+      renderAll();
+    }
+
+    function deleteItem() {
+      if (!state.activeItemId) return;
+      const item = state.items.find(i => i.id === state.activeItemId);
+      if (!item) return;
+      const ok = confirm(`Delete ${item.name}?`);
+      if (!ok) return;
+      state.items = state.items.filter(i => i.id !== item.id);
+      saveState();
+      resetItemForm();
+      renderAll();
+    }
+
+    function renderItems() {
+      const query = inventorySearch.value.trim().toLowerCase();
+      const filtered = state.items.filter(item => {
+        const vendorName = getVendorName(item.vendorId).toLowerCase();
+        return (
+          item.name.toLowerCase().includes(query) ||
+          item.category.toLowerCase().includes(query) ||
+          vendorName.includes(query)
+        );
+      });
+
+      itemCountEl.textContent = `${filtered.length} items`;
+      itemsTable.innerHTML = "";
+
+      filtered
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(item => {
+          const status = getStatus(item);
+          const missingCost = Number(item.cost) <= 0;
+          const missingVendor = !item.vendorId;
+          const missingPar = Number(item.par) <= 0;
+          const dataIssues = [missingCost, missingVendor, missingPar].filter(Boolean).length;
+          const dataLabel = dataIssues === 0 ? "Complete" : `${dataIssues} missing`;
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>
+              <strong>${item.name}</strong><br />
+              <span class="muted">${item.unit} • ${item.sku || "No SKU"}</span>
+            </td>
+            <td>${item.category}</td>
+            <td>${getVendorName(item.vendorId)}</td>
+            <td>${item.onHand}</td>
+            <td>${item.par}</td>
+            <td>${getSuggestedPar(item).toFixed(1)}</td>
+            <td>${item.reorderPoint}</td>
+            <td><span class="pill ${status.tone}">${status.label}</span></td>
+            <td><span class="pill ${dataIssues === 0 ? "ok" : "warn"}">${dataLabel}</span></td>
+            <td>${currency(getItemValue(item))}</td>
+          `;
+          row.style.cursor = "pointer";
+          row.addEventListener("click", () => {
+            state.activeItemId = item.id;
+            fillItemForm(item);
+            setActiveView("inventory");
+          });
+          itemsTable.appendChild(row);
+        });
+    }
+
+    function renderCounts() {
+      const query = countSearch.value.trim().toLowerCase();
+      const filtered = state.items.filter(item => item.name.toLowerCase().includes(query));
+      countList.innerHTML = "";
+
+      if (!filtered.length) {
+        countList.innerHTML = "<div class='muted'>No items match this search.</div>";
+        return;
+      }
+
+      filtered.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${item.name}</strong>
+              <div class="muted">${item.category} • ${item.unit}</div>
+            </div>
+            <div class="muted">Current: ${item.onHand}</div>
+          </div>
+          <div style="margin-top: 10px;">
+            <label>New count</label>
+            <input type="number" min="0" step="0.1" data-count-id="${item.id}" placeholder="${item.onHand}" />
+          </div>
+        `;
+        countList.appendChild(card);
+      });
+    }
+
+    function applyCounts() {
+      const inputs = countList.querySelectorAll("input[data-count-id]");
+      let updated = 0;
+      inputs.forEach(input => {
+        if (input.value === "") return;
+        const item = state.items.find(i => i.id === input.dataset.countId);
+        if (!item) return;
+        item.onHand = Number(input.value);
+        item.updatedAt = Date.now();
+        updated += 1;
+      });
+
+      if (updated > 0) {
+        saveState();
+        renderAll();
+        alert(`Updated ${updated} item(s).`);
+      } else {
+        alert("No counts entered.");
+      }
+    }
+
+    function saveSchedule() {
+      if (!scheduleName.value.trim()) {
+        alert("Schedule name is required.");
+        return;
+      }
+      state.schedules.unshift({
+        id: crypto.randomUUID(),
+        name: scheduleName.value.trim(),
+        frequency: scheduleFrequency.value,
+        nextDate: scheduleNext.value,
+        createdAt: Date.now()
+      });
+      scheduleName.value = "";
+      scheduleNext.value = "";
+      saveState();
+      renderSchedules();
+    }
+
+    function clearSchedules() {
+      const ok = confirm("Clear all schedules?");
+      if (!ok) return;
+      state.schedules = [];
+      saveState();
+      renderSchedules();
+    }
+
+    function renderSchedules() {
+      scheduleList.innerHTML = "";
+      if (!state.schedules.length) {
+        scheduleList.innerHTML = "<div class='muted'>No schedules yet.</div>";
+        return;
+      }
+      state.schedules.forEach(schedule => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${schedule.name}</strong>
+              <div class="muted">${schedule.frequency} • Next: ${schedule.nextDate || "TBD"}</div>
+            </div>
+          </div>
+        `;
+        scheduleList.appendChild(card);
+      });
+    }
+
+    function resetVendorForm() {
+      state.activeVendorId = null;
+      Object.values(vendorForm).forEach(field => field.value = "");
+      deleteVendorBtn.disabled = true;
+      vendorStatus.textContent = "Add a new vendor";
+    }
+
+    function saveVendor() {
+      if (!vendorForm.name.value.trim()) {
+        alert("Vendor name is required.");
+        return;
+      }
+
+      const vendorData = {
+        id: state.activeVendorId || crypto.randomUUID(),
+        name: vendorForm.name.value.trim(),
+        phone: vendorForm.phone.value.trim(),
+        email: vendorForm.email.value.trim(),
+        notes: vendorForm.notes.value.trim(),
+        updatedAt: Date.now()
+      };
+
+      if (state.activeVendorId) {
+        const index = state.vendors.findIndex(v => v.id === state.activeVendorId);
+        if (index >= 0) state.vendors[index] = vendorData;
+      } else {
+        state.vendors.unshift(vendorData);
+      }
+
+      saveState();
+      resetVendorForm();
+      buildVendorOptions();
+      renderAll();
+    }
+
+    function deleteVendor() {
+      if (!state.activeVendorId) return;
+      const vendor = state.vendors.find(v => v.id === state.activeVendorId);
+      if (!vendor) return;
+      const ok = confirm(`Delete ${vendor.name}?`);
+      if (!ok) return;
+      state.vendors = state.vendors.filter(v => v.id !== vendor.id);
+      state.items = state.items.map(item => item.vendorId === vendor.id ? { ...item, vendorId: "" } : item);
+      saveState();
+      resetVendorForm();
+      buildVendorOptions();
+      renderAll();
+    }
+
+    function renderVendors() {
+      vendorCount.textContent = `${state.vendors.length} vendors`;
+      vendorList.innerHTML = "";
+
+      if (!state.vendors.length) {
+        vendorList.innerHTML = "<div class='muted'>No vendors yet. Add your first supplier above.</div>";
+        return;
+      }
+
+      state.vendors.forEach(vendor => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${vendor.name}</strong>
+              <div class="muted">${vendor.email || "No email"} • ${vendor.phone || "No phone"}</div>
+            </div>
+            <button class="ghost" data-vendor-id="${vendor.id}">Edit</button>
+          </div>
+          <div class="muted" style="margin-top: 8px;">${vendor.notes || "No notes"}</div>
+        `;
+        card.querySelector("button").addEventListener("click", () => {
+          state.activeVendorId = vendor.id;
+          vendorForm.name.value = vendor.name;
+          vendorForm.phone.value = vendor.phone;
+          vendorForm.email.value = vendor.email;
+          vendorForm.notes.value = vendor.notes;
+          deleteVendorBtn.disabled = false;
+          vendorStatus.textContent = "Editing vendor";
+          setActiveView("vendors");
+        });
+        vendorList.appendChild(card);
+      });
+    }
+
+    function renderOrders() {
+      const query = orderSearch.value.trim().toLowerCase();
+      const suggestions = state.items
+        .map(item => {
+          const orderQty = getSuggestedOrderQty(item);
+          const status = getStatus(item);
+          return { item, orderQty, status };
+        })
+        .filter(s => s.orderQty > 0)
+        .filter(s => {
+          const vendorName = getVendorName(s.item.vendorId).toLowerCase();
+          return (
+            s.item.name.toLowerCase().includes(query) ||
+            s.item.category.toLowerCase().includes(query) ||
+            vendorName.includes(query)
+          );
+        });
+
+      orderList.innerHTML = "";
+      if (!suggestions.length) {
+        orderList.innerHTML = "<div class='muted'>No suggested orders right now. Your stock levels look healthy.</div>";
+        return;
+      }
+
+      suggestions.sort((a, b) => b.orderQty - a.orderQty).forEach(s => {
+        const item = s.item;
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${item.name}</strong>
+              <div class="muted">${item.category} • Vendor: ${getVendorName(item.vendorId)}</div>
+            </div>
+            <span class="pill ${s.status.tone}">${s.status.label}</span>
+          </div>
+          <div class="grid-2" style="margin-top: 10px;">
+            <div>
+              <div class="muted">On-hand</div>
+              <strong>${item.onHand} ${item.unit}</strong>
+            </div>
+            <div>
+              <div class="muted">Par level</div>
+              <strong>${item.par} ${item.unit}</strong>
+            </div>
+            <div>
+              <div class="muted">Suggested par</div>
+              <strong>${getSuggestedPar(item).toFixed(1)} ${item.unit}</strong>
+            </div>
+            <div>
+              <div class="muted">Suggested order</div>
+              <strong>${s.orderQty} ${item.unit}</strong>
+            </div>
+            <div>
+              <div class="muted">Estimated cost</div>
+              <strong>${currency(s.orderQty * Number(item.cost || 0))}</strong>
+            </div>
+          </div>
+        `;
+        orderList.appendChild(card);
+      });
+    }
+
+    function generatePoDrafts() {
+      const suggestions = state.items
+        .map(item => ({
+          item,
+          orderQty: getSuggestedOrderQty(item)
+        }))
+        .filter(entry => entry.orderQty > 0);
+
+      const grouped = {};
+      suggestions.forEach(entry => {
+        const vendorId = entry.item.vendorId || "unassigned";
+        if (!grouped[vendorId]) grouped[vendorId] = [];
+        grouped[vendorId].push(entry);
+      });
+
+      state.poDrafts = Object.entries(grouped).map(([vendorId, entries]) => {
+        const vendorName = vendorId === "unassigned" ? "Unassigned" : getVendorName(vendorId);
+        return {
+          id: crypto.randomUUID(),
+          vendorId,
+          vendorName,
+          createdAt: new Date().toISOString(),
+          status: "Draft",
+          items: entries.map(entry => ({
+            itemId: entry.item.id,
+            name: entry.item.name,
+            unit: entry.item.unit,
+            qty: entry.orderQty,
+            cost: Number(entry.item.cost || 0)
+          }))
+        };
+      });
+
+      saveState();
+      renderPoDrafts();
+    }
+
+    function clearPoDrafts() {
+      const ok = confirm("Clear all PO drafts?");
+      if (!ok) return;
+      state.poDrafts = [];
+      saveState();
+      renderPoDrafts();
+    }
+
+    function renderPoDrafts() {
+      poCount.textContent = `${state.poDrafts.length} drafts`;
+      poList.innerHTML = "";
+      if (!state.poDrafts.length) {
+        poList.innerHTML = "<div class='muted'>No PO drafts yet.</div>";
+        return;
+      }
+      state.poDrafts.forEach(po => {
+        const total = po.items.reduce((sum, item) => sum + item.qty * item.cost, 0);
+        const itemsHtml = po.items.map(item => `<div class="muted">${item.name}: ${item.qty} ${item.unit}</div>`).join("");
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${po.vendorName}</strong>
+              <div class="muted">${po.status} • ${new Date(po.createdAt).toLocaleDateString()}</div>
+            </div>
+            <div><strong>${currency(total)}</strong></div>
+          </div>
+          <div style="margin-top: 8px;">${itemsHtml}</div>
+        `;
+        poList.appendChild(card);
+      });
+    }
+
+    function logInvoice(file) {
+      if (!file) return;
+      state.invoices.unshift({
+        id: crypto.randomUUID(),
+        name: file.name,
+        uploadedAt: new Date().toISOString()
+      });
+      saveState();
+      renderInvoices();
+    }
+
+    function clearInvoices() {
+      const ok = confirm("Clear invoices?");
+      if (!ok) return;
+      state.invoices = [];
+      saveState();
+      renderInvoices();
+    }
+
+    function renderInvoices() {
+      invoiceList.innerHTML = "";
+      if (!state.invoices.length) {
+        invoiceList.innerHTML = "<div class='muted'>No invoices uploaded.</div>";
+        return;
+      }
+      state.invoices.forEach(invoice => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${invoice.name}</strong>
+              <div class="muted">Uploaded ${new Date(invoice.uploadedAt).toLocaleString()}</div>
+            </div>
+          </div>
+        `;
+        invoiceList.appendChild(card);
+      });
+    }
+
+    function renderDashboard() {
+      const totalValue = state.items.reduce((sum, item) => sum + getItemValue(item), 0);
+      const belowCount = state.items.filter(item => Number(item.onHand) <= Number(item.reorderPoint || 0)).length;
+      const suggestedValue = state.items.reduce((sum, item) => sum + (getSuggestedOrderQty(item) * Number(item.cost || 0)), 0);
+
+      summaryValue.textContent = currency(totalValue);
+      summaryBelow.textContent = `${belowCount}`;
+      summaryOrder.textContent = currency(suggestedValue);
+
+      const alerts = state.items
+        .map(item => ({ item, status: getStatus(item) }))
+        .filter(({ status }) => status.tone !== "ok")
+        .sort((a, b) => getSuggestedOrderQty(b.item) - getSuggestedOrderQty(a.item));
+
+      alertCount.textContent = `${alerts.length} alerts`;
+      alertsList.innerHTML = "";
+
+      if (!alerts.length) {
+        alertsList.innerHTML = "<div class='muted'>No alerts — everything looks stocked.</div>";
+      } else {
+        alerts.forEach(({ item, status }) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="section-title">
+              <div>
+                <strong>${item.name}</strong>
+                <div class="muted">${item.category} • ${getVendorName(item.vendorId)}</div>
+              </div>
+              <span class="pill ${status.tone}">${status.label}</span>
+            </div>
+            <div class="muted" style="margin-top: 8px;">On-hand: ${item.onHand} • Reorder point: ${item.reorderPoint}</div>
+          `;
+          alertsList.appendChild(card);
+        });
+      }
+
+      const managerAlerts = state.items
+        .map(item => {
+          const suggestedPar = getSuggestedPar(item);
+          const currentPar = Number(item.par || 0);
+          if (!Number.isFinite(suggestedPar) || suggestedPar <= 0) return null;
+          if (currentPar >= suggestedPar) return null;
+          return { item, suggestedPar };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.suggestedPar - a.suggestedPar);
+
+      managerCount.textContent = `${managerAlerts.length} alerts`;
+      managerList.innerHTML = "";
+
+      if (!managerAlerts.length) {
+        managerList.innerHTML = "<div class='muted'>No par changes needed right now.</div>";
+      } else {
+        managerAlerts.slice(0, 6).forEach(({ item, suggestedPar }) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="section-title">
+              <div>
+                <strong>${item.name}</strong>
+                <div class="muted">Current par: ${item.par} • Suggested: ${suggestedPar.toFixed(1)} ${item.unit}</div>
+              </div>
+              <span class="pill warn">Raise par</span>
+            </div>
+            <div class="muted" style="margin-top: 8px;">Usage: ${item.usagePerDay || 0} / day • Lead: ${item.leadTimeDays || 0} days</div>
+          `;
+          managerList.appendChild(card);
+        });
+      }
+
+      const notifications = managerAlerts.map(({ item, suggestedPar }) => (
+        `${item.name}: raise par to ${suggestedPar.toFixed(1)} ${item.unit}`
+      ));
+      notificationCount.textContent = `${notifications.length} messages`;
+      notificationList.innerHTML = notifications.length
+        ? notifications.map(msg => `<div class="card">${msg}</div>`).join("")
+        : "<div class='muted'>No notifications queued.</div>";
+
+      const dataIssues = state.items
+        .map(item => {
+          const issues = [];
+          if (Number(item.cost) <= 0) issues.push("missing cost");
+          if (!item.vendorId) issues.push("missing vendor");
+          if (Number(item.par) <= 0) issues.push("missing par");
+          if (!issues.length) return null;
+          return { item, issues };
+        })
+        .filter(Boolean);
+
+      dataQualityCount.textContent = `${dataIssues.length} issues`;
+      dataQualityList.innerHTML = "";
+      if (!dataIssues.length) {
+        dataQualityList.innerHTML = "<div class='muted'>All items have complete data.</div>";
+      } else {
+        dataIssues.slice(0, 6).forEach(({ item, issues }) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="section-title">
+              <div>
+                <strong>${item.name}</strong>
+                <div class="muted">${issues.join(" • ")}</div>
+              </div>
+              <span class="pill warn">Needs review</span>
+            </div>
+          `;
+          dataQualityList.appendChild(card);
+        });
+      }
+
+      const topItems = state.items
+        .map(item => ({ item, value: getItemValue(item) }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+
+      topValueList.innerHTML = "";
+      if (!topItems.length) {
+        topValueList.innerHTML = "<div class='muted'>Add items to see value insights.</div>";
+      } else {
+        topItems.forEach(({ item, value }) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="section-title">
+              <div>
+                <strong>${item.name}</strong>
+                <div class="muted">${item.category}</div>
+              </div>
+              <div>${currency(value)}</div>
+            </div>
+            <div class="muted" style="margin-top: 8px;">${item.onHand} ${item.unit} @ ${currency(item.cost)} / unit</div>
+          `;
+          topValueList.appendChild(card);
+        });
+      }
+    }
+
+    function renderRoleSummary() {
+      const roleMessages = {
+        manager: "Managers: review reorder alerts, data quality issues, and approve PO drafts.",
+        buyer: "Buyers: prioritize vendor spend, generate PO drafts, and confirm lead times.",
+        chef: "Chefs: focus on usage variance, waste highlights, and recipe costs.",
+        owner: "Owners: track profitability, total inventory value, and vendor spend.",
+        vendor: "Vendors: review PO drafts and ensure price history is current."
+      };
+      roleSummary.textContent = roleMessages[roleView.value] || roleMessages.manager;
+    }
+
+    function createIngredientRow(ingredient = { itemId: "", qty: "" }) {
+      const row = document.createElement("div");
+      row.className = "ingredient-row";
+      row.innerHTML = `
+        <div>
+          <label>Item</label>
+          <select class="ingredient-item"></select>
+        </div>
+        <div>
+          <label>Qty</label>
+          <input class="ingredient-qty" type="number" min="0" step="0.1" />
+        </div>
+        <button class="danger" type="button">Remove</button>
+      `;
+
+      const select = row.querySelector("select");
+      const qtyInput = row.querySelector("input");
+      const removeBtn = row.querySelector("button");
+
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Select item";
+      select.appendChild(placeholder);
+      state.items.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = item.name;
+        select.appendChild(option);
+      });
+
+      select.value = ingredient.itemId;
+      qtyInput.value = ingredient.qty;
+
+      removeBtn.addEventListener("click", () => {
+        row.remove();
+      });
+
+      return row;
+    }
+
+    function resetRecipeForm() {
+      state.activeRecipeId = null;
+      recipeForm.name.value = "";
+      recipeForm.yield.value = "";
+      recipeForm.price.value = "";
+      recipeForm.notes.value = "";
+      ingredientsList.innerHTML = "";
+      addIngredientRow();
+      deleteRecipeBtn.disabled = true;
+      recipeStatus.textContent = "Add a new recipe";
+    }
+
+    function addIngredientRow() {
+      ingredientsList.appendChild(createIngredientRow());
+    }
+
+    function getIngredientData() {
+      const rows = ingredientsList.querySelectorAll(".ingredient-row");
+      const ingredients = [];
+      rows.forEach(row => {
+        const itemId = row.querySelector(".ingredient-item").value;
+        const qty = Number(row.querySelector(".ingredient-qty").value || 0);
+        if (!itemId) return;
+        ingredients.push({ itemId, qty });
+      });
+      return ingredients;
+    }
+
+    function calculateRecipeCost(recipe) {
+      return recipe.ingredients.reduce((sum, ingredient) => {
+        const item = state.items.find(i => i.id === ingredient.itemId);
+        if (!item) return sum;
+        return sum + Number(item.cost || 0) * Number(ingredient.qty || 0);
+      }, 0);
+    }
+
+    function fillRecipeForm(recipe) {
+      recipeForm.name.value = recipe.name;
+      recipeForm.yield.value = recipe.yield;
+      recipeForm.price.value = recipe.menuPrice || "";
+      recipeForm.notes.value = recipe.notes;
+      ingredientsList.innerHTML = "";
+      recipe.ingredients.forEach(ingredient => {
+        ingredientsList.appendChild(createIngredientRow(ingredient));
+      });
+      deleteRecipeBtn.disabled = false;
+      recipeStatus.textContent = "Editing recipe";
+    }
+
+    function saveRecipe() {
+      if (!recipeForm.name.value.trim()) {
+        alert("Recipe name is required.");
+        return;
+      }
+      const ingredients = getIngredientData();
+      if (!ingredients.length) {
+        alert("Add at least one ingredient.");
+        return;
+      }
+
+      const recipeData = {
+        id: state.activeRecipeId || crypto.randomUUID(),
+        name: recipeForm.name.value.trim(),
+        yield: Number(recipeForm.yield.value || 1),
+        menuPrice: Number(recipeForm.price.value || 0),
+        notes: recipeForm.notes.value.trim(),
+        ingredients,
+        updatedAt: Date.now()
+      };
+
+      if (state.activeRecipeId) {
+        const index = state.recipes.findIndex(r => r.id === state.activeRecipeId);
+        if (index >= 0) state.recipes[index] = recipeData;
+      } else {
+        state.recipes.unshift(recipeData);
+      }
+
+      saveState();
+      resetRecipeForm();
+      renderAll();
+    }
+
+    function deleteRecipe() {
+      if (!state.activeRecipeId) return;
+      const recipe = state.recipes.find(r => r.id === state.activeRecipeId);
+      if (!recipe) return;
+      const ok = confirm(`Delete ${recipe.name}?`);
+      if (!ok) return;
+      state.recipes = state.recipes.filter(r => r.id !== recipe.id);
+      saveState();
+      resetRecipeForm();
+      renderAll();
+    }
+
+    function renderRecipes() {
+      recipeCount.textContent = `${state.recipes.length} recipes`;
+      recipeList.innerHTML = "";
+
+      if (!state.recipes.length) {
+        recipeList.innerHTML = "<div class='muted'>No recipes yet. Add your first recipe above.</div>";
+        return;
+      }
+
+      state.recipes.forEach(recipe => {
+        const cost = calculateRecipeCost(recipe);
+        const perServing = recipe.yield ? cost / recipe.yield : cost;
+        const margin = recipe.menuPrice ? ((recipe.menuPrice - perServing) / recipe.menuPrice) * 100 : 0;
+        const card = document.createElement("div");
+        card.className = "card";
+        const ingredientsHtml = recipe.ingredients.map(ingredient => {
+          const item = state.items.find(i => i.id === ingredient.itemId);
+          return `<div class="muted">${item ? item.name : "Unknown"}: ${ingredient.qty}</div>`;
+        }).join("");
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${recipe.name}</strong>
+              <div class="muted">Yield: ${recipe.yield} servings</div>
+            </div>
+            <button class="ghost" data-recipe-id="${recipe.id}">Edit</button>
+          </div>
+          <div class="grid-3" style="margin-top: 10px;">
+            <div>
+              <div class="muted">Batch cost</div>
+              <strong>${currency(cost)}</strong>
+            </div>
+            <div>
+              <div class="muted">Cost per serving</div>
+              <strong>${currency(perServing)}</strong>
+            </div>
+            <div>
+              <div class="muted">Food cost %</div>
+              <strong>${recipe.menuPrice ? `${(100 - margin).toFixed(1)}%` : "N/A"}</strong>
+            </div>
+          </div>
+          <div style="margin-top: 8px;">${ingredientsHtml}</div>
+          <div class="muted" style="margin-top: 8px;">${recipe.notes || "No notes"}</div>
+        `;
+        card.querySelector("button").addEventListener("click", () => {
+          state.activeRecipeId = recipe.id;
+          fillRecipeForm(recipe);
+          setActiveView("recipes");
+        });
+        recipeList.appendChild(card);
+      });
+    }
+
+    function logSale() {
+      if (!saleRecipe.value) {
+        alert("Select a recipe.");
+        return;
+      }
+      const servings = Number(saleServings.value || 0);
+      if (servings <= 0) {
+        alert("Enter servings sold.");
+        return;
+      }
+      const entry = {
+        id: crypto.randomUUID(),
+        recipeId: saleRecipe.value,
+        servings,
+        date: saleDate.value || new Date().toISOString().slice(0, 10)
+      };
+      state.sales.unshift(entry);
+      saveState();
+      saleServings.value = "";
+      saleDate.value = "";
+      saleStatus.textContent = "Sale logged";
+      renderAll();
+    }
+
+    function clearSales() {
+      const ok = confirm("Clear all sales logs?");
+      if (!ok) return;
+      state.sales = [];
+      saveState();
+      renderAll();
+    }
+
+    function renderSales() {
+      salesList.innerHTML = "";
+      if (!state.sales.length) {
+        salesList.innerHTML = "<div class='muted'>No sales logged yet.</div>";
+        return;
+      }
+      state.sales.slice(0, 10).forEach(entry => {
+        const recipe = state.recipes.find(r => r.id === entry.recipeId);
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${recipe ? recipe.name : "Unknown recipe"}</strong>
+              <div class="muted">${entry.date}</div>
+            </div>
+            <div><strong>${entry.servings}</strong> servings</div>
+          </div>
+        `;
+        salesList.appendChild(card);
+      });
+    }
+
+    function logUsage() {
+      if (!usageItem.value) {
+        alert("Select an item.");
+        return;
+      }
+      const usedQty = Number(usageQty.value || 0);
+      const waste = Number(wasteQty.value || 0);
+      if (usedQty <= 0 && waste <= 0) {
+        alert("Enter actual usage or waste quantity.");
+        return;
+      }
+      const entry = {
+        id: crypto.randomUUID(),
+        itemId: usageItem.value,
+        usedQty,
+        wasteQty: waste,
+        wasteReason: wasteReason.value.trim(),
+        date: usageDate.value || new Date().toISOString().slice(0, 10)
+      };
+      state.usageLogs.unshift(entry);
+      saveState();
+      usageQty.value = "";
+      wasteQty.value = "";
+      wasteReason.value = "";
+      usageDate.value = "";
+      usageStatus.textContent = "Usage logged";
+      renderAll();
+    }
+
+    function clearUsage() {
+      const ok = confirm("Clear all usage logs?");
+      if (!ok) return;
+      state.usageLogs = [];
+      saveState();
+      renderAll();
+    }
+
+    function renderUsageLogs() {
+      usageList.innerHTML = "";
+      if (!state.usageLogs.length) {
+        usageList.innerHTML = "<div class='muted'>No usage logs yet.</div>";
+        return;
+      }
+      state.usageLogs.slice(0, 10).forEach(entry => {
+        const item = state.items.find(i => i.id === entry.itemId);
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${item ? item.name : "Unknown item"}</strong>
+              <div class="muted">${entry.date}</div>
+            </div>
+            <div class="muted">Used: ${entry.usedQty} • Waste: ${entry.wasteQty || 0}</div>
+          </div>
+          <div class="muted" style="margin-top: 8px;">${entry.wasteReason || "No waste reason"}</div>
+        `;
+        usageList.appendChild(card);
+      });
+    }
+
+    function calculateTheoreticalUsage() {
+      const totals = {};
+      state.sales.forEach(entry => {
+        const recipe = state.recipes.find(r => r.id === entry.recipeId);
+        if (!recipe) return;
+        recipe.ingredients.forEach(ingredient => {
+          const qty = Number(ingredient.qty || 0) * Number(entry.servings || 0);
+          totals[ingredient.itemId] = (totals[ingredient.itemId] || 0) + qty;
+        });
+      });
+      return totals;
+    }
+
+    function calculateActualUsage() {
+      const totals = {};
+      const wasteTotals = {};
+      state.usageLogs.forEach(entry => {
+        totals[entry.itemId] = (totals[entry.itemId] || 0) + Number(entry.usedQty || 0);
+        wasteTotals[entry.itemId] = (wasteTotals[entry.itemId] || 0) + Number(entry.wasteQty || 0);
+      });
+      return { totals, wasteTotals };
+    }
+
+    function renderVariance() {
+      const theoretical = calculateTheoreticalUsage();
+      const actual = calculateActualUsage();
+      varianceTable.innerHTML = "";
+
+      if (!state.items.length) {
+        varianceTable.innerHTML = "<tr><td colspan='5' class='muted'>Add items and usage to see variance.</td></tr>";
+        return;
+      }
+
+      state.items.forEach(item => {
+        const theory = theoretical[item.id] || 0;
+        const actualUsed = actual.totals[item.id] || 0;
+        const waste = actual.wasteTotals[item.id] || 0;
+        const variance = actualUsed - theory;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.name}</td>
+          <td>${theory.toFixed(2)} ${item.unit}</td>
+          <td>${actualUsed.toFixed(2)} ${item.unit}</td>
+          <td>${waste.toFixed(2)} ${item.unit}</td>
+          <td>${variance.toFixed(2)} ${item.unit}</td>
+        `;
+        varianceTable.appendChild(row);
+      });
+    }
+
+    function renderWasteSummary() {
+      const actual = calculateActualUsage();
+      const entries = Object.entries(actual.wasteTotals)
+        .map(([itemId, qty]) => {
+          const item = state.items.find(i => i.id === itemId);
+          return item ? { name: item.name, qty } : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.qty - a.qty)
+        .slice(0, 5);
+
+      wasteSummary.innerHTML = "";
+      if (!entries.length) {
+        wasteSummary.innerHTML = "<div class='muted'>No waste logged yet.</div>";
+        return;
+      }
+      entries.forEach(entry => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${entry.name}</strong>
+              <div class="muted">Waste: ${entry.qty.toFixed(2)}</div>
+            </div>
+          </div>
+        `;
+        wasteSummary.appendChild(card);
+      });
+    }
+
+    function logPrice() {
+      if (!priceItem.value || !priceVendor.value || !priceAmount.value) {
+        alert("Select item, vendor, and price.");
+        return;
+      }
+      state.priceHistory.unshift({
+        id: crypto.randomUUID(),
+        itemId: priceItem.value,
+        vendorId: priceVendor.value,
+        amount: Number(priceAmount.value),
+        date: priceDate.value || new Date().toISOString().slice(0, 10),
+        note: priceNote.value.trim()
+      });
+      priceAmount.value = "";
+      priceDate.value = "";
+      priceNote.value = "";
+      saveState();
+      renderPriceHistory();
+    }
+
+    function clearPrices() {
+      const ok = confirm("Clear price history?");
+      if (!ok) return;
+      state.priceHistory = [];
+      saveState();
+      renderPriceHistory();
+    }
+
+    function renderPriceHistory() {
+      priceHistoryList.innerHTML = "";
+      if (!state.priceHistory.length) {
+        priceHistoryList.innerHTML = "<div class='muted'>No price history logged.</div>";
+        return;
+      }
+      state.priceHistory.slice(0, 10).forEach(entry => {
+        const item = state.items.find(i => i.id === entry.itemId);
+        const vendor = getVendorName(entry.vendorId);
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${item ? item.name : "Unknown item"}</strong>
+              <div class="muted">${vendor} • ${entry.date}</div>
+            </div>
+            <div><strong>${currency(entry.amount)}</strong></div>
+          </div>
+          <div class="muted" style="margin-top: 8px;">${entry.note || "No notes"}</div>
+        `;
+        priceHistoryList.appendChild(card);
+      });
+    }
+
+    function saveUser() {
+      if (!userName.value.trim()) {
+        alert("User name is required.");
+        return;
+      }
+      state.users.unshift({
+        id: crypto.randomUUID(),
+        name: userName.value.trim(),
+        role: userRole.value,
+        email: userEmail.value.trim(),
+        createdAt: Date.now()
+      });
+      userName.value = "";
+      userEmail.value = "";
+      saveState();
+      renderUsers();
+    }
+
+    function clearUsers() {
+      const ok = confirm("Clear all users?");
+      if (!ok) return;
+      state.users = [];
+      saveState();
+      renderUsers();
+    }
+
+    function renderUsers() {
+      userList.innerHTML = "";
+      if (!state.users.length) {
+        userList.innerHTML = "<div class='muted'>No users added.</div>";
+        return;
+      }
+      state.users.forEach(user => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${user.name}</strong>
+              <div class="muted">${user.role} • ${user.email || "No email"}</div>
+            </div>
+          </div>
+        `;
+        userList.appendChild(card);
+      });
+    }
+
+    function saveNotificationSettings() {
+      state.settings.notifyEmail = notifyEmail.value.trim();
+      state.settings.notifyPhone = notifyPhone.value.trim();
+      saveState();
+      alert("Notification settings saved.");
+    }
+
+    function renderReports() {
+      profitReport.innerHTML = "";
+      if (!state.recipes.length) {
+        profitReport.innerHTML = "<div class='muted'>Add recipes to view profitability.</div>";
+      } else {
+        state.recipes.forEach(recipe => {
+          const cost = calculateRecipeCost(recipe);
+          const perServing = recipe.yield ? cost / recipe.yield : cost;
+          const price = recipe.menuPrice || 0;
+          const margin = price ? ((price - perServing) / price) * 100 : 0;
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="section-title">
+              <div>
+                <strong>${recipe.name}</strong>
+                <div class="muted">Menu: ${price ? currency(price) : "N/A"}</div>
+              </div>
+              <div>${price ? `${margin.toFixed(1)}% margin` : "N/A"}</div>
+            </div>
+            <div class="muted" style="margin-top: 8px;">Cost per serving: ${currency(perServing)}</div>
+          `;
+          profitReport.appendChild(card);
+        });
+      }
+
+      const vendorTotals = {};
+      state.items.forEach(item => {
+        const vendor = getVendorName(item.vendorId);
+        const total = getSuggestedOrderQty(item) * Number(item.cost || 0);
+        vendorTotals[vendor] = (vendorTotals[vendor] || 0) + total;
+      });
+
+      vendorSpend.innerHTML = "";
+      Object.entries(vendorTotals).forEach(([vendor, total]) => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${vendor}</strong>
+              <div class="muted">Suggested spend</div>
+            </div>
+            <div>${currency(total)}</div>
+          </div>
+        `;
+        vendorSpend.appendChild(card);
+      });
+    }
+
+    function saveFeedback() {
+      if (!feedbackTopic.value.trim()) {
+        alert("Feedback topic required.");
+        return;
+      }
+      state.feedback.unshift({
+        id: crypto.randomUUID(),
+        from: feedbackFrom.value,
+        topic: feedbackTopic.value.trim(),
+        note: feedbackNote.value.trim(),
+        createdAt: new Date().toISOString()
+      });
+      feedbackTopic.value = "";
+      feedbackNote.value = "";
+      saveState();
+      renderFeedback();
+    }
+
+    function clearFeedback() {
+      const ok = confirm("Clear all feedback?");
+      if (!ok) return;
+      state.feedback = [];
+      saveState();
+      renderFeedback();
+    }
+
+    function renderFeedback() {
+      feedbackList.innerHTML = "";
+      if (!state.feedback.length) {
+        feedbackList.innerHTML = "<div class='muted'>No feedback captured yet.</div>";
+        return;
+      }
+      state.feedback.forEach(entry => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${entry.topic}</strong>
+              <div class="muted">${entry.from} • ${new Date(entry.createdAt).toLocaleDateString()}</div>
+            </div>
+          </div>
+          <div class="muted" style="margin-top: 8px;">${entry.note || "No notes"}</div>
+        `;
+        feedbackList.appendChild(card);
+      });
+    }
+
+    function logPosUpload(file) {
+      if (!file) return;
+      state.posUploads.unshift({
+        id: crypto.randomUUID(),
+        name: file.name,
+        uploadedAt: new Date().toISOString()
+      });
+      saveState();
+      renderPosUploads();
+    }
+
+    function clearPosUploads() {
+      const ok = confirm("Clear POS uploads?");
+      if (!ok) return;
+      state.posUploads = [];
+      saveState();
+      renderPosUploads();
+    }
+
+    function renderPosUploads() {
+      posList.innerHTML = "";
+      if (!state.posUploads.length) {
+        posList.innerHTML = "<div class='muted'>No POS uploads yet.</div>";
+        return;
+      }
+      state.posUploads.forEach(entry => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="section-title">
+            <div>
+              <strong>${entry.name}</strong>
+              <div class="muted">${new Date(entry.uploadedAt).toLocaleString()}</div>
+            </div>
+          </div>
+        `;
+        posList.appendChild(card);
+      });
+    }
+
+    function renderAll() {
+      buildVendorOptions();
+      buildRecipeOptions();
+      buildUsageItemOptions();
+      renderItems();
+      renderCounts();
+      renderSchedules();
+      renderVendors();
+      renderOrders();
+      renderPoDrafts();
+      renderInvoices();
+      renderRecipes();
+      renderSales();
+      renderUsageLogs();
+      renderVariance();
+      renderWasteSummary();
+      renderPriceHistory();
+      renderUsers();
+      renderReports();
+      renderFeedback();
+      renderPosUploads();
+      renderDashboard();
+    }
+
+    function exportJson() {
+      const payload = JSON.stringify({
+        items: state.items,
+        vendors: state.vendors,
+        recipes: state.recipes,
+        sales: state.sales,
+        usageLogs: state.usageLogs,
+        priceHistory: state.priceHistory,
+        poDrafts: state.poDrafts,
+        invoices: state.invoices,
+        schedules: state.schedules,
+        users: state.users,
+        feedback: state.feedback,
+        posUploads: state.posUploads,
+        settings: state.settings,
+        exportedAt: new Date().toISOString()
+      }, null, 2);
+      const blob = new Blob([payload], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `pantrypilot-export-${Date.now()}.json`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function importJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (!data.items || !data.vendors) {
+            alert("Invalid file format.");
+            return;
+          }
+          state.items = data.items;
+          state.vendors = data.vendors;
+          state.recipes = data.recipes || [];
+          state.sales = data.sales || [];
+          state.usageLogs = data.usageLogs || [];
+          state.priceHistory = data.priceHistory || [];
+          state.poDrafts = data.poDrafts || [];
+          state.invoices = data.invoices || [];
+          state.schedules = data.schedules || [];
+          state.users = data.users || [];
+          state.feedback = data.feedback || [];
+          state.posUploads = data.posUploads || [];
+          state.settings = {
+            safetyDays: Number(data.settings?.safetyDays ?? 2),
+            notifyEmail: data.settings?.notifyEmail || "",
+            notifyPhone: data.settings?.notifyPhone || ""
+          };
+          saveState();
+          resetItemForm();
+          resetVendorForm();
+          resetRecipeForm();
+          renderAll();
+          alert("Data imported successfully.");
+        } catch {
+          alert("Could not read that file.");
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = "";
+    }
+
+    function clearAll() {
+      const ok = confirm("This will delete all items, vendors, recipes, logs, and settings. Continue?");
+      if (!ok) return;
+      state.items = [];
+      state.vendors = [];
+      state.recipes = [];
+      state.sales = [];
+      state.usageLogs = [];
+      state.priceHistory = [];
+      state.poDrafts = [];
+      state.invoices = [];
+      state.schedules = [];
+      state.users = [];
+      state.feedback = [];
+      state.posUploads = [];
+      state.settings = {
+        safetyDays: 2,
+        notifyEmail: "",
+        notifyPhone: ""
+      };
+      saveState();
+      resetItemForm();
+      resetVendorForm();
+      resetRecipeForm();
+      renderAll();
+    }
+
+    nav.addEventListener("click", event => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      setActiveView(button.dataset.view);
+    });
+
+    document.querySelectorAll("[data-jump]").forEach(button => {
+      button.addEventListener("click", () => {
+        const viewId = button.dataset.jump;
+        setActiveView(viewId);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
+    roleView.addEventListener("change", renderRoleSummary);
+
+    saveItemBtn.addEventListener("click", saveItem);
+    deleteItemBtn.addEventListener("click", deleteItem);
+    resetFormBtn.addEventListener("click", resetItemForm);
+    inventorySearch.addEventListener("input", renderItems);
+    countSearch.addEventListener("input", renderCounts);
+    applyCountsBtn.addEventListener("click", applyCounts);
+    saveScheduleBtn.addEventListener("click", saveSchedule);
+    clearSchedulesBtn.addEventListener("click", clearSchedules);
+    orderSearch.addEventListener("input", renderOrders);
+    refreshOrdersBtn.addEventListener("click", renderOrders);
+
+    saveVendorBtn.addEventListener("click", saveVendor);
+    deleteVendorBtn.addEventListener("click", deleteVendor);
+
+    createPoBtn.addEventListener("click", generatePoDrafts);
+    clearPosBtn.addEventListener("click", clearPoDrafts);
+
+    invoiceUpload.addEventListener("change", event => {
+      logInvoice(event.target.files[0]);
+      event.target.value = "";
+    });
+    clearInvoicesBtn.addEventListener("click", clearInvoices);
+
+    addIngredientBtn.addEventListener("click", addIngredientRow);
+    saveRecipeBtn.addEventListener("click", saveRecipe);
+    deleteRecipeBtn.addEventListener("click", deleteRecipe);
+
+    saveSaleBtn.addEventListener("click", logSale);
+    clearSalesBtn.addEventListener("click", clearSales);
+    saveUsageBtn.addEventListener("click", logUsage);
+    clearUsageBtn.addEventListener("click", clearUsage);
+
+    savePriceBtn.addEventListener("click", logPrice);
+    clearPricesBtn.addEventListener("click", clearPrices);
+
+    saveUserBtn.addEventListener("click", saveUser);
+    clearUsersBtn.addEventListener("click", clearUsers);
+    saveNotificationsBtn.addEventListener("click", saveNotificationSettings);
+
+    saveFeedbackBtn.addEventListener("click", saveFeedback);
+    clearFeedbackBtn.addEventListener("click", clearFeedback);
+
+    posUpload.addEventListener("change", event => {
+      logPosUpload(event.target.files[0]);
+      event.target.value = "";
+    });
+    clearPosUploadsBtn.addEventListener("click", clearPosUploads);
+
+    exportJsonBtn.addEventListener("click", exportJson);
+    importJsonInput.addEventListener("change", importJson);
+    clearAllBtn.addEventListener("click", clearAll);
+    safetyDaysInput.addEventListener("input", () => {
+      state.settings.safetyDays = Number(safetyDaysInput.value || 0);
+      saveState();
+      renderAll();
+    });
+
+    loadState();
+    buildCategoryOptions();
+    buildVendorOptions();
+    resetItemForm();
+    resetVendorForm();
+    resetRecipeForm();
+    safetyDaysInput.value = state.settings.safetyDays ?? 2;
+    notifyEmail.value = state.settings.notifyEmail || "";
+    notifyPhone.value = state.settings.notifyPhone || "";
+    renderRoleSummary();
+    renderAll();
+  </script>
+</body>
+</html>
+```
