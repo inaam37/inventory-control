@@ -1,3 +1,14 @@
+# Consultant Prompt for GPT
+
+Use this prompt when requesting a fresh Next.js + Tailwind + Python backend build:
+
+```
+hey gpt let’s build a web application using NextJS, tailwind, CSS and Python for backend. Assume I have no experience with building the scaffolding or setting up the repository. Let’s start from the scratch. I have an idea that I haves added to this index.html that I want to build out. <insert you work so far>
+```
+
+Below is the latest HTML (paste this after the prompt when starting from scratch):
+
+```
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -238,19 +249,6 @@
           <div class="footer-note">On-hand × cost</div>
         </div>
         <div class="card">
-          <div class="muted">Inventory value on date</div>
-          <h2 id="summaryValueOnDate">$0.00</h2>
-          <div class="grid-2" style="margin-top: 8px;">
-            <div>
-              <label for="valueDate">Select date</label>
-              <input id="valueDate" type="date" />
-            </div>
-            <div class="footer-note" style="align-self: end;">
-              Uses items added on or before the date.
-            </div>
-          </div>
-        </div>
-        <div class="card">
           <div class="muted">Items below reorder point</div>
           <h2 id="summaryBelow">0</h2>
           <div class="footer-note">Needs attention</div>
@@ -442,86 +440,12 @@
                 <th>Par</th>
                 <th>Suggested Par</th>
                 <th>Reorder</th>
-                <th>Added</th>
                 <th>Status</th>
                 <th>Data</th>
                 <th>Value</th>
               </tr>
             </thead>
             <tbody id="itemsTable"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">
-          <h3>Close Inventory Period</h3>
-          <span class="muted">Save a weekly or monthly snapshot for your accountant</span>
-        </div>
-        <div class="grid-3" style="margin-top: 12px;">
-          <div>
-            <label for="snapshotPeriod">Period type</label>
-            <select id="snapshotPeriod">
-              <option value="Weekly">Weekly close</option>
-              <option value="Monthly">Monthly close</option>
-            </select>
-          </div>
-          <div>
-            <label for="snapshotDate">Close date</label>
-            <input id="snapshotDate" type="date" />
-          </div>
-          <div>
-            <label for="snapshotLabel">Notes</label>
-            <input id="snapshotLabel" placeholder="End of month count" />
-          </div>
-        </div>
-        <div class="toolbar" style="margin-top: 12px;">
-          <button class="primary" id="closeInventory">Save Snapshot</button>
-          <button class="ghost" id="exportCurrentPdf">Export current inventory (PDF)</button>
-        </div>
-        <div class="footer-note" style="margin-top: 8px;">
-          Snapshots store item quantities and total value at that moment. Use PDF export to share with your accountant.
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">
-          <h3>Inventory Snapshots</h3>
-          <span class="muted" id="snapshotCount">0 snapshots</span>
-        </div>
-        <div id="snapshotList" class="stack" style="margin-top: 12px;"></div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">
-          <h3>Compare Inventory Periods</h3>
-          <span class="muted">Side-by-side monthly or weekly changes</span>
-        </div>
-        <div class="grid-3" style="margin-top: 12px;">
-          <div>
-            <label for="compareLeft">First period</label>
-            <select id="compareLeft"></select>
-          </div>
-          <div>
-            <label for="compareRight">Second period</label>
-            <select id="compareRight"></select>
-          </div>
-          <div style="align-self: end;">
-            <button class="ghost" id="compareBtn">Compare</button>
-          </div>
-        </div>
-        <div id="compareSummary" class="muted" style="margin-top: 10px;"></div>
-        <div style="overflow-x:auto; margin-top: 12px;">
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th id="compareLeftLabel">Period A</th>
-                <th id="compareRightLabel">Period B</th>
-                <th>Difference</th>
-              </tr>
-            </thead>
-            <tbody id="compareTable"></tbody>
           </table>
         </div>
       </div>
@@ -644,57 +568,6 @@
           <span class="muted" id="poCount">0 drafts</span>
         </div>
         <div id="poList" class="stack"></div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">
-          <h3>PO Status Update</h3>
-          <span class="muted">Track draft → sent → received</span>
-        </div>
-        <div class="grid-3" style="margin-top: 12px;">
-          <div>
-            <label for="poSelect">Purchase order</label>
-            <select id="poSelect"></select>
-          </div>
-          <div>
-            <label for="poStatusSelect">Status</label>
-            <select id="poStatusSelect">
-              <option value="Draft">Draft</option>
-              <option value="Sent">Sent</option>
-              <option value="Received">Received</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
-          <div style="align-self: end;">
-            <button class="primary" id="updatePoStatus">Update Status</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">
-          <h3>Receiving Log</h3>
-          <span class="muted">Confirm deliveries and costs</span>
-        </div>
-        <div class="grid-3" style="margin-top: 12px;">
-          <div>
-            <label for="receivePoSelect">PO to receive</label>
-            <select id="receivePoSelect"></select>
-          </div>
-          <div>
-            <label for="receiveDate">Received date</label>
-            <input id="receiveDate" type="date" />
-          </div>
-          <div>
-            <label for="receiveNote">Receiving notes</label>
-            <input id="receiveNote" placeholder="Shorted 2 cases of tomatoes" />
-          </div>
-        </div>
-        <div class="toolbar" style="margin-top: 12px;">
-          <button class="primary" id="markReceived">Mark Received</button>
-          <button class="ghost" id="clearReceipts">Clear Receipts</button>
-        </div>
-        <div id="receivingList" class="stack" style="margin-top: 12px;"></div>
       </div>
 
       <div class="card">
@@ -1011,6 +884,7 @@
             Import JSON
             <input type="file" id="importJson" accept="application/json" style="display:none;" />
           </label>
+          <button class="danger" id="clearAll">Clear All Data</button>
         </div>
         <div class="grid-2" style="margin-top: 16px;">
           <div>
@@ -1077,8 +951,6 @@
       priceHistory: [],
       poDrafts: [],
       invoices: [],
-      receivingLogs: [],
-      inventorySnapshots: [],
       schedules: [],
       users: [],
       feedback: [],
@@ -1130,20 +1002,6 @@
     const deleteItemBtn = document.getElementById("deleteItem");
     const resetFormBtn = document.getElementById("resetForm");
     const formStatus = document.getElementById("formStatus");
-    const snapshotPeriod = document.getElementById("snapshotPeriod");
-    const snapshotDate = document.getElementById("snapshotDate");
-    const snapshotLabel = document.getElementById("snapshotLabel");
-    const closeInventoryBtn = document.getElementById("closeInventory");
-    const exportCurrentPdfBtn = document.getElementById("exportCurrentPdf");
-    const snapshotList = document.getElementById("snapshotList");
-    const snapshotCount = document.getElementById("snapshotCount");
-    const compareLeft = document.getElementById("compareLeft");
-    const compareRight = document.getElementById("compareRight");
-    const compareBtn = document.getElementById("compareBtn");
-    const compareTable = document.getElementById("compareTable");
-    const compareSummary = document.getElementById("compareSummary");
-    const compareLeftLabel = document.getElementById("compareLeftLabel");
-    const compareRightLabel = document.getElementById("compareRightLabel");
 
     const vendorForm = {
       name: document.getElementById("vendorName"),
@@ -1167,8 +1025,6 @@
     const refreshOrdersBtn = document.getElementById("refreshOrders");
 
     const summaryValue = document.getElementById("summaryValue");
-    const summaryValueOnDate = document.getElementById("summaryValueOnDate");
-    const valueDateInput = document.getElementById("valueDate");
     const summaryBelow = document.getElementById("summaryBelow");
     const summaryOrder = document.getElementById("summaryOrder");
     const alertsList = document.getElementById("alertsList");
@@ -1185,6 +1041,7 @@
 
     const exportJsonBtn = document.getElementById("exportJson");
     const importJsonInput = document.getElementById("importJson");
+    const clearAllBtn = document.getElementById("clearAll");
     const safetyDaysInput = document.getElementById("safetyDays");
 
     const recipeForm = {
@@ -1234,15 +1091,6 @@
     const clearPosBtn = document.getElementById("clearPos");
     const poList = document.getElementById("poList");
     const poCount = document.getElementById("poCount");
-    const poSelect = document.getElementById("poSelect");
-    const poStatusSelect = document.getElementById("poStatusSelect");
-    const updatePoStatusBtn = document.getElementById("updatePoStatus");
-    const receivePoSelect = document.getElementById("receivePoSelect");
-    const receiveDate = document.getElementById("receiveDate");
-    const receiveNote = document.getElementById("receiveNote");
-    const markReceivedBtn = document.getElementById("markReceived");
-    const clearReceiptsBtn = document.getElementById("clearReceipts");
-    const receivingList = document.getElementById("receivingList");
 
     const invoiceUpload = document.getElementById("invoiceUpload");
     const clearInvoicesBtn = document.getElementById("clearInvoices");
@@ -1295,8 +1143,6 @@
         priceHistory: state.priceHistory,
         poDrafts: state.poDrafts,
         invoices: state.invoices,
-        receivingLogs: state.receivingLogs,
-        inventorySnapshots: state.inventorySnapshots,
         schedules: state.schedules,
         users: state.users,
         feedback: state.feedback,
@@ -1317,8 +1163,6 @@
           state.priceHistory = raw.priceHistory || [];
           state.poDrafts = raw.poDrafts || [];
           state.invoices = raw.invoices || [];
-          state.receivingLogs = raw.receivingLogs || [];
-          state.inventorySnapshots = raw.inventorySnapshots || [];
           state.schedules = raw.schedules || [];
           state.users = raw.users || [];
           state.feedback = raw.feedback || [];
@@ -1338,8 +1182,6 @@
         state.priceHistory = [];
         state.poDrafts = [];
         state.invoices = [];
-        state.receivingLogs = [];
-        state.inventorySnapshots = [];
         state.schedules = [];
         state.users = [];
         state.feedback = [];
@@ -1530,7 +1372,6 @@
         leadTimeDays: Number(itemForm.lead.value || 0),
         usagePerDay: Number(itemForm.usage.value || 0),
         sku: itemForm.sku.value.trim(),
-        createdAt: state.activeItemId ? (state.items.find(item => item.id === state.activeItemId)?.createdAt || Date.now()) : Date.now(),
         updatedAt: Date.now()
       };
 
@@ -1593,7 +1434,6 @@
             <td>${item.par}</td>
             <td>${getSuggestedPar(item).toFixed(1)}</td>
             <td>${item.reorderPoint}</td>
-            <td>${formatDate(item.createdAt)}</td>
             <td><span class="pill ${status.tone}">${status.label}</span></td>
             <td><span class="pill ${dataIssues === 0 ? "ok" : "warn"}">${dataLabel}</span></td>
             <td>${currency(getItemValue(item))}</td>
@@ -1606,225 +1446,6 @@
           });
           itemsTable.appendChild(row);
         });
-    }
-
-    function buildInventorySnapshot(periodType, dateString, labelText) {
-      const snapshotItems = state.items.map(item => ({
-        id: item.id,
-        name: item.name,
-        unit: item.unit,
-        onHand: Number(item.onHand || 0),
-        value: getItemValue(item)
-      }));
-      const totalValue = snapshotItems.reduce((sum, item) => sum + item.value, 0);
-      return {
-        id: crypto.randomUUID(),
-        periodType,
-        date: dateString,
-        label: labelText,
-        totalValue,
-        createdAt: Date.now(),
-        items: snapshotItems
-      };
-    }
-
-    function renderSnapshots() {
-      snapshotCount.textContent = `${state.inventorySnapshots.length} snapshots`;
-      snapshotList.innerHTML = "";
-      if (!state.inventorySnapshots.length) {
-        snapshotList.innerHTML = "<div class='muted'>No snapshots saved yet.</div>";
-        return;
-      }
-      state.inventorySnapshots.forEach(snapshot => {
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <div class="section-title">
-            <div>
-              <strong>${snapshot.periodType} close • ${snapshot.date}</strong>
-              <div class="muted">${snapshot.label || "No notes"}</div>
-            </div>
-            <div><strong>${currency(snapshot.totalValue)}</strong></div>
-          </div>
-          <div class="toolbar" style="margin-top: 8px;">
-            <button class="ghost" data-export-snapshot="${snapshot.id}">Export PDF</button>
-          </div>
-        `;
-        snapshotList.appendChild(card);
-      });
-
-      snapshotList.querySelectorAll("[data-export-snapshot]").forEach(button => {
-        button.addEventListener("click", () => {
-          const snapshot = state.inventorySnapshots.find(entry => entry.id === button.dataset.exportSnapshot);
-          if (!snapshot) return;
-          exportInventoryPdf(
-            `${snapshot.periodType} Inventory Close (${snapshot.date})`,
-            snapshot.items,
-            snapshot.totalValue
-          );
-        });
-      });
-    }
-
-    function renderComparisonOptions() {
-      const buildOptions = (selectEl) => {
-        selectEl.innerHTML = "";
-        const currentOption = document.createElement("option");
-        currentOption.value = "current";
-        currentOption.textContent = "Current inventory";
-        selectEl.appendChild(currentOption);
-
-        state.inventorySnapshots.forEach(snapshot => {
-          const option = document.createElement("option");
-          option.value = snapshot.id;
-          option.textContent = `${snapshot.periodType} • ${snapshot.date}`;
-          selectEl.appendChild(option);
-        });
-      };
-
-      buildOptions(compareLeft);
-      buildOptions(compareRight);
-    }
-
-    function getComparisonData(selection) {
-      if (selection === "current") {
-        return {
-          label: "Current inventory",
-          items: state.items.map(item => ({
-            name: item.name,
-            unit: item.unit,
-            onHand: Number(item.onHand || 0)
-          }))
-        };
-      }
-      const snapshot = state.inventorySnapshots.find(entry => entry.id === selection);
-      if (!snapshot) return null;
-      return {
-        label: `${snapshot.periodType} • ${snapshot.date}`,
-        items: snapshot.items.map(item => ({
-          name: item.name,
-          unit: item.unit,
-          onHand: Number(item.onHand || 0)
-        }))
-      };
-    }
-
-    function renderComparison() {
-      const leftData = getComparisonData(compareLeft.value);
-      const rightData = getComparisonData(compareRight.value);
-      compareTable.innerHTML = "";
-
-      if (!leftData || !rightData) {
-        compareSummary.textContent = "Select two inventory periods to compare.";
-        return;
-      }
-
-      compareLeftLabel.textContent = leftData.label;
-      compareRightLabel.textContent = rightData.label;
-      compareSummary.textContent = `Comparing ${leftData.label} vs ${rightData.label}.`;
-
-      const allItems = new Map();
-      leftData.items.forEach(item => allItems.set(item.name, { left: item, right: null }));
-      rightData.items.forEach(item => {
-        const entry = allItems.get(item.name) || { left: null, right: null };
-        entry.right = item;
-        allItems.set(item.name, entry);
-      });
-
-      [...allItems.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([name, entry]) => {
-        const leftQty = entry.left ? entry.left.onHand : 0;
-        const rightQty = entry.right ? entry.right.onHand : 0;
-        const unit = entry.left?.unit || entry.right?.unit || "";
-        const diff = rightQty - leftQty;
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${name}</td>
-          <td>${leftQty.toFixed(2)} ${unit}</td>
-          <td>${rightQty.toFixed(2)} ${unit}</td>
-          <td>${diff.toFixed(2)} ${unit}</td>
-        `;
-        compareTable.appendChild(row);
-      });
-    }
-
-    function closeInventoryPeriod() {
-      const dateString = snapshotDate.value || new Date().toISOString().slice(0, 10);
-      const labelText = snapshotLabel.value.trim();
-      const snapshot = buildInventorySnapshot(snapshotPeriod.value, dateString, labelText);
-      state.inventorySnapshots.unshift(snapshot);
-      snapshotLabel.value = "";
-      snapshotDate.value = "";
-      saveState();
-      renderAll();
-    }
-
-    function exportCurrentInventoryPdf() {
-      const items = state.items.map(item => ({
-        name: item.name,
-        unit: item.unit,
-        onHand: Number(item.onHand || 0),
-        value: getItemValue(item)
-      }));
-      const totalValue = items.reduce((sum, item) => sum + item.value, 0);
-      exportInventoryPdf("Current Inventory Snapshot", items, totalValue);
-    }
-
-    function exportInventoryPdf(title, items, totalValue) {
-      const rows = items.map(item => `
-        <tr>
-          <td>${item.name}</td>
-          <td style="text-align:right;">${item.onHand.toFixed(2)}</td>
-          <td>${item.unit}</td>
-          <td style="text-align:right;">${currency(item.value)}</td>
-        </tr>
-      `).join("");
-      const html = `
-        <html>
-        <head>
-          <title>${title}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
-            h1 { font-size: 20px; margin-bottom: 4px; }
-            p { color: #555; margin-top: 0; }
-            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-            th, td { border-bottom: 1px solid #ddd; padding: 8px; font-size: 13px; }
-            th { text-align: left; background: #f5f5f5; }
-            tfoot td { font-weight: bold; }
-          </style>
-        </head>
-        <body>
-          <h1>${title}</h1>
-          <p>Generated from PantryPilot inventory</p>
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th style="text-align:right;">Qty</th>
-                <th>Unit</th>
-                <th style="text-align:right;">Value</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-            <tfoot>
-              <tr>
-                <td colspan="3">Total inventory value</td>
-                <td style="text-align:right;">${currency(totalValue)}</td>
-              </tr>
-            </tfoot>
-          </table>
-          <p style="margin-top: 16px;">Use your browser’s Print dialog to save as PDF.</p>
-        </body>
-        </html>
-      `;
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        alert("Popup blocked. Allow popups to export PDF.");
-        return;
-      }
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
     }
 
     function renderCounts() {
@@ -2128,7 +1749,6 @@
       state.poDrafts.forEach(po => {
         const total = po.items.reduce((sum, item) => sum + item.qty * item.cost, 0);
         const itemsHtml = po.items.map(item => `<div class="muted">${item.name}: ${item.qty} ${item.unit}</div>`).join("");
-        const statusTone = po.status === "Received" ? "ok" : po.status === "Sent" ? "warn" : "alert";
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `
@@ -2137,99 +1757,11 @@
               <strong>${po.vendorName}</strong>
               <div class="muted">${po.status} • ${new Date(po.createdAt).toLocaleDateString()}</div>
             </div>
-            <div>
-              <span class="pill ${statusTone}">${po.status}</span>
-              <strong style="margin-left: 8px;">${currency(total)}</strong>
-            </div>
+            <div><strong>${currency(total)}</strong></div>
           </div>
           <div style="margin-top: 8px;">${itemsHtml}</div>
         `;
         poList.appendChild(card);
-      });
-    }
-
-    function renderPoSelectors() {
-      poSelect.innerHTML = "";
-      receivePoSelect.innerHTML = "";
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = "Select PO";
-      poSelect.appendChild(placeholder.cloneNode(true));
-      receivePoSelect.appendChild(placeholder);
-
-      state.poDrafts.forEach(po => {
-        const option = document.createElement("option");
-        option.value = po.id;
-        option.textContent = `${po.vendorName} (${po.status})`;
-        poSelect.appendChild(option.cloneNode(true));
-        receivePoSelect.appendChild(option);
-      });
-    }
-
-    function updatePoStatus() {
-      if (!poSelect.value) {
-        alert("Select a purchase order.");
-        return;
-      }
-      const po = state.poDrafts.find(entry => entry.id === poSelect.value);
-      if (!po) return;
-      po.status = poStatusSelect.value;
-      po.updatedAt = new Date().toISOString();
-      saveState();
-      renderAll();
-    }
-
-    function markReceived() {
-      if (!receivePoSelect.value) {
-        alert("Select a purchase order.");
-        return;
-      }
-      const po = state.poDrafts.find(entry => entry.id === receivePoSelect.value);
-      if (!po) return;
-      po.status = "Received";
-      po.updatedAt = new Date().toISOString();
-      state.receivingLogs.unshift({
-        id: crypto.randomUUID(),
-        poId: po.id,
-        vendorName: po.vendorName,
-        receivedDate: receiveDate.value || new Date().toISOString().slice(0, 10),
-        note: receiveNote.value.trim(),
-        total: po.items.reduce((sum, item) => sum + item.qty * item.cost, 0)
-      });
-      receiveDate.value = "";
-      receiveNote.value = "";
-      saveState();
-      renderAll();
-    }
-
-    function clearReceipts() {
-      const ok = confirm("Clear receiving logs?");
-      if (!ok) return;
-      state.receivingLogs = [];
-      saveState();
-      renderAll();
-    }
-
-    function renderReceivingLogs() {
-      receivingList.innerHTML = "";
-      if (!state.receivingLogs.length) {
-        receivingList.innerHTML = "<div class='muted'>No receipts logged yet.</div>";
-        return;
-      }
-      state.receivingLogs.slice(0, 10).forEach(entry => {
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <div class="section-title">
-            <div>
-              <strong>${entry.vendorName}</strong>
-              <div class="muted">Received: ${entry.receivedDate}</div>
-            </div>
-            <div><strong>${currency(entry.total)}</strong></div>
-          </div>
-          <div class="muted" style="margin-top: 8px;">${entry.note || "No notes"}</div>
-        `;
-        receivingList.appendChild(card);
       });
     }
 
@@ -2275,20 +1807,10 @@
 
     function renderDashboard() {
       const totalValue = state.items.reduce((sum, item) => sum + getItemValue(item), 0);
-      const valueDate = valueDateInput.value ? new Date(valueDateInput.value + "T23:59:59") : null;
-      const valueOnDate = valueDate
-        ? state.items
-            .filter(item => {
-              const created = item.createdAt ? new Date(item.createdAt) : null;
-              return created ? created <= valueDate : true;
-            })
-            .reduce((sum, item) => sum + getItemValue(item), 0)
-        : totalValue;
       const belowCount = state.items.filter(item => Number(item.onHand) <= Number(item.reorderPoint || 0)).length;
       const suggestedValue = state.items.reduce((sum, item) => sum + (getSuggestedOrderQty(item) * Number(item.cost || 0)), 0);
 
       summaryValue.textContent = currency(totalValue);
-      summaryValueOnDate.textContent = currency(valueOnDate);
       summaryBelow.textContent = `${belowCount}`;
       summaryOrder.textContent = currency(suggestedValue);
 
@@ -2430,13 +1952,6 @@
         vendor: "Vendors: review PO drafts and ensure price history is current."
       };
       roleSummary.textContent = roleMessages[roleView.value] || roleMessages.manager;
-    }
-
-    function formatDate(timestamp) {
-      if (!timestamp) return "—";
-      const date = new Date(timestamp);
-      if (Number.isNaN(date.getTime())) return "—";
-      return date.toLocaleDateString();
     }
 
     function createIngredientRow(ingredient = { itemId: "", qty: "" }) {
@@ -3073,16 +2588,11 @@
       buildRecipeOptions();
       buildUsageItemOptions();
       renderItems();
-      renderSnapshots();
-      renderComparisonOptions();
-      renderComparison();
       renderCounts();
       renderSchedules();
       renderVendors();
       renderOrders();
       renderPoDrafts();
-      renderPoSelectors();
-      renderReceivingLogs();
       renderInvoices();
       renderRecipes();
       renderSales();
@@ -3107,8 +2617,6 @@
         priceHistory: state.priceHistory,
         poDrafts: state.poDrafts,
         invoices: state.invoices,
-        receivingLogs: state.receivingLogs,
-        inventorySnapshots: state.inventorySnapshots,
         schedules: state.schedules,
         users: state.users,
         feedback: state.feedback,
@@ -3143,8 +2651,6 @@
           state.priceHistory = data.priceHistory || [];
           state.poDrafts = data.poDrafts || [];
           state.invoices = data.invoices || [];
-          state.receivingLogs = data.receivingLogs || [];
-          state.inventorySnapshots = data.inventorySnapshots || [];
           state.schedules = data.schedules || [];
           state.users = data.users || [];
           state.feedback = data.feedback || [];
@@ -3179,8 +2685,6 @@
       state.priceHistory = [];
       state.poDrafts = [];
       state.invoices = [];
-      state.receivingLogs = [];
-      state.inventorySnapshots = [];
       state.schedules = [];
       state.users = [];
       state.feedback = [];
@@ -3216,9 +2720,6 @@
     deleteItemBtn.addEventListener("click", deleteItem);
     resetFormBtn.addEventListener("click", resetItemForm);
     inventorySearch.addEventListener("input", renderItems);
-    closeInventoryBtn.addEventListener("click", closeInventoryPeriod);
-    exportCurrentPdfBtn.addEventListener("click", exportCurrentInventoryPdf);
-    compareBtn.addEventListener("click", renderComparison);
     countSearch.addEventListener("input", renderCounts);
     applyCountsBtn.addEventListener("click", applyCounts);
     saveScheduleBtn.addEventListener("click", saveSchedule);
@@ -3231,9 +2732,6 @@
 
     createPoBtn.addEventListener("click", generatePoDrafts);
     clearPosBtn.addEventListener("click", clearPoDrafts);
-    updatePoStatusBtn.addEventListener("click", updatePoStatus);
-    markReceivedBtn.addEventListener("click", markReceived);
-    clearReceiptsBtn.addEventListener("click", clearReceipts);
 
     invoiceUpload.addEventListener("change", event => {
       logInvoice(event.target.files[0]);
@@ -3268,12 +2766,12 @@
 
     exportJsonBtn.addEventListener("click", exportJson);
     importJsonInput.addEventListener("change", importJson);
+    clearAllBtn.addEventListener("click", clearAll);
     safetyDaysInput.addEventListener("input", () => {
       state.settings.safetyDays = Number(safetyDaysInput.value || 0);
       saveState();
       renderAll();
     });
-    valueDateInput.addEventListener("change", renderDashboard);
 
     loadState();
     buildCategoryOptions();
@@ -3284,9 +2782,9 @@
     safetyDaysInput.value = state.settings.safetyDays ?? 2;
     notifyEmail.value = state.settings.notifyEmail || "";
     notifyPhone.value = state.settings.notifyPhone || "";
-    snapshotDate.value = new Date().toISOString().slice(0, 10);
     renderRoleSummary();
     renderAll();
   </script>
 </body>
 </html>
+```
