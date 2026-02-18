@@ -32,13 +32,7 @@ router.get("/", requireAuth, authorize("overview:read"), (req, res) => {
       "GET /api/auth/me",
       "GET /api/overview",
       "GET /api/items",
-      "GET /api/locations",
-      "POST /api/locations",
-      "GET /api/inventory?locationId=<id>",
-      "POST /api/inventory",
-      "POST /api/inventory/transfer",
-      "GET /api/reports/location/:locationId",
-      "GET /api/reports/consolidated"
+      "GET /api/dashboard"
     ]
   });
 });

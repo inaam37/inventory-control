@@ -1,12 +1,11 @@
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
 const overviewRouter = require("./routes/overview");
 const itemsRouter = require("./routes/items");
-const locationsRouter = require("./routes/locations");
-const inventoryRouter = require("./routes/inventory");
-const reportsRouter = require("./routes/reports");
+const dashboardRouter = require("./routes/dashboard");
 
 dotenv.config();
 
@@ -14,7 +13,7 @@ const app = express();
 
 app.use(cors({ origin: true }));
 app.use(express.json());
-app.use(optionalAuth);
+app.use(express.static(path.join(__dirname, "../public")));
 
 app.get("/health", async (req, res) => {
   res.json({
@@ -27,9 +26,11 @@ app.get("/health", async (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/overview", overviewRouter);
 app.use("/api/items", itemsRouter);
-app.use("/api/locations", locationsRouter);
-app.use("/api/inventory", inventoryRouter);
-app.use("/api/reports", reportsRouter);
+app.use("/api/dashboard", dashboardRouter);
+
+app.get("/dashboard", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/index.html"));
+});
 
 const port = process.env.PORT || 4000;
 
