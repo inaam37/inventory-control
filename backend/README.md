@@ -11,10 +11,10 @@ Phase 20 hardening for testing, deployment, monitoring, and operations.
 - Production DB setup script for Prisma migrations.
 
 ## Quick start
+
 ```bash
 cd backend
 npm install
-cp .env.example .env
 npm run prisma:generate
 npm run dev
 ```

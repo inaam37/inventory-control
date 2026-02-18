@@ -1,10 +1,22 @@
 const express = require("express");
+const crypto = require("crypto");
+
+const store = require("../dataStore");
+
+const { state } = require("../data/store");
 
 const router = express.Router();
 
 const items = [];
 
 router.get("/", (req, res) => {
+  const items = state.inventory.map((record) => ({
+    itemName: record.itemName,
+    unit: record.unit,
+    quantity: record.quantity,
+    location_id: record.locationId
+  }));
+
   res.json({
     items,
     count: items.length,
@@ -36,6 +48,8 @@ router.post("/", (req, res) => {
     message: "Item created",
     item: newItem
   });
-});
+
+  return res.status(201).json({ item });
+}));
 
 module.exports = router;
