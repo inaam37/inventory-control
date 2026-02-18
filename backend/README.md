@@ -24,12 +24,23 @@ DATABASE_URL="postgresql://user:password@localhost:5432/pantrypilot"
 ```
 
 ## API scaffold
-Current endpoints are intentionally minimal to keep backend integration focused:
+Implemented endpoints currently run against an in-memory store to validate workflows before Prisma wiring:
 
 - `GET /health` — service health check
-- `GET /api/overview` — status + roadmap metadata
-- `GET /api/items` — placeholder list (wire to Prisma)
-- `POST /api/items` — placeholder create (wire to Prisma)
+- `GET /api/overview` — status + available modules/endpoints
+- `GET /api/items` — list inventory items
+- `POST /api/items` — create inventory item
+
+### Alerts & notifications
+- `POST /api/alerts/run` — evaluate low stock, expiring soon (3 days), variance, high waste, supplier due
+- `GET /api/alerts/notifications?userId=:id` — in-app notifications + bell unread metadata
+- `POST /api/alerts/notifications/:id/read` — mark notification as read
+- `GET /api/alerts/preferences/:userId` — fetch user alert channel preferences
+- `PUT /api/alerts/preferences/:userId` — update user alert channel preferences
+- `POST /api/alerts/digest/daily` — send daily digest for management users
+- `GET /api/alerts/delivery-log` — inspect simulated email/SMS/Slack delivery records
+
+> Slack delivery is optional and currently stubbed as `skipped` unless webhook logic is added.
 
 ## Project layout
 ```
@@ -37,14 +48,18 @@ backend/
   prisma/
     schema.prisma
   src/
-    index.js
+    dataStore.js
+    services/
+      alertsEngine.js
     routes/
       overview.js
       items.js
+      alerts.js
+    index.js
 ```
 
 ## Next steps
-1. Add authentication and JWT sessions.
-2. Implement CRUD endpoints for items, vendors, recipes, and PO drafts.
-3. Add background jobs for reorder notifications.
-4. Wire the frontend to these endpoints.
+1. Replace in-memory store with Prisma models.
+2. Add auth and scope notifications per organization.
+3. Move alert sweeps and digest generation to scheduled background jobs.
+4. Wire real providers (SMTP/Twilio/Slack webhook).

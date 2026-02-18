@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 
 const overviewRouter = require("./routes/overview");
 const itemsRouter = require("./routes/items");
+const alertsRouter = require("./routes/alerts");
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.get("/health", (req, res) => {
 
 app.use("/api/overview", overviewRouter);
 app.use("/api/items", itemsRouter);
+app.use("/api/alerts", alertsRouter);
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => {
