@@ -21,6 +21,7 @@ npm run dev
 Create a `.env` file with:
 ```
 DATABASE_URL="postgresql://user:password@localhost:5432/pantrypilot"
+DEFAULT_ORGANIZATION_ID="your-organization-uuid"
 ```
 
 ## API scaffold
@@ -30,6 +31,8 @@ Current endpoints are intentionally minimal to keep backend integration focused:
 - `GET /api/overview` — status + roadmap metadata
 - `GET /api/items` — placeholder list (wire to Prisma)
 - `POST /api/items` — placeholder create (wire to Prisma)
+- `GET /api/inventory` — current inventory snapshot with quantities, locations, expiry dates, and last count timestamp
+- `GET /api/inventory/low-stock` — critical low-stock items below reorder point
 
 ## Project layout
 ```

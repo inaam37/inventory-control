@@ -15,7 +15,9 @@ router.get("/", (req, res) => {
     endpoints: [
       "GET /health",
       "GET /api/overview",
-      "GET /api/items"
+      "GET /api/items",
+      "GET /api/inventory",
+      "GET /api/inventory/low-stock"
     ]
   });
 });
