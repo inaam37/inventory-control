@@ -29,15 +29,16 @@ DATABASE_URL="postgresql://user:password@localhost:5432/pantrypilot"
 DEFAULT_ORGANIZATION_ID="your-organization-uuid"
 ```
 
-## API scaffold
+## API endpoints
+This phase now supports item persistence (file-backed `ingredients-table`) and barcode workflows:
+
 - `GET /health` — service health check
 - `GET /api/overview` — status + roadmap metadata
-- `GET /api/items` — placeholder list (wire to Prisma)
-- `POST /api/items` — placeholder create (wire to Prisma)
-- `POST /api/recipes` — create a recipe with ingredient quantities
-- `POST /api/recipes/:id/ingredients/:ingredientId` — add ingredient usage to a recipe
-- `GET /api/recipes/:id/can-make?servings=1` — validate ingredient sufficiency
-- `POST /api/recipes/:id/sell` — log sale and auto-deduct inventory
+- `GET /api/items?organizationId=<id>` — list ingredients/items for an organization
+- `POST /api/items` — create ingredient/item (supports optional `barcode`)
+- `POST /api/barcode/generate/:ingredientId` — assign (if missing) and render barcode image
+- `POST /api/barcode/scan` — lookup ingredient by barcode and optional stock in/out adjustment
+- `POST /api/barcode/print-bulk` — generate printable barcode payloads for multiple ingredients
 
 ## Project layout
 ```
@@ -45,17 +46,12 @@ backend/
   prisma/
     schema.prisma
   src/
-    config/
-      roles.js
-    db/
-      userStore.js
+    index.js
     lib/
-      auth.js
-    middleware/
-      auth.js
-      authorize.js
+      async-handler.js
+      item-store.js
     routes/
-      auth.js
+      barcode.js
       overview.js
       items.js
     index.js

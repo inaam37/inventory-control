@@ -4,7 +4,7 @@ const dotenv = require("dotenv");
 
 const overviewRouter = require("./routes/overview");
 const itemsRouter = require("./routes/items");
-const recipesRouter = require("./routes/recipes");
+const barcodeRouter = require("./routes/barcode");
 
 dotenv.config();
 
@@ -25,16 +25,15 @@ app.get("/health", async (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/overview", overviewRouter);
 app.use("/api/items", itemsRouter);
-app.use("/api/recipes", recipesRouter);
+app.use("/api/barcode", barcodeRouter);
 
-    app.listen(port, () => {
-      console.log(`Inventory Control backend listening on ${port}`);
-    });
-  } catch (error) {
-    console.error("Failed to start server:", error);
-    process.exit(1);
-  }
-}
+app.use((error, req, res, next) => {
+  console.error(error);
+  res.status(500).json({
+    error: "Internal server error",
+    message: error.message
+  });
+});
 
 process.on("SIGINT", async () => {
   await disconnectDatabase();

@@ -79,6 +79,7 @@ model Item {
   category       String
   unit           String
   sku            String?
+  barcode        String?  @unique
   onHand         Float    @default(0)
   parLevel       Float    @default(0)
   reorderPoint   Float    @default(0)
