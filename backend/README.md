@@ -26,10 +26,7 @@ npm run dev
 Create a `.env` file with:
 ```
 DATABASE_URL="postgresql://user:password@localhost:5432/pantrypilot"
-JWT_SECRET="replace-with-access-secret"
-JWT_REFRESH_SECRET="replace-with-refresh-secret"
-JWT_ACCESS_TTL_SECONDS="900"
-JWT_REFRESH_TTL_SECONDS="604800"
+DEFAULT_ORGANIZATION_ID="your-organization-uuid"
 ```
 
 ## API scaffold
@@ -37,11 +34,8 @@ JWT_REFRESH_TTL_SECONDS="604800"
 - `GET /api/overview` — status + roadmap metadata
 - `GET /api/items` — placeholder list (wire to Prisma)
 - `POST /api/items` — placeholder create (wire to Prisma)
-- `GET /api/suppliers?organizationId=...` — list suppliers for an organization
-- `GET /api/suppliers/:id` — fetch one supplier with linked ingredients
-- `POST /api/suppliers` — create supplier with contact details, terms, and linked ingredients
-- `PUT /api/suppliers/:id` — update supplier profile, ratings, and linked ingredients
-- `DELETE /api/suppliers/:id` — remove supplier
+- `GET /api/inventory` — current inventory snapshot with quantities, locations, expiry dates, and last count timestamp
+- `GET /api/inventory/low-stock` — critical low-stock items below reorder point
 
 ## Project layout
 ```

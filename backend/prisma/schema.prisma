@@ -16,6 +16,7 @@ model Organization {
   users          User[]
   vendors        Vendor[]
   items          Item[]
+  inventories    Inventory[]
   recipes        Recipe[]
   purchaseOrders PurchaseOrder[]
   notifications  Notification[]
@@ -32,16 +33,14 @@ model Location {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  password     String
-  role         UserRole @default(VIEWER)
-  restaurantId String   @map("restaurant_id")
-  name         String
-  phone        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  restaurant   Organization @relation(fields: [restaurantId], references: [id])
+  id             String       @id @default(uuid())
+  organizationId String
+  fullName       String
+  email          String       @unique
+  role           UserRole     @default(MANAGER)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
 }
 
 enum UserRole {
@@ -64,37 +63,38 @@ model Vendor {
   reliabilityScore Float @default(0)
   ratingCount    Int    @default(0)
   notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  supplierItems  SupplierItem[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  items          Item[]
   priceHistory   PriceHistory[]
   purchaseOrders PurchaseOrder[]
 }
 
 model Item {
-  id             String   @id @default(uuid())
-  organizationId String
-  vendorId       String?
-  name           String
-  category       String
-  unit           String
-  sku            String?
-  onHand         Float    @default(0)
-  parLevel       Float    @default(0)
-  reorderPoint   Float    @default(0)
-  costPerUnit    Float    @default(0)
-  leadTimeDays   Int      @default(0)
-  usagePerDay    Float    @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  vendor         Vendor?  @relation(fields: [vendorId], references: [id])
-  suppliers      SupplierItem[]
-  recipeLines    RecipeIngredient[]
-  usageLogs      UsageLog[]
-  salesLines     SalesIngredient[]
-  priceHistory   PriceHistory[]
+  id                String              @id @default(uuid())
+  organizationId    String
+  vendorId          String?
+  name              String
+  category          String
+  unit              String
+  sku               String?
+  onHand            Float               @default(0)
+  parLevel          Float               @default(0)
+  reorderPoint      Float               @default(0)
+  costPerUnit       Float               @default(0)
+  leadTimeDays      Int                 @default(0)
+  usagePerDay       Float               @default(0)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  organization      Organization        @relation(fields: [organizationId], references: [id])
+  vendor            Vendor?             @relation(fields: [vendorId], references: [id])
+  recipeLines       RecipeIngredient[]
+  usageLogs         UsageLog[]
+  salesLines        SalesIngredient[]
+  priceHistory      PriceHistory[]
+  inventoryEntries  Inventory[]
+  PurchaseOrderItem PurchaseOrderItem[]
 }
 
 model SupplierItem {
@@ -212,69 +212,48 @@ model Notification {
   organization   Organization @relation(fields: [organizationId], references: [id])
 }
 
-model Ingredient {
-  id           String         @id @default(uuid())
-  name         String
-  categoryId   String
-  unit         IngredientUnit
-  reorderLevel Float          @default(0)
-  supplierId   String
-  pricePerUnit Float          @default(0)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  category     Category       @relation(fields: [categoryId], references: [id])
-  supplier     Supplier       @relation(fields: [supplierId], references: [id])
-  inventory    Inventory[]
-
-  @@unique([name, supplierId])
-  @@index([categoryId])
-  @@index([supplierId])
-  @@index([name])
-}
-
 model Inventory {
-  id             String            @id @default(uuid())
+  id             String    @id @default(uuid())
+  organizationId String
   ingredientId   String
-  quantityOnHand Float             @default(0)
-  location       InventoryLocation
-  lastUpdated    DateTime          @default(now())
+  quantity       Float     @default(0)
+  location       String
   expiryDate     DateTime?
-  ingredient     Ingredient        @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  batchNumber    String?
+  lastCountAt    DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  ingredient   Item           @relation(fields: [ingredientId], references: [id])
+  logs         InventoryLog[]
+
+  @@index([organizationId])
   @@index([ingredientId])
-  @@index([location])
   @@index([expiryDate])
-  @@index([lastUpdated])
 }
 
-model Supplier {
-  id           String       @id @default(uuid())
-  name         String
-  contact      String?
-  email        String?
-  phone        String?
-  deliveryDays String[]
-  ingredients  Ingredient[]
+model InventoryLog {
+  id             String              @id @default(uuid())
+  inventoryId    String
+  changeType     InventoryChangeType
+  quantityBefore Float
+  quantityChange Float
+  quantityAfter  Float
+  reason         String?
+  createdAt      DateTime            @default(now())
 
-  @@unique([name])
-  @@unique([email])
-  @@index([phone])
+  inventory Inventory @relation(fields: [inventoryId], references: [id])
+
+  @@index([inventoryId])
+  @@index([createdAt])
 }
 
-model Category {
-  id          String       @id @default(uuid())
-  name        String       @unique
-  ingredients Ingredient[]
-}
-
-enum IngredientUnit {
-  KG
-  LITER
-  PIECES
-}
-
-enum InventoryLocation {
-  STOREROOM
-  FREEZER
-  COUNTER
+enum InventoryChangeType {
+  RECEIPT
+  USAGE
+  WASTE
+  ADJUSTMENT
+  COUNT
+  TRANSFER
 }

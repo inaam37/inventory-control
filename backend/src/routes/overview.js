@@ -22,11 +22,8 @@ router.get("/", requireAuth, authorize("overview:read"), (req, res) => {
       "GET /api/auth/me",
       "GET /api/overview",
       "GET /api/items",
-      "GET /api/suppliers",
-      "GET /api/suppliers/:id",
-      "POST /api/suppliers",
-      "PUT /api/suppliers/:id",
-      "DELETE /api/suppliers/:id"
+      "GET /api/inventory",
+      "GET /api/inventory/low-stock"
     ]
   });
 });
