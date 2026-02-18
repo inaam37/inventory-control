@@ -11,13 +11,20 @@ const prisma = require("./lib/prisma");
 dotenv.config();
 
 const app = express();
+
 app.use(cors({ origin: true }));
 app.use(express.json());
+app.use(optionalAuth);
 
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", service: "pantrypilot-backend" });
+app.get("/health", async (req, res) => {
+  res.json({
+    status: "ok",
+    service: "inventory-control-backend",
+    restaurantName: process.env.RESTAURANT_NAME || "Restaurant"
+  });
 });
 
+app.use("/api/auth", authRouter);
 app.use("/api/overview", overviewRouter);
 app.use("/api/items", itemsRouter);
 app.use("/api/inventory", inventoryRouter);
@@ -32,3 +39,10 @@ process.on("SIGINT", async () => {
   await prisma.$disconnect();
   process.exit(0);
 });
+
+process.on("SIGTERM", async () => {
+  await disconnectDatabase();
+  process.exit(0);
+});
+
+startServer();
