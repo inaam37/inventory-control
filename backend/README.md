@@ -30,6 +30,10 @@ Current endpoints are intentionally minimal to keep backend integration focused:
 - `GET /api/overview` — status + roadmap metadata
 - `GET /api/items` — placeholder list (wire to Prisma)
 - `POST /api/items` — placeholder create (wire to Prisma)
+- `POST /api/inventory/stock-in` — log supplier receipts with batch/expiry and update inventory value
+- `POST /api/inventory/stock-out` — log usage/waste/spoilage and auto-calculate COGS
+- `GET /api/inventory/transactions` — audit trail of all stock movement transactions
+- `GET /api/inventory/cogs` — aggregated COGS summary from stock-out records
 
 ## Project layout
 ```

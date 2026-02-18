@@ -87,6 +87,8 @@ model Item {
   usageLogs      UsageLog[]
   salesLines     SalesIngredient[]
   priceHistory   PriceHistory[]
+  purchaseOrderItems PurchaseOrderItem[]
+  inventoryTransactions InventoryTransaction[]
 }
 
 model Recipe {
@@ -152,6 +154,38 @@ model PriceHistory {
   createdAt DateTime @default(now())
   item      Item     @relation(fields: [itemId], references: [id])
   vendor    Vendor   @relation(fields: [vendorId], references: [id])
+}
+
+
+model InventoryTransaction {
+  id            String   @id @default(uuid())
+  itemId         String
+  type          InventoryTransactionType
+  quantity      Float
+  supplierId    String?
+  pricePaid     Float?
+  unitCost      Float
+  expiryDate    DateTime?
+  batchNumber   String?
+  stockOutReason StockOutReason?
+  cogsAmount    Float    @default(0)
+  occurredAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+  item          Item     @relation(fields: [itemId], references: [id])
+
+  @@index([itemId, occurredAt])
+  @@index([type, occurredAt])
+}
+
+enum InventoryTransactionType {
+  STOCK_IN
+  STOCK_OUT
+}
+
+enum StockOutReason {
+  COOKING
+  WASTE
+  SPOILAGE
 }
 
 model PurchaseOrder {
