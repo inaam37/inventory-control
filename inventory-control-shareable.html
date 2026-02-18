@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inventory List</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 1050px; margin: 0 auto; background:#fafafa; }
+    h1 { margin: 0; }
+    .topbar { display:flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .totals { font-weight: 800; }
+
+    .card { background:white; border: 1px solid #e6e6e6; border-radius: 16px; padding: 14px; margin-bottom: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+    input, select { padding: 10px; font-size: 16px; border: 1px solid #ddd; border-radius: 12px; }
+    input { flex: 1 1 180px; }
+    select { flex: 0 0 190px; }
+    button { padding: 10px 14px; font-size: 16px; cursor: pointer; border-radius: 12px; border: 1px solid #ddd; background: #fff; }
+    button:hover { filter: brightness(0.98); }
+    .primary { border-color: #b4d4ff; background: #e9f2ff; }
+    .danger { border-color: #f0b4b4; background: #ffecec; }
+    .muted { color: #666; font-size: 14px; }
+
+    .grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+
+    /* Category header image */
+    .catHero {
+      height: 140px;
+      border-radius: 14px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid #eee;
+      background-size: cover;
+      background-position: center;
+      display:flex;
+      align-items: flex-end;
+    }
+    .catOverlay {
+      width: 100%;
+      padding: 12px;
+      color: white;
+      background: linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0.15), rgba(0,0,0,0));
+      display:flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 10px;
+    }
+    .catTitleWrap { display:flex; flex-direction: column; gap: 2px; }
+    .catTitle { font-size: 22px; font-weight: 900; line-height: 1.05; text-shadow: 0 2px 10px rgba(0,0,0,0.35); }
+    .catMeta { font-size: 14px; opacity: 0.92; text-shadow: 0 2px 10px rgba(0,0,0,0.35); }
+    .catTotal { font-size: 20px; font-weight: 900; text-shadow: 0 2px 10px rgba(0,0,0,0.35); white-space: nowrap; }
+
+    ul { list-style: none; padding: 0; margin: 12px 0 0; }
+    li {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      padding: 10px; border: 1px solid #eee; border-radius: 14px; margin-bottom: 10px;
+      background: #fff;
+    }
+    .meta { display: flex; flex-direction: column; gap: 4px; }
+    .line1 { display:flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+    .name { font-weight: 800; }
+    .pill { font-size: 12px; border: 1px solid #ddd; padding: 2px 8px; border-radius: 999px; background:#f8f8f8; }
+    .nums { display:flex; gap: 10px; flex-wrap: wrap; }
+    .right { display:flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .smallbtn { padding: 8px 10px; font-size: 14px; border-radius: 12px; }
+
+    .emptyBox { margin-top: 12px; padding: 12px; border: 1px dashed #ddd; border-radius: 14px; background: #fbfbfb; }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <h1>Inventory</h1>
+    <div class="totals" id="grandTotal">Grand Total: $0.00</div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <input id="itemName" placeholder="Item name (e.g., Milk)" />
+      <input id="itemQty" type="number" min="0" step="1" placeholder="Qty (e.g., 10)" />
+      <input id="itemPrice" type="number" min="0" step="0.01" placeholder="Price per unit (e.g., 3.99)" />
+      <select id="itemCategory"></select>
+      <button id="addBtn" class="primary">Add</button>
+    </div>
+
+    <div class="row">
+      <input id="search" placeholder="Search items or categories..." />
+      <button id="clearBtn" class="danger">Clear All</button>
+    </div>
+
+    <div class="muted">
+      Tip: Price is <b>per unit</b>. Total value = Qty × Price. (Currency: CAD)
+    </div>
+  </div>
+
+  <div class="grid" id="sections"></div>
+
+  <script>
+    const STORAGE_KEY = "inventory_items_v3";
+
+    const CATEGORIES = [
+      "Meat",
+      "Dairy",
+      "Vegetables",
+      "Dry Storage",
+      "Seafood",
+      "Frozen",
+      "Beverages",
+      "Spices/Condiments",
+      "Other"
+    ];
+
+    // Category header images (free, auto-updating images from Unsplash).
+    // If you prefer your OWN images later, replace the URLs below with your image file paths like:
+    // "assets/meat.jpg"
+    const CATEGORY_IMAGES = {
+      "Meat": "https://source.unsplash.com/1200x500/?raw-meat,butcher,steak",
+      "Dairy": "https://source.unsplash.com/1200x500/?dairy,milk,cheese",
+      "Vegetables": "https://source.unsplash.com/1200x500/?vegetables,produce,market",
+      "Dry Storage": "https://source.unsplash.com/1200x500/?pantry,grains,beans,pasta",
+      "Seafood": "https://source.unsplash.com/1200x500/?seafood,fish,shrimp",
+      "Frozen": "https://source.unsplash.com/1200x500/?frozen-food,freezer",
+      "Beverages": "https://source.unsplash.com/1200x500/?beverages,juice,soda,coffee",
+      "Spices/Condiments": "https://source.unsplash.com/1200x500/?spices,herbs,condiments",
+      "Other": "https://source.unsplash.com/1200x500/?kitchen,ingredients"
+    };
+
+    const nameInput = document.getElementById("itemName");
+    const qtyInput = document.getElementById("itemQty");
+    const priceInput = document.getElementById("itemPrice");
+    const catSelect = document.getElementById("itemCategory");
+    const addBtn = document.getElementById("addBtn");
+    const sectionsEl = document.getElementById("sections");
+    const searchEl = document.getElementById("search");
+    const clearBtn = document.getElementById("clearBtn");
+    const grandTotalEl = document.getElementById("grandTotal");
+    const CATEGORY_LIST_TEXT = CATEGORIES.join(", ");
+
+    function normalizeCategory(rawCategory) {
+      const normalized = String(rawCategory ?? "").trim().toLowerCase();
+      return CATEGORIES.find(cat => cat.toLowerCase() === normalized) || "Other";
+    }
+
+    function initCategories() {
+      catSelect.innerHTML = "";
+      CATEGORIES.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c;
+        opt.textContent = c;
+        catSelect.appendChild(opt);
+      });
+    }
+
+    function loadItems() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveItems(items) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    // CAD formatting
+    function money(n) {
+      const x = Number(n);
+      if (!Number.isFinite(x)) return "$0.00";
+      return x.toLocaleString("en-CA", { style: "currency", currency: "CAD" });
+    }
+
+    function itemTotal(item) {
+      const qty = Number(item.qty);
+      const price = Number(item.price);
+      if (!Number.isFinite(qty) || !Number.isFinite(price)) return 0;
+      return qty * price;
+    }
+
+    function render() {
+      const q = searchEl.value.trim().toLowerCase();
+      const all = loadItems();
+
+      const items = q
+        ? all.filter(i =>
+            (i.name || "").toLowerCase().includes(q) ||
+            (i.category || "").toLowerCase().includes(q)
+          )
+        : all;
+
+      const groups = {};
+      CATEGORIES.forEach(c => groups[c] = []);
+      items.forEach(i => {
+        const cat = normalizeCategory(i.category);
+        groups[cat].push(i);
+      });
+
+      const grand = all.reduce((sum, i) => sum + itemTotal(i), 0);
+      grandTotalEl.textContent = `Grand Total: ${money(grand)}`;
+
+      sectionsEl.innerHTML = "";
+
+      CATEGORIES.forEach(cat => {
+        const groupItems = groups[cat];
+
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const catTotal = groupItems.reduce((sum, i) => sum + itemTotal(i), 0);
+
+        // Hero image header
+        const hero = document.createElement("div");
+        hero.className = "catHero";
+        hero.style.backgroundImage = `url("${CATEGORY_IMAGES[cat] || CATEGORY_IMAGES["Other"]}")`;
+
+        const overlay = document.createElement("div");
+        overlay.className = "catOverlay";
+
+        const left = document.createElement("div");
+        left.className = "catTitleWrap";
+        left.innerHTML = `
+          <div class="catTitle">${escapeHtml(cat)}</div>
+          <div class="catMeta">${groupItems.length} item(s)</div>
+        `;
+
+        const right = document.createElement("div");
+        right.className = "catTotal";
+        right.textContent = money(catTotal);
+
+        overlay.appendChild(left);
+        overlay.appendChild(right);
+        hero.appendChild(overlay);
+
+        card.appendChild(hero);
+
+        const ul = document.createElement("ul");
+
+        if (groupItems.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "emptyBox muted";
+          empty.textContent = "No items in this category.";
+          card.appendChild(empty);
+        } else {
+          groupItems
+            .slice()
+            .sort((a,b) => (a.name || "").localeCompare(b.name || ""))
+            .forEach(item => {
+              const li = document.createElement("li");
+
+              const meta = document.createElement("div");
+              meta.className = "meta";
+
+              const line1 = document.createElement("div");
+              line1.className = "line1";
+              line1.innerHTML = `
+                <span class="name">${escapeHtml(item.name)}</span>
+                <span class="pill">${escapeHtml(item.category || "Other")}</span>
+              `;
+
+              const line2 = document.createElement("div");
+              line2.className = "nums muted";
+              const qty = Number(item.qty);
+              const price = Number(item.price);
+              const total = itemTotal(item);
+
+              line2.textContent =
+                `Qty: ${Number.isFinite(qty) ? qty : 0} • ` +
+                `Unit: ${money(Number.isFinite(price) ? price : 0)} • ` +
+                `Total: ${money(total)}`;
+
+              meta.appendChild(line1);
+              meta.appendChild(line2);
+
+              const actions = document.createElement("div");
+              actions.className = "right";
+
+              const editBtn = document.createElement("button");
+              editBtn.className = "smallbtn";
+              editBtn.textContent = "Edit";
+              editBtn.onclick = () => editItem(item.id);
+
+              const delBtn = document.createElement("button");
+              delBtn.className = "smallbtn danger";
+              delBtn.textContent = "Delete";
+              delBtn.onclick = () => deleteItem(item.id);
+
+              actions.appendChild(editBtn);
+              actions.appendChild(delBtn);
+
+              li.appendChild(meta);
+              li.appendChild(actions);
+              ul.appendChild(li);
+            });
+
+          card.appendChild(ul);
+        }
+
+        sectionsEl.appendChild(card);
+      });
+    }
+
+    function addItem() {
+      const name = nameInput.value.trim();
+      const qty = Number(qtyInput.value);
+      const price = Number(priceInput.value);
+      const category = catSelect.value;
+
+      if (!name) { alert("Please enter an item name."); return; }
+      if (!Number.isFinite(qty) || qty < 0) { alert("Please enter a valid quantity (0 or more)."); return; }
+      if (!Number.isFinite(price) || price < 0) { alert("Please enter a valid price (0 or more)."); return; }
+
+      const items = loadItems();
+      const id = Date.now().toString() + Math.random().toString(16).slice(2);
+
+      items.unshift({ id, name, qty, price, category, updatedAt: Date.now() });
+      saveItems(items);
+
+      nameInput.value = "";
+      qtyInput.value = "";
+      priceInput.value = "";
+      nameInput.focus();
+
+      render();
+    }
+
+    function deleteItem(id) {
+      const items = loadItems().filter(i => i.id !== id);
+      saveItems(items);
+      render();
+    }
+
+    function editItem(id) {
+      const items = loadItems();
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+
+      const newName = prompt("Item name:", item.name ?? "");
+      if (newName === null) return;
+
+      const newQtyStr = prompt("Quantity:", String(item.qty ?? 0));
+      if (newQtyStr === null) return;
+
+      const newPriceStr = prompt("Price per unit:", String(item.price ?? 0));
+      if (newPriceStr === null) return;
+
+      const newCat = prompt(`Category (${CATEGORY_LIST_TEXT}):`, item.category ?? "Other");
+      if (newCat === null) return;
+
+      const newQty = Number(newQtyStr);
+      const newPrice = Number(newPriceStr);
+
+      if (!newName.trim()) { alert("Name cannot be empty."); return; }
+      if (!Number.isFinite(newQty) || newQty < 0) { alert("Invalid quantity."); return; }
+      if (!Number.isFinite(newPrice) || newPrice < 0) { alert("Invalid price."); return; }
+
+      item.name = newName.trim();
+      item.qty = newQty;
+      item.price = newPrice;
+      item.category = normalizeCategory(newCat);
+      item.updatedAt = Date.now();
+
+      saveItems(items);
+      render();
+    }
+
+    function clearAll() {
+      const ok = confirm("Delete ALL inventory items? This cannot be undone.");
+      if (!ok) return;
+      localStorage.removeItem(STORAGE_KEY);
+      render();
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    addBtn.addEventListener("click", addItem);
+    clearBtn.addEventListener("click", clearAll);
+    searchEl.addEventListener("input", render);
+
+    nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
+    qtyInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
+    priceInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addItem(); });
+
+    initCategories();
+    render();
+  </script>
+
+</body>
+</html>
