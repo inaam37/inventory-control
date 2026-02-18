@@ -29,15 +29,20 @@ DATABASE_URL="postgresql://user:password@localhost:5432/pantrypilot"
 DEFAULT_ORGANIZATION_ID="your-organization-uuid"
 ```
 
-## API scaffold
-Current endpoints include Phase 10 expiry tracking and FIFO workflows:
-
+## API endpoints
 - `GET /health` — service health check
 - `GET /api/overview` — status + roadmap metadata
 - `GET /api/items` — placeholder list (wire to Prisma)
 - `POST /api/items` — placeholder create (wire to Prisma)
-- `POST /api/waste` — log ingredient waste events
-- `GET /api/waste/report` — waste trends, cost, and high-waste item insights
+- `POST /api/purchase-orders` — create supplier purchase order with approval threshold handling
+- `POST /api/purchase-orders/auto-generate` — auto-generate POs for low-stock items (`onHand < reorderPoint`)
+- `PUT /api/purchase-orders/:id/status` — update lifecycle state (`PENDING`, `PARTIAL`, `DELIVERED`, `CANCELLED`)
+
+## Purchase order workflow highlights
+- Computes `totalCost` from line quantity × unit cost.
+- Estimates supplier delivery from longest item lead time.
+- Supports approval workflow based on configurable threshold (`approvalStatus`).
+- Groups low-stock items by supplier and creates one PO per supplier during auto-generation.
 
 ## Project layout
 ```
@@ -46,16 +51,12 @@ backend/
     schema.prisma
   src/
     index.js
-    jobs/
-      expiryAlerts.js
-    lib/
-      expiry.js
-      prisma.js
+    prisma.js
     routes/
       inventory.js
       overview.js
       items.js
-      waste.js
+      purchaseOrders.js
 ```
 
 ## Next steps

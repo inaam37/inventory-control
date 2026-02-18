@@ -24,9 +24,9 @@ router.get("/", requireAuth, authorize("overview:read"), (req, res) => {
       "GET /api/auth/me",
       "GET /api/overview",
       "GET /api/items",
-      "POST /api/count-session",
-      "POST /api/count-session/:id/items",
-      "GET /api/count-session/:id/variance-report"
+      "POST /api/purchase-orders",
+      "POST /api/purchase-orders/auto-generate",
+      "PUT /api/purchase-orders/:id/status"
     ]
   });
 });

@@ -8,18 +8,17 @@ datasource db {
 }
 
 model Organization {
-  id             String          @id @default(uuid())
-  name           String
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  locations      Location[]
-  users          User[]
-  vendors        Vendor[]
-  items          Item[]
-  recipes        Recipe[]
-  purchaseOrders PurchaseOrder[]
-  notifications  Notification[]
-  countSessions  CountSession[]
+  id               String          @id @default(uuid())
+  name             String
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  locations        Location[]
+  users            User[]
+  vendors          Vendor[]
+  items            Item[]
+  recipes          Recipe[]
+  purchaseOrders   PurchaseOrder[]
+  notifications    Notification[]
 }
 
 model Location {
@@ -93,8 +92,7 @@ model Item {
   usageLogs      UsageLog[]
   salesLines     SalesIngredient[]
   priceHistory   PriceHistory[]
-  purchaseOrderItems PurchaseOrderItem[]
-  countEntries   CountSessionItem[]
+  purchaseOrderLines PurchaseOrderItem[]
 }
 
 model Recipe {
@@ -112,12 +110,12 @@ model Recipe {
 }
 
 model RecipeIngredient {
-  id       String @id @default(uuid())
-  recipeId String
-  itemId   String
-  quantity Float
-  recipe   Recipe @relation(fields: [recipeId], references: [id])
-  item     Item   @relation(fields: [itemId], references: [id])
+  id        String @id @default(uuid())
+  recipeId  String
+  itemId    String
+  quantity  Float
+  recipe    Recipe @relation(fields: [recipeId], references: [id])
+  item      Item   @relation(fields: [itemId], references: [id])
 }
 
 model SalesLog {
@@ -141,13 +139,13 @@ model SalesIngredient {
 
 model UsageLog {
   id          String   @id @default(uuid())
-  itemId      String
-  usedQty     Float    @default(0)
-  wasteQty    Float    @default(0)
-  wasteReason String?
-  usedDate    DateTime
-  createdAt   DateTime @default(now())
-  item        Item     @relation(fields: [itemId], references: [id])
+  itemId       String
+  usedQty      Float    @default(0)
+  wasteQty     Float    @default(0)
+  wasteReason  String?
+  usedDate     DateTime
+  createdAt    DateTime @default(now())
+  item         Item     @relation(fields: [itemId], references: [id])
 }
 
 model PriceHistory {
@@ -163,22 +161,33 @@ model PriceHistory {
 }
 
 model PurchaseOrder {
-  id             String              @id @default(uuid())
-  organizationId String
-  vendorId       String
-  status         PurchaseOrderStatus @default(DRAFT)
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  organization   Organization        @relation(fields: [organizationId], references: [id])
-  vendor         Vendor              @relation(fields: [vendorId], references: [id])
-  items          PurchaseOrderItem[]
+  id                   String                @id @default(uuid())
+  organizationId       String
+  vendorId             String
+  status               PurchaseOrderStatus   @default(PENDING)
+  totalCost            Float                 @default(0)
+  expectedDeliveryDate DateTime?
+  approvalStatus       ApprovalStatus        @default(APPROVED)
+  approvalThreshold    Float                 @default(0)
+  approvedAt           DateTime?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  organization         Organization          @relation(fields: [organizationId], references: [id])
+  vendor               Vendor                @relation(fields: [vendorId], references: [id])
+  items                PurchaseOrderItem[]
 }
 
 enum PurchaseOrderStatus {
-  DRAFT
-  SENT
-  RECEIVED
+  PENDING
+  PARTIAL
+  DELIVERED
   CANCELLED
+}
+
+enum ApprovalStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
 }
 
 model PurchaseOrderItem {
