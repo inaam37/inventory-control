@@ -36,12 +36,8 @@ Current endpoints include Phase 10 expiry tracking and FIFO workflows:
 - `GET /api/overview` — status + roadmap metadata
 - `GET /api/items` — placeholder list (wire to Prisma)
 - `POST /api/items` — placeholder create (wire to Prisma)
-- `GET /api/inventory/expiring-soon?organizationId=<id>&days=<n>` — items with batches expiring within n days (default 3)
-- `POST /api/inventory/:itemId/batches` — receive inventory with `receivedQty` and `expiryDate`
-- `POST /api/inventory/:itemId/use` — consume inventory using FIFO (earliest expiry first)
-- `GET /api/inventory/fifo/next/:itemId` — preview next batch selected by FIFO
-- `POST /api/inventory/jobs/expire-check` — manually trigger expiry alert generation
-- `GET /api/inventory/waste-report?organizationId=<id>` — report waste logged as expired
+- `POST /api/waste` — log ingredient waste events
+- `GET /api/waste/report` — waste trends, cost, and high-waste item insights
 
 ## Project layout
 ```
@@ -59,7 +55,7 @@ backend/
       inventory.js
       overview.js
       items.js
-    index.js
+      waste.js
 ```
 
 ## Next steps
