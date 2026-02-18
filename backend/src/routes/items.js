@@ -1,11 +1,20 @@
 const express = require("express");
 
+const { state } = require("../data/store");
+
 const router = express.Router();
 
 router.get("/", (req, res) => {
+  const items = state.inventory.map((record) => ({
+    itemName: record.itemName,
+    unit: record.unit,
+    quantity: record.quantity,
+    location_id: record.locationId
+  }));
+
   res.json({
-    items: [],
-    message: "Items endpoint scaffold. Wire to Prisma to fetch real data."
+    items,
+    message: "Item inventory now includes location_id for multi-location tracking."
   });
 });
 

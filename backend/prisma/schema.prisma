@@ -29,6 +29,7 @@ model Location {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id])
+  items          Item[]
 }
 
 model User {
@@ -69,6 +70,7 @@ model Item {
   id             String   @id @default(uuid())
   organizationId String
   vendorId       String?
+  locationId     String?
   name           String
   category       String
   unit           String
@@ -83,11 +85,16 @@ model Item {
   updatedAt      DateTime @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id])
   vendor         Vendor?  @relation(fields: [vendorId], references: [id])
+  location       Location? @relation(fields: [locationId], references: [id])
   recipeLines    RecipeIngredient[]
   usageLogs      UsageLog[]
   salesLines     SalesIngredient[]
   priceHistory   PriceHistory[]
+  purchaseOrderItems PurchaseOrderItem[]
+
+  @@index([organizationId, locationId])
 }
+
 
 model Recipe {
   id             String   @id @default(uuid())
@@ -192,3 +199,4 @@ model Notification {
   readAt         DateTime?
   organization   Organization @relation(fields: [organizationId], references: [id])
 }
+
