@@ -14,7 +14,7 @@ router.get("/", requireAuth, authorize("overview:read"), (req, res) => {
       "Implement CRUD for items/vendors/recipes",
       "Add purchase order workflows",
       "Enable notifications",
-      "Phase 10: expiry management + FIFO consumption"
+      "Expand analytics dashboards with profitability and cost controls"
     ],
     endpoints: [
       "GET /health",
@@ -24,9 +24,12 @@ router.get("/", requireAuth, authorize("overview:read"), (req, res) => {
       "GET /api/auth/me",
       "GET /api/overview",
       "GET /api/items",
-      "POST /api/purchase-orders",
-      "POST /api/purchase-orders/auto-generate",
-      "PUT /api/purchase-orders/:id/status"
+      "GET /api/analytics/cogs",
+      "GET /api/analytics/inventory-value",
+      "GET /api/analytics/ingredient-costs",
+      "GET /api/analytics/waste-cost",
+      "GET /api/analytics/profit-margin",
+      "GET /api/analytics/inventory-turnover"
     ]
   });
 });

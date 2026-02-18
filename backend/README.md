@@ -34,15 +34,12 @@ DEFAULT_ORGANIZATION_ID="your-organization-uuid"
 - `GET /api/overview` — status + roadmap metadata
 - `GET /api/items` — placeholder list (wire to Prisma)
 - `POST /api/items` — placeholder create (wire to Prisma)
-- `POST /api/purchase-orders` — create supplier purchase order with approval threshold handling
-- `POST /api/purchase-orders/auto-generate` — auto-generate POs for low-stock items (`onHand < reorderPoint`)
-- `PUT /api/purchase-orders/:id/status` — update lifecycle state (`PENDING`, `PARTIAL`, `DELIVERED`, `CANCELLED`)
-
-## Purchase order workflow highlights
-- Computes `totalCost` from line quantity × unit cost.
-- Estimates supplier delivery from longest item lead time.
-- Supports approval workflow based on configurable threshold (`approvalStatus`).
-- Groups low-stock items by supplier and creates one PO per supplier during auto-generation.
+- `GET /api/analytics/cogs` — Cost of Goods Sold grouped by period
+- `GET /api/analytics/inventory-value` — inventory valuation snapshot (supports `asOf`)
+- `GET /api/analytics/ingredient-costs` — ingredient cost trends from price history
+- `GET /api/analytics/waste-cost` — waste cost totals and period trend
+- `GET /api/analytics/profit-margin` — gross margin report by recipe/dish
+- `GET /api/analytics/inventory-turnover` — inventory turnover ratio and valuation context
 
 ## Project layout
 ```
@@ -56,7 +53,8 @@ backend/
       inventory.js
       overview.js
       items.js
-      purchaseOrders.js
+      analytics.js
+    prisma.js
 ```
 
 ## Next steps

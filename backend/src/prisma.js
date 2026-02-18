@@ -1,15 +1,13 @@
-const { PrismaClient } = require("@prisma/client");
+let prisma = null;
 
-const globalForPrisma = globalThis;
-
-const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"]
-  });
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+try {
+  // @prisma/client is generated during backend setup.
+  // Keep startup resilient in environments where generation has not run yet.
+  // eslint-disable-next-line global-require
+  const { PrismaClient } = require("@prisma/client");
+  prisma = new PrismaClient();
+} catch (error) {
+  prisma = null;
 }
 
 module.exports = prisma;
