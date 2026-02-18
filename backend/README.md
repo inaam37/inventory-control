@@ -24,12 +24,18 @@ DATABASE_URL="postgresql://user:password@localhost:5432/pantrypilot"
 ```
 
 ## API scaffold
-Current endpoints are intentionally minimal to keep backend integration focused:
+Current endpoints include Phase 10 expiry tracking and FIFO workflows:
 
 - `GET /health` — service health check
 - `GET /api/overview` — status + roadmap metadata
 - `GET /api/items` — placeholder list (wire to Prisma)
 - `POST /api/items` — placeholder create (wire to Prisma)
+- `GET /api/inventory/expiring-soon?organizationId=<id>&days=<n>` — items with batches expiring within n days (default 3)
+- `POST /api/inventory/:itemId/batches` — receive inventory with `receivedQty` and `expiryDate`
+- `POST /api/inventory/:itemId/use` — consume inventory using FIFO (earliest expiry first)
+- `GET /api/inventory/fifo/next/:itemId` — preview next batch selected by FIFO
+- `POST /api/inventory/jobs/expire-check` — manually trigger expiry alert generation
+- `GET /api/inventory/waste-report?organizationId=<id>` — report waste logged as expired
 
 ## Project layout
 ```
@@ -38,7 +44,13 @@ backend/
     schema.prisma
   src/
     index.js
+    jobs/
+      expiryAlerts.js
+    lib/
+      expiry.js
+      prisma.js
     routes/
+      inventory.js
       overview.js
       items.js
 ```
