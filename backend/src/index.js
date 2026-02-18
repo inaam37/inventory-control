@@ -4,7 +4,7 @@ const dotenv = require("dotenv");
 
 const overviewRouter = require("./routes/overview");
 const itemsRouter = require("./routes/items");
-const ingredientsRouter = require("./routes/ingredients");
+const suppliersRouter = require("./routes/suppliers");
 
 dotenv.config();
 
@@ -25,15 +25,15 @@ app.get("/health", async (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/overview", overviewRouter);
 app.use("/api/items", itemsRouter);
-app.use("/api/ingredients", ingredientsRouter);
+app.use("/api/suppliers", suppliersRouter);
 
-app.use(errorHandler);
-
-const port = Number(process.env.PORT) || 3001;
-
-async function startServer() {
-  try {
-    await connectDatabase();
+app.use((err, req, res, next) => {
+  console.error(err);
+  if (err.code === "P2025") {
+    return res.status(404).json({ error: "Resource not found" });
+  }
+  return res.status(500).json({ error: "Internal server error" });
+});
 
     app.listen(port, () => {
       console.log(`Inventory Control backend listening on ${port}`);

@@ -55,40 +55,57 @@ model Vendor {
   id             String          @id @default(uuid())
   organizationId String
   name           String
+  contactName    String?
   phone          String?
   email          String?
+  address        String?
+  deliverySchedule String?
+  paymentTerms   String?
+  reliabilityScore Float @default(0)
+  ratingCount    Int    @default(0)
   notes          String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  organization   Organization    @relation(fields: [organizationId], references: [id])
-  items          Item[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  supplierItems  SupplierItem[]
   priceHistory   PriceHistory[]
   purchaseOrders PurchaseOrder[]
 }
 
 model Item {
-  id                String              @id @default(uuid())
-  organizationId    String
-  vendorId          String?
-  name              String
-  category          String
-  unit              String
-  sku               String?
-  onHand            Float               @default(0)
-  parLevel          Float               @default(0)
-  reorderPoint      Float               @default(0)
-  costPerUnit       Float               @default(0)
-  leadTimeDays      Int                 @default(0)
-  usagePerDay       Float               @default(0)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  organization      Organization        @relation(fields: [organizationId], references: [id])
-  vendor            Vendor?             @relation(fields: [vendorId], references: [id])
-  recipeLines       RecipeIngredient[]
-  usageLogs         UsageLog[]
-  salesLines        SalesIngredient[]
-  priceHistory      PriceHistory[]
-  PurchaseOrderItem PurchaseOrderItem[]
+  id             String   @id @default(uuid())
+  organizationId String
+  vendorId       String?
+  name           String
+  category       String
+  unit           String
+  sku            String?
+  onHand         Float    @default(0)
+  parLevel       Float    @default(0)
+  reorderPoint   Float    @default(0)
+  costPerUnit    Float    @default(0)
+  leadTimeDays   Int      @default(0)
+  usagePerDay    Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  vendor         Vendor?  @relation(fields: [vendorId], references: [id])
+  suppliers      SupplierItem[]
+  recipeLines    RecipeIngredient[]
+  usageLogs      UsageLog[]
+  salesLines     SalesIngredient[]
+  priceHistory   PriceHistory[]
+}
+
+model SupplierItem {
+  id        String   @id @default(uuid())
+  vendorId  String
+  itemId    String
+  createdAt DateTime @default(now())
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, itemId])
 }
 
 model Recipe {

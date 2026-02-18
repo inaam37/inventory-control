@@ -34,21 +34,14 @@ JWT_REFRESH_TTL_SECONDS="604800"
 
 ## API scaffold
 - `GET /health` — service health check
-- `POST /api/auth/register` — create user (password hashed)
-- `POST /api/auth/login` — issue access/refresh tokens
-- `POST /api/auth/refresh` — issue new access token from refresh token
-- `POST /api/auth/logout` — invalidate refresh token
-- `GET /api/auth/me` — authenticated profile endpoint
-- `GET /api/overview` — authenticated roadmap metadata
-- `GET /api/items` — authenticated + permission gated read
-- `POST /api/items` — authenticated + permission gated write
-
-## Roles & permissions
-Supported roles:
-- `ADMIN`: full access
-- `MANAGER`: overview read, item read/write, user read/write
-- `STAFF`: overview read, item read/write
-- `VIEWER`: overview read, item read only
+- `GET /api/overview` — status + roadmap metadata
+- `GET /api/items` — placeholder list (wire to Prisma)
+- `POST /api/items` — placeholder create (wire to Prisma)
+- `GET /api/suppliers?organizationId=...` — list suppliers for an organization
+- `GET /api/suppliers/:id` — fetch one supplier with linked ingredients
+- `POST /api/suppliers` — create supplier with contact details, terms, and linked ingredients
+- `PUT /api/suppliers/:id` — update supplier profile, ratings, and linked ingredients
+- `DELETE /api/suppliers/:id` — remove supplier
 
 ## Project layout
 ```
@@ -71,3 +64,9 @@ backend/
       items.js
     index.js
 ```
+
+## Next steps
+1. Add authentication and JWT sessions.
+2. Expand CRUD coverage for items, recipes, and PO drafts.
+3. Add background jobs for reorder notifications.
+4. Wire the frontend to these endpoints.
