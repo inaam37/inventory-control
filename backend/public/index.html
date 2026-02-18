@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PantryPilot Dashboard</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <main class="dashboard">
+    <header class="dashboard-header">
+      <div>
+        <p class="kicker">Inventory Intelligence</p>
+        <h1>PantryPilot Dashboard</h1>
+      </div>
+      <form id="date-filter-form" class="filters">
+        <label>
+          Start date
+          <input type="date" id="startDate" name="startDate" required />
+        </label>
+        <label>
+          End date
+          <input type="date" id="endDate" name="endDate" required />
+        </label>
+        <button type="submit">Apply</button>
+      </form>
+    </header>
+
+    <section class="cards-grid" id="quick-stats"></section>
+
+    <section class="panel-grid">
+      <article class="panel chart-panel">
+        <h2>Total Inventory Value</h2>
+        <p id="total-value" class="value-pill">$0.00</p>
+        <canvas id="categoryChart" height="220"></canvas>
+      </article>
+
+      <article class="panel chart-panel">
+        <h2>Stock Flow Trend</h2>
+        <canvas id="flowChart" height="220"></canvas>
+      </article>
+    </section>
+
+    <section class="panel-grid">
+      <article class="panel alerts-panel">
+        <h2>Low Stock Alerts</h2>
+        <ul id="low-stock-list" class="alert-list"></ul>
+      </article>
+
+      <article class="panel alerts-panel">
+        <h2>Expiring Soon</h2>
+        <ul id="expiring-list" class="alert-list"></ul>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>Recent Transactions</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Item</th>
+              <th>Type</th>
+              <th>Qty</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody id="transactions-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
