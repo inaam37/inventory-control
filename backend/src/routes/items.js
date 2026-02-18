@@ -3,9 +3,18 @@ const crypto = require("crypto");
 
 const store = require("../dataStore");
 
+const { state } = require("../data/store");
+
 const router = express.Router();
 
 router.get("/", (req, res) => {
+  const items = state.inventory.map((record) => ({
+    itemName: record.itemName,
+    unit: record.unit,
+    quantity: record.quantity,
+    location_id: record.locationId
+  }));
+
   res.json({
     items: store.items
   });
@@ -32,6 +41,8 @@ router.post("/", (req, res) => {
     message: "Item created",
     item
   });
-});
+
+  return res.status(201).json({ item });
+}));
 
 module.exports = router;
