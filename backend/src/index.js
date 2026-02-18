@@ -27,6 +27,23 @@ app.use("/api/overview", overviewRouter);
 app.use("/api/items", itemsRouter);
 app.use("/api/inventory", inventoryRouter);
 
+app.use(errorHandler);
+
+const port = Number(process.env.PORT) || 3001;
+
+async function startServer() {
+  try {
+    await connectDatabase();
+
+    app.listen(port, () => {
+      console.log(`Inventory Control backend listening on ${port}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+}
+
 process.on("SIGINT", async () => {
   await disconnectDatabase();
   process.exit(0);

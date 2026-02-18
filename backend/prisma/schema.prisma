@@ -72,29 +72,29 @@ model Vendor {
 }
 
 model Item {
-  id                String              @id @default(uuid())
-  organizationId    String
-  vendorId          String?
-  name              String
-  category          String
-  unit              String
-  sku               String?
-  onHand            Float               @default(0)
-  parLevel          Float               @default(0)
-  reorderPoint      Float               @default(0)
-  costPerUnit       Float               @default(0)
-  leadTimeDays      Int                 @default(0)
-  usagePerDay       Float               @default(0)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  organization      Organization        @relation(fields: [organizationId], references: [id])
-  vendor            Vendor?             @relation(fields: [vendorId], references: [id])
-  recipeLines       RecipeIngredient[]
-  usageLogs         UsageLog[]
-  salesLines        SalesIngredient[]
-  priceHistory      PriceHistory[]
-  inventoryEntries  Inventory[]
-  PurchaseOrderItem PurchaseOrderItem[]
+  id             String   @id @default(uuid())
+  organizationId String
+  vendorId       String?
+  name           String
+  category       String
+  unit           String
+  sku            String?
+  onHand         Float    @default(0)
+  parLevel       Float    @default(0)
+  reorderPoint   Float    @default(0)
+  costPerUnit    Float    @default(0)
+  leadTimeDays   Int      @default(0)
+  usagePerDay    Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  vendor         Vendor?  @relation(fields: [vendorId], references: [id])
+  recipeLines    RecipeIngredient[]
+  usageLogs      UsageLog[]
+  salesLines     SalesIngredient[]
+  priceHistory   PriceHistory[]
+  purchaseOrderItems PurchaseOrderItem[]
+  inventoryTransactions InventoryTransaction[]
 }
 
 model SupplierItem {
@@ -171,6 +171,38 @@ model PriceHistory {
   createdAt     DateTime @default(now())
   item          Item     @relation(fields: [itemId], references: [id])
   vendor        Vendor   @relation(fields: [vendorId], references: [id])
+}
+
+
+model InventoryTransaction {
+  id            String   @id @default(uuid())
+  itemId         String
+  type          InventoryTransactionType
+  quantity      Float
+  supplierId    String?
+  pricePaid     Float?
+  unitCost      Float
+  expiryDate    DateTime?
+  batchNumber   String?
+  stockOutReason StockOutReason?
+  cogsAmount    Float    @default(0)
+  occurredAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+  item          Item     @relation(fields: [itemId], references: [id])
+
+  @@index([itemId, occurredAt])
+  @@index([type, occurredAt])
+}
+
+enum InventoryTransactionType {
+  STOCK_IN
+  STOCK_OUT
+}
+
+enum StockOutReason {
+  COOKING
+  WASTE
+  SPOILAGE
 }
 
 model PurchaseOrder {
