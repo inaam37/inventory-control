@@ -1,11 +1,14 @@
-# PantryPilot Backend (Scaffold)
+# PantryPilot Backend
 
-This backend scaffolding sets the foundation for a long-term SaaS deployment using **PostgreSQL + Prisma + Express**. It mirrors the data models currently stored on the client side and is designed to scale with multi-location restaurant teams.
+Phase 20 hardening for testing, deployment, monitoring, and operations.
 
-## Why this stack
-- **PostgreSQL**: reliable, scalable relational data.
-- **Prisma**: type-safe data access and migrations.
-- **Express**: minimal API layer (swap with NestJS later if desired).
+## Features added
+- Complete API test coverage for current endpoints.
+- Admin operational endpoints protected by `x-admin-token`.
+- Request timing logs + lightweight in-memory caching.
+- Optional Sentry integration for errors and traces.
+- Production deployment descriptors (`Procfile`, `app.json`).
+- Production DB setup script for Prisma migrations.
 
 ## Quick start
 ```bash
@@ -13,38 +16,38 @@ cd backend
 npm install
 cp .env.example .env
 npm run prisma:generate
-npm run prisma:migrate
 npm run dev
 ```
 
+## Run tests
+```bash
+npm test
+```
+
 ## Environment
-Create a `.env` file with:
-```
+```bash
 DATABASE_URL="postgresql://user:password@localhost:5432/pantrypilot"
+PORT=4000
+CACHE_TTL_SECONDS=30
+ADMIN_TOKEN=dev-admin-token
+SENTRY_DSN=
+SENTRY_TRACES_SAMPLE_RATE=0.1
 ```
 
-## API scaffold
-Current endpoints are intentionally minimal to keep backend integration focused:
+## API endpoints
+- `GET /health`
+- `GET /api/overview`
+- `GET /api/items`
+- `POST /api/items`
+- `GET /api/admin/status` (requires `x-admin-token`)
+- `POST /api/admin/cache/invalidate` (requires `x-admin-token`)
 
-- `GET /health` — service health check
-- `GET /api/overview` — status + roadmap metadata
-- `GET /api/items` — placeholder list (wire to Prisma)
-- `POST /api/items` — placeholder create (wire to Prisma)
-
-## Project layout
-```
-backend/
-  prisma/
-    schema.prisma
-  src/
-    index.js
-    routes/
-      overview.js
-      items.js
+## Production DB setup
+```bash
+DATABASE_URL="postgresql://..." ./scripts/setup-production-db.sh
 ```
 
-## Next steps
-1. Add authentication and JWT sessions.
-2. Implement CRUD endpoints for items, vendors, recipes, and PO drafts.
-3. Add background jobs for reorder notifications.
-4. Wire the frontend to these endpoints.
+## Deployment
+- **Backend**: Heroku/AWS/DigitalOcean (Node process: `node src/index.js`)
+- **Frontend**: Vercel/Netlify static deploy (`index.html`, `admin.html`)
+- See full runbook in `docs/DEPLOYMENT.md`.
