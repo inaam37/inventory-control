@@ -16,10 +16,10 @@ model Organization {
   users          User[]
   vendors        Vendor[]
   items          Item[]
-  inventories    Inventory[]
   recipes        Recipe[]
   purchaseOrders PurchaseOrder[]
   notifications  Notification[]
+  countSessions  CountSession[]
 }
 
 model Location {
@@ -72,74 +72,37 @@ model Vendor {
 }
 
 model Item {
-  id             String   @id @default(uuid())
+  id             String             @id @default(uuid())
   organizationId String
   vendorId       String?
   name           String
   category       String
   unit           String
   sku            String?
-  barcode        String?  @unique
-  onHand         Float    @default(0)
-  parLevel       Float    @default(0)
-  reorderPoint   Float    @default(0)
-  costPerUnit    Float    @default(0)
-  leadTimeDays   Int      @default(0)
-  usagePerDay    Float    @default(0)
-  expiryDate     DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  vendor         Vendor?  @relation(fields: [vendorId], references: [id])
+  onHand         Float              @default(0)
+  parLevel       Float              @default(0)
+  reorderPoint   Float              @default(0)
+  costPerUnit    Float              @default(0)
+  leadTimeDays   Int                @default(0)
+  usagePerDay    Float              @default(0)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  vendor         Vendor?            @relation(fields: [vendorId], references: [id])
   recipeLines    RecipeIngredient[]
   usageLogs      UsageLog[]
-  salesLines         SalesIngredient[]
-  priceHistory       PriceHistory[]
+  salesLines     SalesIngredient[]
+  priceHistory   PriceHistory[]
   purchaseOrderItems PurchaseOrderItem[]
-  wasteLogs          WasteLog[]
-}
-
-model WasteLog {
-  id             String      @id @default(uuid())
-  ingredientId   String
-  quantityWasted Float
-  reason         WasteReason
-  date           DateTime
-  cost           Float
-  createdAt      DateTime    @default(now())
-  ingredient     Item        @relation(fields: [ingredientId], references: [id])
-
-  @@index([ingredientId, date])
-}
-
-enum WasteReason {
-  SPOILED
-  DAMAGED
-  OVERSTOCK
-  THEFT
-}
-
-model InventoryBatch {
-  id             String   @id @default(uuid())
-  itemId         String
-  receivedQty    Float
-  remainingQty   Float
-  unitCost       Float?
-  expiryDate     DateTime
-  receivedAt     DateTime @default(now())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  item           Item     @relation(fields: [itemId], references: [id])
+  countEntries   CountSessionItem[]
 }
 
 model Recipe {
   id             String             @id @default(uuid())
   organizationId String
   name           String
-  preparationTime Int      @default(0)
-  costToPrepare  Float    @default(0)
-  yield          Int      @default(1)
-  menuPrice      Float    @default(0)
+  yield          Int                @default(1)
+  menuPrice      Float              @default(0)
   notes          String?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
@@ -149,14 +112,12 @@ model Recipe {
 }
 
 model RecipeIngredient {
-  id        String  @id @default(uuid())
-  recipeId  String
-  itemId    String
-  quantity  Float
-  recipe    Recipe  @relation(fields: [recipeId], references: [id])
-  item      Item    @relation(fields: [itemId], references: [id])
-
-  @@unique([recipeId, itemId])
+  id       String @id @default(uuid())
+  recipeId String
+  itemId   String
+  quantity Float
+  recipe   Recipe @relation(fields: [recipeId], references: [id])
+  item     Item   @relation(fields: [itemId], references: [id])
 }
 
 model SalesLog {
@@ -184,54 +145,21 @@ model UsageLog {
   usedQty     Float    @default(0)
   wasteQty    Float    @default(0)
   wasteReason String?
-  isExpiredWaste Boolean @default(false)
-  usedDate  DateTime
-  createdAt DateTime @default(now())
-  item      Item     @relation(fields: [itemId], references: [id])
+  usedDate    DateTime
+  createdAt   DateTime @default(now())
+  item        Item     @relation(fields: [itemId], references: [id])
 }
 
 model PriceHistory {
   id            String   @id @default(uuid())
-  itemId        String
-  vendorId      String
-  amount        Float
-  effectiveDate DateTime
-  notes         String?
-  createdAt     DateTime @default(now())
-  item          Item     @relation(fields: [itemId], references: [id])
-  vendor        Vendor   @relation(fields: [vendorId], references: [id])
-}
-
-
-model InventoryTransaction {
-  id            String   @id @default(uuid())
   itemId         String
-  type          InventoryTransactionType
-  quantity      Float
-  supplierId    String?
-  pricePaid     Float?
-  unitCost      Float
-  expiryDate    DateTime?
-  batchNumber   String?
-  stockOutReason StockOutReason?
-  cogsAmount    Float    @default(0)
-  occurredAt    DateTime @default(now())
-  createdAt     DateTime @default(now())
-  item          Item     @relation(fields: [itemId], references: [id])
-
-  @@index([itemId, occurredAt])
-  @@index([type, occurredAt])
-}
-
-enum InventoryTransactionType {
-  STOCK_IN
-  STOCK_OUT
-}
-
-enum StockOutReason {
-  COOKING
-  WASTE
-  SPOILAGE
+  vendorId       String
+  amount         Float
+  effectiveDate  DateTime
+  notes          String?
+  createdAt      DateTime @default(now())
+  item           Item     @relation(fields: [itemId], references: [id])
+  vendor         Vendor   @relation(fields: [vendorId], references: [id])
 }
 
 model PurchaseOrder {
@@ -273,48 +201,40 @@ model Notification {
   organization   Organization @relation(fields: [organizationId], references: [id])
 }
 
-model Inventory {
-  id             String    @id @default(uuid())
+model CountSession {
+  id             String             @id @default(uuid())
   organizationId String
-  ingredientId   String
-  quantity       Float     @default(0)
-  location       String
-  expiryDate     DateTime?
-  batchNumber    String?
-  lastCountAt    DateTime  @default(now())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  locationId     String?
+  scheduledFor   DateTime?
+  status         CountSessionStatus @default(OPEN)
+  notes          String?
+  startedAt      DateTime           @default(now())
+  completedAt    DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  items          CountSessionItem[]
 
-  organization Organization   @relation(fields: [organizationId], references: [id])
-  ingredient   Item           @relation(fields: [ingredientId], references: [id])
-  logs         InventoryLog[]
-
-  @@index([organizationId])
-  @@index([ingredientId])
-  @@index([expiryDate])
+  @@index([organizationId, status])
 }
 
-model InventoryLog {
-  id             String              @id @default(uuid())
-  inventoryId    String
-  changeType     InventoryChangeType
-  quantityBefore Float
-  quantityChange Float
-  quantityAfter  Float
-  reason         String?
-  createdAt      DateTime            @default(now())
-
-  inventory Inventory @relation(fields: [inventoryId], references: [id])
-
-  @@index([inventoryId])
-  @@index([createdAt])
+enum CountSessionStatus {
+  OPEN
+  COMPLETED
 }
 
-enum InventoryChangeType {
-  RECEIPT
-  USAGE
-  WASTE
-  ADJUSTMENT
-  COUNT
-  TRANSFER
+model CountSessionItem {
+  id             String       @id @default(uuid())
+  countSessionId String
+  itemId         String
+  systemQty      Float
+  countedQty     Float
+  varianceQty    Float
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  countSession   CountSession @relation(fields: [countSessionId], references: [id], onDelete: Cascade)
+  item           Item         @relation(fields: [itemId], references: [id])
+
+  @@unique([countSessionId, itemId])
+  @@index([countSessionId, varianceQty])
 }

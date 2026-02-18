@@ -4,7 +4,7 @@ const dotenv = require("dotenv");
 
 const overviewRouter = require("./routes/overview");
 const itemsRouter = require("./routes/items");
-const wasteRouter = require("./routes/waste");
+const countSessionsRouter = require("./routes/countSessions");
 
 dotenv.config();
 
@@ -25,7 +25,7 @@ app.get("/health", async (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/overview", overviewRouter);
 app.use("/api/items", itemsRouter);
-app.use("/api/waste", wasteRouter);
+app.use("/api/count-session", countSessionsRouter);
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => {
