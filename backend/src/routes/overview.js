@@ -10,12 +10,19 @@ router.get("/", (req, res) => {
       "Add authentication",
       "Implement CRUD for items/vendors/recipes",
       "Add purchase order workflows",
-      "Enable notifications"
+      "Enable notifications",
+      "Expand analytics dashboards with profitability and cost controls"
     ],
     endpoints: [
       "GET /health",
       "GET /api/overview",
-      "GET /api/items"
+      "GET /api/items",
+      "GET /api/analytics/cogs",
+      "GET /api/analytics/inventory-value",
+      "GET /api/analytics/ingredient-costs",
+      "GET /api/analytics/waste-cost",
+      "GET /api/analytics/profit-margin",
+      "GET /api/analytics/inventory-turnover"
     ]
   });
 });
