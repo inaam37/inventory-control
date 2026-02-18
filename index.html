@@ -1559,16 +1559,11 @@
         ingredientAutocomplete.appendChild(option);
       });
 
-      priceItem.innerHTML = "";
-      const priceDefault = document.createElement("option");
-      priceDefault.value = "";
-      priceDefault.textContent = "Select item";
-      priceItem.appendChild(priceDefault);
-      state.items.forEach(item => {
-        const option = document.createElement("option");
-        option.value = item.id;
-        option.textContent = item.name;
-        priceItem.appendChild(option);
+      const groups = {};
+      CATEGORIES.forEach(c => groups[c] = []);
+      items.forEach(i => {
+        const cat = normalizeCategory(i.category);
+        groups[cat].push(i);
       });
     }
 
@@ -2250,68 +2245,11 @@
       });
     }
 
-    function renderOrders() {
-      const query = orderSearch.value.trim().toLowerCase();
-      const suggestions = state.items
-        .map(item => {
-          const orderQty = getSuggestedOrderQty(item);
-          const status = getStatus(item);
-          return { item, orderQty, status };
-        })
-        .filter(s => s.orderQty > 0)
-        .filter(s => {
-          const vendorName = getVendorName(s.item.vendorId).toLowerCase();
-          return (
-            s.item.name.toLowerCase().includes(query) ||
-            s.item.category.toLowerCase().includes(query) ||
-            vendorName.includes(query)
-          );
-        });
+      const newCat = prompt(`Category (${CATEGORY_LIST_TEXT}):`, item.category ?? "Other");
+      if (newCat === null) return;
 
-      orderList.innerHTML = "";
-      if (!suggestions.length) {
-        orderList.innerHTML = "<div class='muted'>No suggested orders right now. Your stock levels look healthy.</div>";
-        return;
-      }
-
-      suggestions.sort((a, b) => b.orderQty - a.orderQty).forEach(s => {
-        const item = s.item;
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <div class="section-title">
-            <div>
-              <strong>${item.name}</strong>
-              <div class="muted">${item.category} • Vendor: ${getVendorName(item.vendorId)}</div>
-            </div>
-            <span class="pill ${s.status.tone}">${s.status.label}</span>
-          </div>
-          <div class="grid-2" style="margin-top: 10px;">
-            <div>
-              <div class="muted">On-hand</div>
-              <strong>${item.onHand} ${item.unit}</strong>
-            </div>
-            <div>
-              <div class="muted">Par level</div>
-              <strong>${item.par} ${item.unit}</strong>
-            </div>
-            <div>
-              <div class="muted">Suggested par</div>
-              <strong>${getSuggestedPar(item).toFixed(1)} ${item.unit}</strong>
-            </div>
-            <div>
-              <div class="muted">Suggested order</div>
-              <strong>${s.orderQty} ${item.unit}</strong>
-            </div>
-            <div>
-              <div class="muted">Estimated cost</div>
-              <strong>${currency(s.orderQty * Number(item.cost || 0))}</strong>
-            </div>
-          </div>
-        `;
-        orderList.appendChild(card);
-      });
-    }
+      const newQty = Number(newQtyStr);
+      const newPrice = Number(newPriceStr);
 
     function generatePoDrafts() {
       const suggestions = state.items
@@ -2328,23 +2266,11 @@
         grouped[vendorId].push(entry);
       });
 
-      state.poDrafts = Object.entries(grouped).map(([vendorId, entries]) => {
-        const vendorName = vendorId === "unassigned" ? "Unassigned" : getVendorName(vendorId);
-        return {
-          id: crypto.randomUUID(),
-          vendorId,
-          vendorName,
-          createdAt: new Date().toISOString(),
-          status: "Draft",
-          items: entries.map(entry => ({
-            itemId: entry.item.id,
-            name: entry.item.name,
-            unit: entry.item.unit,
-            qty: entry.orderQty,
-            cost: Number(entry.item.cost || 0)
-          }))
-        };
-      });
+      item.name = newName.trim();
+      item.qty = newQty;
+      item.price = newPrice;
+      item.category = normalizeCategory(newCat);
+      item.updatedAt = Date.now();
 
       saveState();
       renderPoDrafts();
