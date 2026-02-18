@@ -15,7 +15,10 @@ router.get("/", (req, res) => {
     endpoints: [
       "GET /health",
       "GET /api/overview",
-      "GET /api/items"
+      "GET /api/items",
+      "POST /api/purchase-orders",
+      "POST /api/purchase-orders/auto-generate",
+      "PUT /api/purchase-orders/:id/status"
     ]
   });
 });
