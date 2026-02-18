@@ -54,13 +54,19 @@ model Vendor {
   id             String   @id @default(uuid())
   organizationId String
   name           String
+  contactName    String?
   phone          String?
   email          String?
+  address        String?
+  deliverySchedule String?
+  paymentTerms   String?
+  reliabilityScore Float @default(0)
+  ratingCount    Int    @default(0)
   notes          String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id])
-  items          Item[]
+  supplierItems  SupplierItem[]
   priceHistory   PriceHistory[]
   purchaseOrders PurchaseOrder[]
 }
@@ -83,10 +89,22 @@ model Item {
   updatedAt      DateTime @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id])
   vendor         Vendor?  @relation(fields: [vendorId], references: [id])
+  suppliers      SupplierItem[]
   recipeLines    RecipeIngredient[]
   usageLogs      UsageLog[]
   salesLines     SalesIngredient[]
   priceHistory   PriceHistory[]
+}
+
+model SupplierItem {
+  id        String   @id @default(uuid())
+  vendorId  String
+  itemId    String
+  createdAt DateTime @default(now())
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, itemId])
 }
 
 model Recipe {

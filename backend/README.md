@@ -30,6 +30,11 @@ Current endpoints are intentionally minimal to keep backend integration focused:
 - `GET /api/overview` — status + roadmap metadata
 - `GET /api/items` — placeholder list (wire to Prisma)
 - `POST /api/items` — placeholder create (wire to Prisma)
+- `GET /api/suppliers?organizationId=...` — list suppliers for an organization
+- `GET /api/suppliers/:id` — fetch one supplier with linked ingredients
+- `POST /api/suppliers` — create supplier with contact details, terms, and linked ingredients
+- `PUT /api/suppliers/:id` — update supplier profile, ratings, and linked ingredients
+- `DELETE /api/suppliers/:id` — remove supplier
 
 ## Project layout
 ```
@@ -45,6 +50,6 @@ backend/
 
 ## Next steps
 1. Add authentication and JWT sessions.
-2. Implement CRUD endpoints for items, vendors, recipes, and PO drafts.
+2. Expand CRUD coverage for items, recipes, and PO drafts.
 3. Add background jobs for reorder notifications.
 4. Wire the frontend to these endpoints.
