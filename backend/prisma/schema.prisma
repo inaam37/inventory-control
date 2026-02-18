@@ -45,17 +45,22 @@ model User {
 enum UserRole {
   ADMIN
   MANAGER
-  BUYER
-  CHEF
   STAFF
+  VIEWER
 }
 
 model Vendor {
   id             String          @id @default(uuid())
   organizationId String
   name           String
+  contactName    String?
   phone          String?
   email          String?
+  address        String?
+  deliverySchedule String?
+  paymentTerms   String?
+  reliabilityScore Float @default(0)
+  ratingCount    Int    @default(0)
   notes          String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -203,4 +208,42 @@ model Notification {
   createdAt      DateTime     @default(now())
   readAt         DateTime?
   organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model CountSession {
+  id             String             @id @default(uuid())
+  organizationId String
+  locationId     String?
+  scheduledFor   DateTime?
+  status         CountSessionStatus @default(OPEN)
+  notes          String?
+  startedAt      DateTime           @default(now())
+  completedAt    DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  items          CountSessionItem[]
+
+  @@index([organizationId, status])
+}
+
+enum CountSessionStatus {
+  OPEN
+  COMPLETED
+}
+
+model CountSessionItem {
+  id             String       @id @default(uuid())
+  countSessionId String
+  itemId         String
+  systemQty      Float
+  countedQty     Float
+  varianceQty    Float
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  countSession   CountSession @relation(fields: [countSessionId], references: [id], onDelete: Cascade)
+  item           Item         @relation(fields: [itemId], references: [id])
+
+  @@unique([countSessionId, itemId])
+  @@index([countSessionId, varianceQty])
 }

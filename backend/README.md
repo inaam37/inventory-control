@@ -1,19 +1,24 @@
-# PantryPilot Backend (Scaffold)
+# Inventory Control Backend (Phase 1)
 
-This backend scaffolding sets the foundation for a long-term SaaS deployment using **PostgreSQL + Prisma + Express**. It mirrors the data models currently stored on the client side and is designed to scale with multi-location restaurant teams.
+This backend sets up a Node.js + Express foundation for a restaurant inventory system with PostgreSQL via Prisma.
 
-## Why this stack
-- **PostgreSQL**: reliable, scalable relational data.
-- **Prisma**: type-safe data access and migrations.
-- **Express**: minimal API layer (swap with NestJS later if desired).
+## What is included
+
+- Express server running on **port 3001** by default
+- Folder architecture:
+  - `src/models`
+  - `src/routes`
+  - `src/controllers`
+  - `src/middleware`
+- Database bootstrap in `src/config/database.js`
+- Environment template with server, auth, and API key settings
 
 ## Quick start
+
 ```bash
 cd backend
 npm install
-cp .env.example .env
 npm run prisma:generate
-npm run prisma:migrate
 npm run dev
 ```
 
@@ -21,6 +26,7 @@ npm run dev
 Create a `.env` file with:
 ```
 DATABASE_URL="postgresql://user:password@localhost:5432/pantrypilot"
+DEFAULT_ORGANIZATION_ID="your-organization-uuid"
 ```
 
 ## API endpoints
@@ -47,6 +53,7 @@ backend/
     index.js
     prisma.js
     routes/
+      inventory.js
       overview.js
       items.js
       purchaseOrders.js
@@ -54,6 +61,6 @@ backend/
 
 ## Next steps
 1. Add authentication and JWT sessions.
-2. Implement CRUD endpoints for items, vendors, recipes, and PO drafts.
+2. Expand CRUD coverage for items, recipes, and PO drafts.
 3. Add background jobs for reorder notifications.
 4. Wire the frontend to these endpoints.
