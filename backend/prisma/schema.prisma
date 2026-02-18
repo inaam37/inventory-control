@@ -46,17 +46,22 @@ model User {
 enum UserRole {
   ADMIN
   MANAGER
-  BUYER
-  CHEF
   STAFF
+  VIEWER
 }
 
 model Vendor {
   id             String          @id @default(uuid())
   organizationId String
   name           String
+  contactName    String?
   phone          String?
   email          String?
+  address        String?
+  deliverySchedule String?
+  paymentTerms   String?
+  reliabilityScore Float @default(0)
+  ratingCount    Int    @default(0)
   notes          String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -90,6 +95,17 @@ model Item {
   priceHistory      PriceHistory[]
   inventoryEntries  Inventory[]
   PurchaseOrderItem PurchaseOrderItem[]
+}
+
+model SupplierItem {
+  id        String   @id @default(uuid())
+  vendorId  String
+  itemId    String
+  createdAt DateTime @default(now())
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, itemId])
 }
 
 model Recipe {
