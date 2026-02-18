@@ -26,10 +26,7 @@ npm run dev
 Create a `.env` file with:
 ```
 DATABASE_URL="postgresql://user:password@localhost:5432/pantrypilot"
-JWT_SECRET="replace-with-access-secret"
-JWT_REFRESH_SECRET="replace-with-refresh-secret"
-JWT_ACCESS_TTL_SECONDS="900"
-JWT_REFRESH_TTL_SECONDS="604800"
+DEFAULT_ORGANIZATION_ID="your-organization-uuid"
 ```
 
 ## API scaffold
@@ -63,3 +60,9 @@ backend/
       items.js
     index.js
 ```
+
+## Next steps
+1. Add authentication and JWT sessions.
+2. Expand CRUD coverage for items, recipes, and PO drafts.
+3. Add background jobs for reorder notifications.
+4. Wire the frontend to these endpoints.

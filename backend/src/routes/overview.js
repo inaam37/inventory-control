@@ -9,10 +9,9 @@ router.get("/", requireAuth, authorize("overview:read"), (req, res) => {
   res.json({
     message: "Backend scaffolding active",
     nextSteps: [
-      "Connect Prisma client",
-      "Authentication enabled",
-      "Implement CRUD for items/vendors/recipes",
-      "Add purchase order workflows",
+      "Connect authentication",
+      "Expand purchase order workflows",
+      "Add reporting and forecasting",
       "Enable notifications"
     ],
     endpoints: [
