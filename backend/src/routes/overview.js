@@ -1,8 +1,11 @@
 const express = require("express");
 
+const { requireAuth } = require("../middleware/auth");
+const { authorize } = require("../middleware/authorize");
+
 const router = express.Router();
 
-router.get("/", (req, res) => {
+router.get("/", requireAuth, authorize("overview:read"), (req, res) => {
   res.json({
     message: "Backend scaffolding active",
     nextSteps: [
@@ -10,7 +13,8 @@ router.get("/", (req, res) => {
       "Add authentication",
       "Implement CRUD for items/vendors/recipes",
       "Add purchase order workflows",
-      "Enable notifications"
+      "Enable notifications",
+      "Expand analytics dashboards with profitability and cost controls"
     ],
     phase15: {
       capabilities: [
@@ -22,6 +26,10 @@ router.get("/", (req, res) => {
     },
     endpoints: [
       "GET /health",
+      "POST /api/auth/login",
+      "POST /api/auth/logout",
+      "POST /api/auth/refresh",
+      "GET /api/auth/me",
       "GET /api/overview",
       "GET /api/items",
       "GET /api/locations",
