@@ -186,6 +186,20 @@
 
     .footer-note { font-size: 12px; color: var(--muted); }
 
+    .form-feedback {
+      margin-top: 10px;
+      font-size: 13px;
+      min-height: 18px;
+    }
+
+    .form-feedback.error { color: #b42318; }
+    .form-feedback.success { color: #067647; }
+
+    input.invalid, select.invalid, textarea.invalid {
+      border-color: #f04438;
+      background: #fff6f6;
+    }
+
     .ingredient-row {
       display: grid;
       grid-template-columns: 2fr 1fr auto;
@@ -417,6 +431,10 @@
             <label for="itemSku">Internal SKU</label>
             <input id="itemSku" placeholder="TOM-001" />
           </div>
+          <div>
+            <label for="itemBarcode">Barcode</label>
+            <input id="itemBarcode" placeholder="0123456789012" inputmode="numeric" />
+          </div>
         </div>
 
         <div class="toolbar" style="margin-top: 16px;">
@@ -424,6 +442,7 @@
           <button class="danger" id="deleteItem" disabled>Delete Item</button>
           <span class="muted" id="formStatus">Add a new item</span>
         </div>
+        <div id="itemFormFeedback" class="form-feedback" aria-live="polite"></div>
       </div>
 
       <div class="card">
@@ -552,6 +571,11 @@
           </div>
         </div>
         <div id="countList" class="stack" style="margin-top: 12px;"></div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="startCount">Start Inventory Count</button>
+          <span class="muted" id="countSessionStatus">No active count session</span>
+        </div>
+        <div id="countFormFeedback" class="form-feedback" aria-live="polite"></div>
         <div class="footer-note">Counts update the on-hand quantity and are stored locally.</div>
       </div>
 
@@ -653,6 +677,32 @@
         <div class="footer-note" style="margin-top: 10px;">Drafts are generated from current ordering suggestions.</div>
       </div>
 
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Create Purchase Order (Manual)</h3>
+          <span class="muted">Build a PO line manually when needed</span>
+        </div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="manualPoVendor">Vendor</label>
+            <select id="manualPoVendor"></select>
+          </div>
+          <div>
+            <label for="manualPoItem">Ingredient</label>
+            <input id="manualPoItem" list="ingredientAutocomplete" placeholder="Search ingredient" />
+          </div>
+          <div>
+            <label for="manualPoQty">Qty</label>
+            <input id="manualPoQty" type="number" min="0.1" step="0.1" placeholder="10" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveManualPo">Create Manual PO</button>
+        </div>
+        <div id="manualPoFeedback" class="form-feedback" aria-live="polite"></div>
+      </div>
+
       <div class="card">
         <div class="section-title">
           <h3>PO Drafts</h3>
@@ -704,11 +754,16 @@
             <label for="receiveNote">Receiving notes</label>
             <input id="receiveNote" placeholder="Shorted 2 cases of tomatoes" />
           </div>
+          <div>
+            <label for="receiveBarcode">Barcode scan</label>
+            <input id="receiveBarcode" placeholder="Scan barcode" inputmode="numeric" />
+          </div>
         </div>
         <div class="toolbar" style="margin-top: 12px;">
           <button class="primary" id="markReceived">Mark Received</button>
           <button class="ghost" id="clearReceipts">Clear Receipts</button>
         </div>
+        <div id="stockInFeedback" class="form-feedback" aria-live="polite"></div>
         <div id="receivingList" class="stack" style="margin-top: 12px;"></div>
       </div>
 
@@ -767,6 +822,7 @@
           <button class="danger" id="deleteRecipe" disabled>Delete Recipe</button>
           <span class="muted" id="recipeStatus">Add a new recipe</span>
         </div>
+        <div id="recipeFormFeedback" class="form-feedback" aria-live="polite"></div>
       </div>
 
       <div class="card">
@@ -808,36 +864,62 @@
 
       <div class="card">
         <div class="section-title">
-          <h3>Actual Usage & Waste</h3>
-          <span class="muted">Record actual item usage and waste</span>
+          <h3>Stock Out (Cooking Usage)</h3>
+          <span class="muted">Record ingredient depletion for production</span>
         </div>
         <div class="grid-3" style="margin-top: 12px;">
           <div>
-            <label for="usageItem">Item</label>
-            <select id="usageItem"></select>
+            <label for="usageItemSearch">Ingredient search</label>
+            <input id="usageItemSearch" list="ingredientAutocomplete" placeholder="Type ingredient" />
           </div>
           <div>
-            <label for="usageQty">Actual used</label>
-            <input id="usageQty" type="number" min="0" step="0.1" placeholder="12" />
+            <label for="usageQty">Qty used</label>
+            <input id="usageQty" type="number" min="0.1" step="0.1" placeholder="12" />
           </div>
           <div>
             <label for="usageDate">Date</label>
             <input id="usageDate" type="date" />
           </div>
           <div>
-            <label for="wasteQty">Waste qty</label>
-            <input id="wasteQty" type="number" min="0" step="0.1" placeholder="1.5" />
+            <label for="usageBarcode">Barcode scan</label>
+            <input id="usageBarcode" placeholder="Scan barcode" inputmode="numeric" />
           </div>
-          <div style="grid-column: 2 / -1;">
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveUsage">Log Stock Out</button>
+          <button class="ghost" id="clearUsage">Clear Usage</button>
+          <span class="muted" id="usageStatus">Record stock out transactions</span>
+        </div>
+        <div id="usageFormFeedback" class="form-feedback" aria-live="polite"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Log Waste</h3>
+          <span class="muted">Track spoilage, trim, and overproduction waste</span>
+        </div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="wasteItemSearch">Ingredient search</label>
+            <input id="wasteItemSearch" list="ingredientAutocomplete" placeholder="Type ingredient" />
+          </div>
+          <div>
+            <label for="wasteQty">Waste qty</label>
+            <input id="wasteQty" type="number" min="0.1" step="0.1" placeholder="1.5" />
+          </div>
+          <div>
+            <label for="wasteDate">Date</label>
+            <input id="wasteDate" type="date" />
+          </div>
+          <div style="grid-column: 1 / -1;">
             <label for="wasteReason">Waste reason</label>
             <input id="wasteReason" placeholder="Spoilage" />
           </div>
         </div>
         <div class="toolbar" style="margin-top: 12px;">
-          <button class="primary" id="saveUsage">Log Usage</button>
-          <button class="ghost" id="clearUsage">Clear Usage</button>
-          <span class="muted" id="usageStatus">Record actual usage and waste</span>
+          <button class="primary" id="logWaste">Log Waste</button>
         </div>
+        <div id="wasteFormFeedback" class="form-feedback" aria-live="polite"></div>
         <div id="usageList" class="stack" style="margin-top: 12px;"></div>
       </div>
 
@@ -1128,6 +1210,8 @@
     </section>
   </main>
 
+  <datalist id="ingredientAutocomplete"></datalist>
+
   <script>
     const STORAGE_KEY = "pantrypilot_phase3";
 
@@ -1168,7 +1252,8 @@
       lastGeneratedReport: null,
       activeItemId: null,
       activeVendorId: null,
-      activeRecipeId: null
+      activeRecipeId: null,
+      activeCountSession: null
     };
 
     const nav = document.getElementById("nav");
@@ -1198,7 +1283,8 @@
       vendor: document.getElementById("itemVendor"),
       lead: document.getElementById("itemLead"),
       usage: document.getElementById("itemUsage"),
-      sku: document.getElementById("itemSku")
+      sku: document.getElementById("itemSku"),
+      barcode: document.getElementById("itemBarcode")
     };
 
     const itemCountEl = document.getElementById("itemCount");
@@ -1211,6 +1297,8 @@
     const deleteItemBtn = document.getElementById("deleteItem");
     const resetFormBtn = document.getElementById("resetForm");
     const formStatus = document.getElementById("formStatus");
+    const itemFormFeedback = document.getElementById("itemFormFeedback");
+    const ingredientAutocomplete = document.getElementById("ingredientAutocomplete");
     const snapshotPeriod = document.getElementById("snapshotPeriod");
     const snapshotDate = document.getElementById("snapshotDate");
     const snapshotLabel = document.getElementById("snapshotLabel");
@@ -1242,6 +1330,9 @@
     const countList = document.getElementById("countList");
     const countSearch = document.getElementById("countSearch");
     const applyCountsBtn = document.getElementById("applyCounts");
+    const startCountBtn = document.getElementById("startCount");
+    const countSessionStatus = document.getElementById("countSessionStatus");
+    const countFormFeedback = document.getElementById("countFormFeedback");
 
     const orderList = document.getElementById("orderList");
     const orderSearch = document.getElementById("orderSearch");
@@ -1281,6 +1372,7 @@
     const recipeStatus = document.getElementById("recipeStatus");
     const recipeList = document.getElementById("recipeList");
     const recipeCount = document.getElementById("recipeCount");
+    const recipeFormFeedback = document.getElementById("recipeFormFeedback");
 
     const saleRecipe = document.getElementById("saleRecipe");
     const saleServings = document.getElementById("saleServings");
@@ -1290,15 +1382,21 @@
     const salesList = document.getElementById("salesList");
     const saleStatus = document.getElementById("saleStatus");
 
-    const usageItem = document.getElementById("usageItem");
+    const usageItemSearch = document.getElementById("usageItemSearch");
+    const usageBarcode = document.getElementById("usageBarcode");
     const usageQty = document.getElementById("usageQty");
     const usageDate = document.getElementById("usageDate");
+    const wasteItemSearch = document.getElementById("wasteItemSearch");
+    const wasteDate = document.getElementById("wasteDate");
     const wasteQty = document.getElementById("wasteQty");
     const wasteReason = document.getElementById("wasteReason");
     const saveUsageBtn = document.getElementById("saveUsage");
+    const logWasteBtn = document.getElementById("logWaste");
     const clearUsageBtn = document.getElementById("clearUsage");
     const usageList = document.getElementById("usageList");
     const usageStatus = document.getElementById("usageStatus");
+    const usageFormFeedback = document.getElementById("usageFormFeedback");
+    const wasteFormFeedback = document.getElementById("wasteFormFeedback");
     const varianceTable = document.getElementById("varianceTable");
     const wasteSummary = document.getElementById("wasteSummary");
 
@@ -1312,6 +1410,11 @@
     const priceHistoryList = document.getElementById("priceHistoryList");
 
     const createPoBtn = document.getElementById("createPo");
+    const manualPoVendor = document.getElementById("manualPoVendor");
+    const manualPoItem = document.getElementById("manualPoItem");
+    const manualPoQty = document.getElementById("manualPoQty");
+    const saveManualPoBtn = document.getElementById("saveManualPo");
+    const manualPoFeedback = document.getElementById("manualPoFeedback");
     const clearPosBtn = document.getElementById("clearPos");
     const poList = document.getElementById("poList");
     const poCount = document.getElementById("poCount");
@@ -1321,6 +1424,8 @@
     const receivePoSelect = document.getElementById("receivePoSelect");
     const receiveDate = document.getElementById("receiveDate");
     const receiveNote = document.getElementById("receiveNote");
+    const receiveBarcode = document.getElementById("receiveBarcode");
+    const stockInFeedback = document.getElementById("stockInFeedback");
     const markReceivedBtn = document.getElementById("markReceived");
     const clearReceiptsBtn = document.getElementById("clearReceipts");
     const receivingList = document.getElementById("receivingList");
@@ -1426,6 +1531,7 @@
             notifyEmail: raw.settings?.notifyEmail || "",
             notifyPhone: raw.settings?.notifyPhone || ""
           };
+          state.activeCountSession = raw.activeCountSession || null;
         }
       } catch {
         state.items = [];
@@ -1449,6 +1555,7 @@
           notifyEmail: "",
           notifyPhone: ""
         };
+        state.activeCountSession = null;
       }
     }
 
@@ -1495,6 +1602,20 @@
         option.textContent = vendor.name;
         priceVendor.appendChild(option);
       });
+
+      if (manualPoVendor) {
+        manualPoVendor.innerHTML = "";
+        const manualDefault = document.createElement("option");
+        manualDefault.value = "";
+        manualDefault.textContent = "Select vendor";
+        manualPoVendor.appendChild(manualDefault);
+        state.vendors.forEach(vendor => {
+          const option = document.createElement("option");
+          option.value = vendor.id;
+          option.textContent = vendor.name;
+          manualPoVendor.appendChild(option);
+        });
+      }
     }
 
     function buildRecipeOptions() {
@@ -1512,29 +1633,41 @@
     }
 
     function buildUsageItemOptions() {
-      usageItem.innerHTML = "";
-      const defaultOption = document.createElement("option");
-      defaultOption.value = "";
-      defaultOption.textContent = "Select item";
-      usageItem.appendChild(defaultOption);
+      ingredientAutocomplete.innerHTML = "";
       state.items.forEach(item => {
         const option = document.createElement("option");
-        option.value = item.id;
-        option.textContent = item.name;
-        usageItem.appendChild(option);
+        option.value = item.name;
+        ingredientAutocomplete.appendChild(option);
       });
 
-      priceItem.innerHTML = "";
-      const priceDefault = document.createElement("option");
-      priceDefault.value = "";
-      priceDefault.textContent = "Select item";
-      priceItem.appendChild(priceDefault);
-      state.items.forEach(item => {
-        const option = document.createElement("option");
-        option.value = item.id;
-        option.textContent = item.name;
-        priceItem.appendChild(option);
+      const groups = {};
+      CATEGORIES.forEach(c => groups[c] = []);
+      items.forEach(i => {
+        const cat = normalizeCategory(i.category);
+        groups[cat].push(i);
       });
+    }
+
+    function setFormFeedback(element, message, type) {
+      if (!element) return;
+      element.textContent = message || "";
+      element.className = `form-feedback ${type || ""}`.trim();
+    }
+
+    function clearInvalidFields(fields) {
+      fields.forEach(field => {
+        if (field) field.classList.remove("invalid");
+      });
+    }
+
+    function findItemByNameOrBarcode(searchValue, barcodeValue = "") {
+      const normalizedSearch = String(searchValue || "").trim().toLowerCase();
+      const normalizedBarcode = String(barcodeValue || "").trim();
+      return state.items.find(item => {
+        const nameMatch = normalizedSearch && item.name.toLowerCase() === normalizedSearch;
+        const barcodeMatch = normalizedBarcode && String(item.barcode || "") === normalizedBarcode;
+        return nameMatch || barcodeMatch;
+      }) || null;
     }
 
     function getVendorName(vendorId) {
@@ -1587,6 +1720,8 @@
       buildVendorOptions();
       deleteItemBtn.disabled = true;
       formStatus.textContent = "Add a new item";
+      clearInvalidFields([itemForm.name, itemForm.cost, itemForm.onHand, itemForm.barcode]);
+      setFormFeedback(itemFormFeedback, "", "");
     }
 
     function fillItemForm(item) {
@@ -1601,19 +1736,37 @@
       itemForm.lead.value = item.leadTimeDays;
       itemForm.usage.value = item.usagePerDay;
       itemForm.sku.value = item.sku || "";
+      itemForm.barcode.value = item.barcode || "";
       deleteItemBtn.disabled = false;
+      setFormFeedback(itemFormFeedback, "", "");
       formStatus.textContent = "Editing item";
     }
 
     function validateItem() {
-      if (!itemForm.name.value.trim()) return "Item name is required.";
+      clearInvalidFields([itemForm.name, itemForm.cost, itemForm.onHand, itemForm.barcode]);
+      if (!itemForm.name.value.trim()) {
+        itemForm.name.classList.add("invalid");
+        return "Item name is required.";
+      }
+      if (Number(itemForm.cost.value || 0) < 0) {
+        itemForm.cost.classList.add("invalid");
+        return "Cost cannot be negative.";
+      }
+      if (Number(itemForm.onHand.value || 0) < 0) {
+        itemForm.onHand.classList.add("invalid");
+        return "On-hand quantity cannot be negative.";
+      }
+      if (itemForm.barcode.value.trim() && !/^\d{8,14}$/.test(itemForm.barcode.value.trim())) {
+        itemForm.barcode.classList.add("invalid");
+        return "Barcode must be 8 to 14 digits.";
+      }
       return null;
     }
 
     function saveItem() {
       const error = validateItem();
       if (error) {
-        alert(error);
+        setFormFeedback(itemFormFeedback, error, "error");
         return;
       }
 
@@ -1630,6 +1783,7 @@
         leadTimeDays: Number(itemForm.lead.value || 0),
         usagePerDay: Number(itemForm.usage.value || 0),
         sku: itemForm.sku.value.trim(),
+        barcode: itemForm.barcode.value.trim(),
         createdAt: state.activeItemId ? (state.items.find(item => item.id === state.activeItemId)?.createdAt || Date.now()) : Date.now(),
         updatedAt: Date.now()
       };
@@ -1643,6 +1797,7 @@
 
       saveState();
       resetItemForm();
+      setFormFeedback(itemFormFeedback, "Ingredient saved.", "success");
       renderAll();
     }
 
@@ -1702,7 +1857,7 @@
           row.innerHTML = `
             <td>
               <strong>${item.name}</strong><br />
-              <span class="muted">${item.unit} • ${item.sku || "No SKU"}</span>
+              <span class="muted">${item.unit} • ${item.sku || "No SKU"} • ${item.barcode || "No barcode"}</span>
             </td>
             <td>${item.category}</td>
             <td>${getVendorName(item.vendorId)}</td>
@@ -2030,11 +2185,12 @@
       });
 
       if (updated > 0) {
+        state.activeCountSession = null;
         saveState();
+        setFormFeedback(countFormFeedback, `Applied counts for ${updated} item(s).`, "success");
         renderAll();
-        alert(`Updated ${updated} item(s).`);
       } else {
-        alert("No counts entered.");
+        setFormFeedback(countFormFeedback, "No counts entered.", "error");
       }
     }
 
@@ -2170,68 +2326,11 @@
       });
     }
 
-    function renderOrders() {
-      const query = orderSearch.value.trim().toLowerCase();
-      const suggestions = state.items
-        .map(item => {
-          const orderQty = getSuggestedOrderQty(item);
-          const status = getStatus(item);
-          return { item, orderQty, status };
-        })
-        .filter(s => s.orderQty > 0)
-        .filter(s => {
-          const vendorName = getVendorName(s.item.vendorId).toLowerCase();
-          return (
-            s.item.name.toLowerCase().includes(query) ||
-            s.item.category.toLowerCase().includes(query) ||
-            vendorName.includes(query)
-          );
-        });
+      const newCat = prompt(`Category (${CATEGORY_LIST_TEXT}):`, item.category ?? "Other");
+      if (newCat === null) return;
 
-      orderList.innerHTML = "";
-      if (!suggestions.length) {
-        orderList.innerHTML = "<div class='muted'>No suggested orders right now. Your stock levels look healthy.</div>";
-        return;
-      }
-
-      suggestions.sort((a, b) => b.orderQty - a.orderQty).forEach(s => {
-        const item = s.item;
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <div class="section-title">
-            <div>
-              <strong>${item.name}</strong>
-              <div class="muted">${item.category} • Vendor: ${getVendorName(item.vendorId)}</div>
-            </div>
-            <span class="pill ${s.status.tone}">${s.status.label}</span>
-          </div>
-          <div class="grid-2" style="margin-top: 10px;">
-            <div>
-              <div class="muted">On-hand</div>
-              <strong>${item.onHand} ${item.unit}</strong>
-            </div>
-            <div>
-              <div class="muted">Par level</div>
-              <strong>${item.par} ${item.unit}</strong>
-            </div>
-            <div>
-              <div class="muted">Suggested par</div>
-              <strong>${getSuggestedPar(item).toFixed(1)} ${item.unit}</strong>
-            </div>
-            <div>
-              <div class="muted">Suggested order</div>
-              <strong>${s.orderQty} ${item.unit}</strong>
-            </div>
-            <div>
-              <div class="muted">Estimated cost</div>
-              <strong>${currency(s.orderQty * Number(item.cost || 0))}</strong>
-            </div>
-          </div>
-        `;
-        orderList.appendChild(card);
-      });
-    }
+      const newQty = Number(newQtyStr);
+      const newPrice = Number(newPriceStr);
 
     function generatePoDrafts() {
       const suggestions = state.items
@@ -2248,26 +2347,61 @@
         grouped[vendorId].push(entry);
       });
 
-      state.poDrafts = Object.entries(grouped).map(([vendorId, entries]) => {
-        const vendorName = vendorId === "unassigned" ? "Unassigned" : getVendorName(vendorId);
-        return {
-          id: crypto.randomUUID(),
-          vendorId,
-          vendorName,
-          createdAt: new Date().toISOString(),
-          status: "Draft",
-          items: entries.map(entry => ({
-            itemId: entry.item.id,
-            name: entry.item.name,
-            unit: entry.item.unit,
-            qty: entry.orderQty,
-            cost: Number(entry.item.cost || 0)
-          }))
-        };
-      });
+      item.name = newName.trim();
+      item.qty = newQty;
+      item.price = newPrice;
+      item.category = normalizeCategory(newCat);
+      item.updatedAt = Date.now();
 
       saveState();
       renderPoDrafts();
+    }
+
+    function createManualPo() {
+      clearInvalidFields([manualPoVendor, manualPoItem, manualPoQty]);
+      const vendorId = manualPoVendor.value;
+      const item = findItemByNameOrBarcode(manualPoItem.value);
+      const qty = Number(manualPoQty.value || 0);
+      if (!vendorId) {
+        manualPoVendor.classList.add("invalid");
+        setFormFeedback(manualPoFeedback, "Select a vendor.", "error");
+        return;
+      }
+      if (!item) {
+        manualPoItem.classList.add("invalid");
+        setFormFeedback(manualPoFeedback, "Select a valid ingredient.", "error");
+        return;
+      }
+      if (qty <= 0) {
+        manualPoQty.classList.add("invalid");
+        setFormFeedback(manualPoFeedback, "Quantity must be greater than zero.", "error");
+        return;
+      }
+      const vendorName = getVendorName(vendorId);
+      state.poDrafts.unshift({
+        id: crypto.randomUUID(),
+        vendorId,
+        vendorName,
+        createdAt: new Date().toISOString(),
+        status: "Draft",
+        items: [{ itemId: item.id, name: item.name, unit: item.unit, qty, cost: Number(item.cost || 0) }]
+      });
+      saveState();
+      manualPoItem.value = "";
+      manualPoQty.value = "";
+      setFormFeedback(manualPoFeedback, `Manual PO created for ${vendorName}.`, "success");
+      renderAll();
+    }
+
+    function startInventoryCount() {
+      state.activeCountSession = {
+        id: crypto.randomUUID(),
+        startedAt: new Date().toISOString(),
+        startedBy: "Staff"
+      };
+      countSessionStatus.textContent = `Active count started ${new Date(state.activeCountSession.startedAt).toLocaleString()}`;
+      setFormFeedback(countFormFeedback, "Inventory count session started.", "success");
+      saveState();
     }
 
     function clearPoDrafts() {
@@ -2340,12 +2474,19 @@
     }
 
     function markReceived() {
+      clearInvalidFields([receivePoSelect, receiveDate]);
       if (!receivePoSelect.value) {
-        alert("Select a purchase order.");
+        receivePoSelect.classList.add("invalid");
+        setFormFeedback(stockInFeedback, "Select a purchase order to receive.", "error");
         return;
       }
       const po = state.poDrafts.find(entry => entry.id === receivePoSelect.value);
       if (!po) return;
+      if (receiveDate.value && Number.isNaN(new Date(receiveDate.value).getTime())) {
+        receiveDate.classList.add("invalid");
+        setFormFeedback(stockInFeedback, "Enter a valid receiving date.", "error");
+        return;
+      }
       po.status = "Received";
       po.updatedAt = new Date().toISOString();
       state.receivingLogs.unshift({
@@ -2358,6 +2499,8 @@
       });
       receiveDate.value = "";
       receiveNote.value = "";
+      receiveBarcode.value = "";
+      setFormFeedback(stockInFeedback, `Shipment received for ${po.vendorName}.`, "success");
       saveState();
       renderAll();
     }
@@ -2689,13 +2832,20 @@
     }
 
     function saveRecipe() {
+      clearInvalidFields([recipeForm.name, recipeForm.yield]);
       if (!recipeForm.name.value.trim()) {
-        alert("Recipe name is required.");
+        recipeForm.name.classList.add("invalid");
+        setFormFeedback(recipeFormFeedback, "Recipe name is required.", "error");
+        return;
+      }
+      if (Number(recipeForm.yield.value || 1) <= 0) {
+        recipeForm.yield.classList.add("invalid");
+        setFormFeedback(recipeFormFeedback, "Yield must be greater than zero.", "error");
         return;
       }
       const ingredients = getIngredientData();
       if (!ingredients.length) {
-        alert("Add at least one ingredient.");
+        setFormFeedback(recipeFormFeedback, "Add at least one ingredient.", "error");
         return;
       }
 
@@ -2718,6 +2868,7 @@
 
       saveState();
       resetRecipeForm();
+      setFormFeedback(recipeFormFeedback, "Recipe saved.", "success");
       renderAll();
     }
 
@@ -2842,31 +2993,73 @@
     }
 
     function logUsage() {
-      if (!usageItem.value) {
-        alert("Select an item.");
+      clearInvalidFields([usageItemSearch, usageQty, usageDate]);
+      const matchedItem = findItemByNameOrBarcode(usageItemSearch.value, usageBarcode.value);
+      if (!matchedItem) {
+        usageItemSearch.classList.add("invalid");
+        setFormFeedback(usageFormFeedback, "Choose a valid ingredient from autocomplete or barcode.", "error");
         return;
       }
       const usedQty = Number(usageQty.value || 0);
-      const waste = Number(wasteQty.value || 0);
-      if (usedQty <= 0 && waste <= 0) {
-        alert("Enter actual usage or waste quantity.");
+      if (usedQty <= 0) {
+        usageQty.classList.add("invalid");
+        setFormFeedback(usageFormFeedback, "Enter a stock-out quantity greater than zero.", "error");
         return;
       }
       const entry = {
         id: crypto.randomUUID(),
-        itemId: usageItem.value,
+        itemId: matchedItem.id,
         usedQty,
-        wasteQty: waste,
-        wasteReason: wasteReason.value.trim(),
+        wasteQty: 0,
+        wasteReason: "",
+        type: "stock-out",
         date: usageDate.value || new Date().toISOString().slice(0, 10)
       };
       state.usageLogs.unshift(entry);
       saveState();
       usageQty.value = "";
+      usageDate.value = "";
+      usageItemSearch.value = "";
+      usageBarcode.value = "";
+      usageStatus.textContent = "Stock out logged";
+      setFormFeedback(usageFormFeedback, `Stock out logged for ${matchedItem.name}.`, "success");
+      renderAll();
+    }
+
+    function logWaste() {
+      clearInvalidFields([wasteItemSearch, wasteQty, wasteDate, wasteReason]);
+      const matchedItem = findItemByNameOrBarcode(wasteItemSearch.value);
+      if (!matchedItem) {
+        wasteItemSearch.classList.add("invalid");
+        setFormFeedback(wasteFormFeedback, "Select a valid ingredient to log waste.", "error");
+        return;
+      }
+      const qty = Number(wasteQty.value || 0);
+      if (qty <= 0) {
+        wasteQty.classList.add("invalid");
+        setFormFeedback(wasteFormFeedback, "Waste quantity must be greater than zero.", "error");
+        return;
+      }
+      if (!wasteReason.value.trim()) {
+        wasteReason.classList.add("invalid");
+        setFormFeedback(wasteFormFeedback, "Provide a waste reason.", "error");
+        return;
+      }
+      state.usageLogs.unshift({
+        id: crypto.randomUUID(),
+        itemId: matchedItem.id,
+        usedQty: 0,
+        wasteQty: qty,
+        wasteReason: wasteReason.value.trim(),
+        type: "waste",
+        date: wasteDate.value || new Date().toISOString().slice(0, 10)
+      });
+      saveState();
+      wasteItemSearch.value = "";
       wasteQty.value = "";
       wasteReason.value = "";
-      usageDate.value = "";
-      usageStatus.textContent = "Usage logged";
+      wasteDate.value = "";
+      setFormFeedback(wasteFormFeedback, `Waste logged for ${matchedItem.name}.`, "success");
       renderAll();
     }
 
@@ -3518,6 +3711,15 @@
       });
     }
 
+    function renderCountSessionStatus() {
+      if (!state.activeCountSession) {
+        countSessionStatus.textContent = "No active count session";
+        return;
+      }
+      const started = new Date(state.activeCountSession.startedAt).toLocaleString();
+      countSessionStatus.textContent = `Active count started ${started}`;
+    }
+
     function renderAll() {
       buildVendorOptions();
       buildRecipeOptions();
@@ -3527,6 +3729,7 @@
       renderComparisonOptions();
       renderComparison();
       renderCounts();
+      renderCountSessionStatus();
       renderSchedules();
       renderVendors();
       renderOrders();
@@ -3566,6 +3769,7 @@
         reportSchedules: state.reportSchedules,
         lastGeneratedReport: state.lastGeneratedReport,
         settings: state.settings,
+        activeCountSession: state.activeCountSession,
         exportedAt: new Date().toISOString()
       }, null, 2);
       const blob = new Blob([payload], { type: "application/json" });
@@ -3608,6 +3812,7 @@
             notifyEmail: data.settings?.notifyEmail || "",
             notifyPhone: data.settings?.notifyPhone || ""
           };
+          state.activeCountSession = data.activeCountSession || null;
           saveState();
           resetItemForm();
           resetVendorForm();
@@ -3646,6 +3851,7 @@
         notifyEmail: "",
         notifyPhone: ""
       };
+      state.activeCountSession = null;
       saveState();
       resetItemForm();
       resetVendorForm();
@@ -3683,6 +3889,7 @@
     compareBtn.addEventListener("click", renderComparison);
     countSearch.addEventListener("input", renderCounts);
     applyCountsBtn.addEventListener("click", applyCounts);
+    startCountBtn.addEventListener("click", startInventoryCount);
     saveScheduleBtn.addEventListener("click", saveSchedule);
     clearSchedulesBtn.addEventListener("click", clearSchedules);
     orderSearch.addEventListener("input", renderOrders);
@@ -3692,6 +3899,7 @@
     deleteVendorBtn.addEventListener("click", deleteVendor);
 
     createPoBtn.addEventListener("click", generatePoDrafts);
+    saveManualPoBtn.addEventListener("click", createManualPo);
     clearPosBtn.addEventListener("click", clearPoDrafts);
     updatePoStatusBtn.addEventListener("click", updatePoStatus);
     markReceivedBtn.addEventListener("click", markReceived);
@@ -3710,6 +3918,7 @@
     saveSaleBtn.addEventListener("click", logSale);
     clearSalesBtn.addEventListener("click", clearSales);
     saveUsageBtn.addEventListener("click", logUsage);
+    logWasteBtn.addEventListener("click", logWaste);
     clearUsageBtn.addEventListener("click", clearUsage);
 
     savePriceBtn.addEventListener("click", logPrice);
