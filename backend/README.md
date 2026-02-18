@@ -34,10 +34,10 @@ DEFAULT_ORGANIZATION_ID="your-organization-uuid"
 - `GET /api/overview` — status + roadmap metadata
 - `GET /api/items` — placeholder list (wire to Prisma)
 - `POST /api/items` — placeholder create (wire to Prisma)
-- `POST /api/inventory/stock-in` — log supplier receipts with batch/expiry and update inventory value
-- `POST /api/inventory/stock-out` — log usage/waste/spoilage and auto-calculate COGS
-- `GET /api/inventory/transactions` — audit trail of all stock movement transactions
-- `GET /api/inventory/cogs` — aggregated COGS summary from stock-out records
+- `POST /api/recipes` — create a recipe with ingredient quantities
+- `POST /api/recipes/:id/ingredients/:ingredientId` — add ingredient usage to a recipe
+- `GET /api/recipes/:id/can-make?servings=1` — validate ingredient sufficiency
+- `POST /api/recipes/:id/sell` — log sale and auto-deduct inventory
 
 ## Project layout
 ```

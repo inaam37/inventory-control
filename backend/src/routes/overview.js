@@ -22,10 +22,10 @@ router.get("/", requireAuth, authorize("overview:read"), (req, res) => {
       "GET /api/auth/me",
       "GET /api/overview",
       "GET /api/items",
-      "POST /api/inventory/stock-in",
-      "POST /api/inventory/stock-out",
-      "GET /api/inventory/transactions",
-      "GET /api/inventory/cogs"
+      "POST /api/recipes",
+      "POST /api/recipes/:id/ingredients/:ingredientId",
+      "GET /api/recipes/:id/can-make?servings=1",
+      "POST /api/recipes/:id/sell"
     ]
   });
 });

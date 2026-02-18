@@ -4,7 +4,7 @@ const dotenv = require("dotenv");
 
 const overviewRouter = require("./routes/overview");
 const itemsRouter = require("./routes/items");
-const inventoryRouter = require("./routes/inventory");
+const recipesRouter = require("./routes/recipes");
 
 dotenv.config();
 
@@ -25,15 +25,7 @@ app.get("/health", async (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/overview", overviewRouter);
 app.use("/api/items", itemsRouter);
-app.use("/api/inventory", inventoryRouter);
-
-app.use(errorHandler);
-
-const port = Number(process.env.PORT) || 3001;
-
-async function startServer() {
-  try {
-    await connectDatabase();
+app.use("/api/recipes", recipesRouter);
 
     app.listen(port, () => {
       console.log(`Inventory Control backend listening on ${port}`);
