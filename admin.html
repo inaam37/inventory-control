@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PantryPilot Admin Panel</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; background: #f7fafc; color: #1a202c; }
+      .card { background: #fff; border-radius: 8px; padding: 1rem 1.5rem; max-width: 720px; box-shadow: 0 3px 12px rgba(0,0,0,.08); }
+      label { display: block; margin-top: .8rem; font-weight: bold; }
+      input { width: 100%; padding: .6rem; margin-top: .3rem; border: 1px solid #cbd5e0; border-radius: 4px; }
+      button { margin-top: 1rem; margin-right: .5rem; padding: .7rem 1rem; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+      pre { background: #111827; color: #d1fae5; padding: .8rem; border-radius: 6px; overflow-x: auto; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>PantryPilot Admin Panel</h1>
+      <p>Use this panel for operational checks and cache management.</p>
+
+      <label for="baseUrl">Backend Base URL</label>
+      <input id="baseUrl" value="http://localhost:4000" />
+
+      <label for="token">Admin Token</label>
+      <input id="token" type="password" placeholder="x-admin-token value" />
+
+      <button id="refresh">Refresh Status</button>
+      <button id="invalidate">Invalidate Cache</button>
+
+      <h3>Response</h3>
+      <pre id="output">No request yet.</pre>
+    </div>
+
+    <script>
+      const output = document.getElementById("output");
+      const baseUrlInput = document.getElementById("baseUrl");
+      const tokenInput = document.getElementById("token");
+
+      async function callApi(path, method) {
+        const baseUrl = baseUrlInput.value.replace(/\/$/, "");
+        const token = tokenInput.value;
+
+        const response = await fetch(`${baseUrl}${path}`, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-token": token
+          }
+        });
+
+        const payload = await response.json();
+        output.textContent = JSON.stringify({
+          status: response.status,
+          payload
+        }, null, 2);
+      }
+
+      document.getElementById("refresh").addEventListener("click", () => callApi("/api/admin/status", "GET"));
+      document.getElementById("invalidate").addEventListener("click", () => callApi("/api/admin/cache/invalidate", "POST"));
+    </script>
+  </body>
+</html>

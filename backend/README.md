@@ -1,17 +1,14 @@
-# Inventory Control Backend (Phase 1)
+# PantryPilot Backend
 
-This backend sets up a Node.js + Express foundation for a restaurant inventory system with PostgreSQL via Prisma.
+Phase 20 hardening for testing, deployment, monitoring, and operations.
 
-## What is included
-
-- Express server running on **port 3001** by default
-- Folder architecture:
-  - `src/models`
-  - `src/routes`
-  - `src/controllers`
-  - `src/middleware`
-- Database bootstrap in `src/config/database.js`
-- Environment template with server, auth, and API key settings
+## Features added
+- Complete API test coverage for current endpoints.
+- Admin operational endpoints protected by `x-admin-token`.
+- Request timing logs + lightweight in-memory caching.
+- Optional Sentry integration for errors and traces.
+- Production deployment descriptors (`Procfile`, `app.json`).
+- Production DB setup script for Prisma migrations.
 
 ## Quick start
 
@@ -22,51 +19,35 @@ npm run prisma:generate
 npm run dev
 ```
 
+## Run tests
+```bash
+npm test
+```
+
 ## Environment
-Create a `.env` file with:
-```
+```bash
 DATABASE_URL="postgresql://user:password@localhost:5432/pantrypilot"
-DEFAULT_ORGANIZATION_ID="your-organization-uuid"
+PORT=4000
+CACHE_TTL_SECONDS=30
+ADMIN_TOKEN=dev-admin-token
+SENTRY_DSN=
+SENTRY_TRACES_SAMPLE_RATE=0.1
 ```
 
-## API scaffold
-Implemented endpoints currently run against an in-memory store to validate workflows before Prisma wiring:
+## API endpoints
+- `GET /health`
+- `GET /api/overview`
+- `GET /api/items`
+- `POST /api/items`
+- `GET /api/admin/status` (requires `x-admin-token`)
+- `POST /api/admin/cache/invalidate` (requires `x-admin-token`)
 
-- `GET /health` — service health check
-- `GET /api/overview` — status + available modules/endpoints
-- `GET /api/items` — list inventory items
-- `POST /api/items` — create inventory item
-
-### Alerts & notifications
-- `POST /api/alerts/run` — evaluate low stock, expiring soon (3 days), variance, high waste, supplier due
-- `GET /api/alerts/notifications?userId=:id` — in-app notifications + bell unread metadata
-- `POST /api/alerts/notifications/:id/read` — mark notification as read
-- `GET /api/alerts/preferences/:userId` — fetch user alert channel preferences
-- `PUT /api/alerts/preferences/:userId` — update user alert channel preferences
-- `POST /api/alerts/digest/daily` — send daily digest for management users
-- `GET /api/alerts/delivery-log` — inspect simulated email/SMS/Slack delivery records
-
-> Slack delivery is optional and currently stubbed as `skipped` unless webhook logic is added.
-
-## Project layout
-```
-backend/
-  prisma/
-    schema.prisma
-  src/
-    dataStore.js
-    services/
-      alertsEngine.js
-    routes/
-      inventory.js
-      overview.js
-      items.js
-      alerts.js
-    index.js
+## Production DB setup
+```bash
+DATABASE_URL="postgresql://..." ./scripts/setup-production-db.sh
 ```
 
-## Next steps
-1. Replace in-memory store with Prisma models.
-2. Add auth and scope notifications per organization.
-3. Move alert sweeps and digest generation to scheduled background jobs.
-4. Wire real providers (SMTP/Twilio/Slack webhook).
+## Deployment
+- **Backend**: Heroku/AWS/DigitalOcean (Node process: `node src/index.js`)
+- **Frontend**: Vercel/Netlify static deploy (`index.html`, `admin.html`)
+- See full runbook in `docs/DEPLOYMENT.md`.

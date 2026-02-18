@@ -8,12 +8,11 @@ const router = express.Router();
 router.get("/", requireAuth, authorize("overview:read"), (req, res) => {
   res.json({
     message: "Backend scaffolding active",
-    modules: [
-      "Inventory item tracking",
-      "Alert generation engine",
-      "In-app notification bell payload",
-      "Per-user alert preferences",
-      "Daily digest dispatch"
+    phase: "Phase 20 - testing, deployment, documentation",
+    nextSteps: [
+      "Switch item routes to Prisma persistence",
+      "Configure infrastructure secrets in cloud providers",
+      "Set up scheduled backups and dashboards"
     ],
     phase15: {
       capabilities: [
@@ -32,12 +31,8 @@ router.get("/", requireAuth, authorize("overview:read"), (req, res) => {
       "GET /api/overview",
       "GET /api/items",
       "POST /api/items",
-      "POST /api/alerts/run",
-      "GET /api/alerts/notifications?userId=:id",
-      "POST /api/alerts/notifications/:id/read",
-      "GET /api/alerts/preferences/:userId",
-      "PUT /api/alerts/preferences/:userId",
-      "POST /api/alerts/digest/daily"
+      "GET /api/admin/status",
+      "POST /api/admin/cache/invalidate"
     ]
   });
 });

@@ -1,0 +1,22 @@
+{
+  "name": "pantrypilot-backend",
+  "description": "PantryPilot inventory backend",
+  "repository": "https://example.com/pantrypilot",
+  "keywords": ["node", "express", "inventory"],
+  "env": {
+    "DATABASE_URL": {
+      "description": "PostgreSQL connection string"
+    },
+    "ADMIN_TOKEN": {
+      "description": "Admin API token for operational endpoints"
+    },
+    "SENTRY_DSN": {
+      "description": "Sentry DSN for backend error monitoring",
+      "required": false
+    },
+    "CACHE_TTL_SECONDS": {
+      "description": "GET endpoint cache TTL in seconds",
+      "value": "30"
+    }
+  }
+}

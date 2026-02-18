@@ -7,6 +7,8 @@ const { state } = require("../data/store");
 
 const router = express.Router();
 
+const items = [];
+
 router.get("/", (req, res) => {
   const items = state.inventory.map((record) => ({
     itemName: record.itemName,
@@ -16,30 +18,35 @@ router.get("/", (req, res) => {
   }));
 
   res.json({
-    items: store.items
+    items,
+    count: items.length,
+    message: "Items fetched successfully"
   });
 });
 
 router.post("/", (req, res) => {
-  const { name, onHand = 0, reorderPoint = 0, expiresAt = null } = req.body || {};
+  const { name, category, unit } = req.body;
 
-  if (!name) {
-    return res.status(400).json({ error: "name is required" });
+  if (!name || !category || !unit) {
+    return res.status(400).json({
+      error: "Validation failed",
+      message: "name, category, and unit are required"
+    });
   }
 
-  const item = {
-    id: crypto.randomUUID(),
+  const newItem = {
+    id: items.length + 1,
     name,
-    onHand: Number(onHand),
-    reorderPoint: Number(reorderPoint),
-    expiresAt: expiresAt ? new Date(expiresAt) : null
+    category,
+    unit,
+    onHand: Number(req.body.onHand || 0)
   };
 
-  store.items.push(item);
+  items.push(newItem);
 
   return res.status(201).json({
     message: "Item created",
-    item
+    item: newItem
   });
 
   return res.status(201).json({ item });
