@@ -10,12 +10,17 @@ router.get("/", (req, res) => {
       "Add authentication",
       "Implement CRUD for items/vendors/recipes",
       "Add purchase order workflows",
-      "Enable notifications"
+      "Enable notifications",
+      "Phase 10: expiry management + FIFO consumption"
     ],
     endpoints: [
       "GET /health",
       "GET /api/overview",
-      "GET /api/items"
+      "GET /api/items",
+      "GET /api/inventory/expiring-soon",
+      "POST /api/inventory/:itemId/batches",
+      "POST /api/inventory/:itemId/use",
+      "GET /api/inventory/waste-report"
     ]
   });
 });

@@ -4,6 +4,9 @@ const dotenv = require("dotenv");
 
 const overviewRouter = require("./routes/overview");
 const itemsRouter = require("./routes/items");
+const inventoryRouter = require("./routes/inventory");
+const { scheduleExpiryAlertJob } = require("./jobs/expiryAlerts");
+const prisma = require("./lib/prisma");
 
 dotenv.config();
 
@@ -17,8 +20,15 @@ app.get("/health", (req, res) => {
 
 app.use("/api/overview", overviewRouter);
 app.use("/api/items", itemsRouter);
+app.use("/api/inventory", inventoryRouter);
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => {
   console.log(`PantryPilot backend listening on ${port}`);
+  scheduleExpiryAlertJob();
+});
+
+process.on("SIGINT", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
 });
