@@ -30,6 +30,8 @@ Current endpoints are intentionally minimal to keep backend integration focused:
 - `GET /api/overview` — status + roadmap metadata
 - `GET /api/items` — placeholder list (wire to Prisma)
 - `POST /api/items` — placeholder create (wire to Prisma)
+- `POST /api/waste` — log ingredient waste events
+- `GET /api/waste/report` — waste trends, cost, and high-waste item insights
 
 ## Project layout
 ```
@@ -41,6 +43,7 @@ backend/
     routes/
       overview.js
       items.js
+      waste.js
 ```
 
 ## Next steps
