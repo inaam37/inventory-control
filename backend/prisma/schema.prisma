@@ -87,12 +87,15 @@ model Item {
   usageLogs      UsageLog[]
   salesLines     SalesIngredient[]
   priceHistory   PriceHistory[]
+  purchaseOrderItems PurchaseOrderItem[]
 }
 
 model Recipe {
   id             String   @id @default(uuid())
   organizationId String
   name           String
+  preparationTime Int      @default(0)
+  costToPrepare  Float    @default(0)
   yield          Int      @default(1)
   menuPrice      Float    @default(0)
   notes          String?
@@ -110,6 +113,8 @@ model RecipeIngredient {
   quantity  Float
   recipe    Recipe  @relation(fields: [recipeId], references: [id])
   item      Item    @relation(fields: [itemId], references: [id])
+
+  @@unique([recipeId, itemId])
 }
 
 model SalesLog {

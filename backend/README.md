@@ -30,6 +30,10 @@ Current endpoints are intentionally minimal to keep backend integration focused:
 - `GET /api/overview` — status + roadmap metadata
 - `GET /api/items` — placeholder list (wire to Prisma)
 - `POST /api/items` — placeholder create (wire to Prisma)
+- `POST /api/recipes` — create a recipe with ingredient quantities
+- `POST /api/recipes/:id/ingredients/:ingredientId` — add ingredient usage to a recipe
+- `GET /api/recipes/:id/can-make?servings=1` — validate ingredient sufficiency
+- `POST /api/recipes/:id/sell` — log sale and auto-deduct inventory
 
 ## Project layout
 ```
