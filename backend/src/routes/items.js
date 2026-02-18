@@ -1,4 +1,7 @@
 const express = require("express");
+const crypto = require("crypto");
+
+const store = require("../dataStore");
 
 const { state } = require("../data/store");
 
@@ -13,53 +16,30 @@ router.get("/", (req, res) => {
   }));
 
   res.json({
-    items,
-    message: "Item inventory now includes location_id for multi-location tracking."
+    items: store.items
   });
 });
 
-  const items = await itemStore.listByOrganization(organizationId);
+router.post("/", (req, res) => {
+  const { name, onHand = 0, reorderPoint = 0, expiresAt = null } = req.body || {};
 
-  return res.json({ items });
-}));
-
-router.post("/", asyncHandler(async (req, res) => {
-  const {
-    organizationId,
-    vendorId,
-    name,
-    category,
-    unit,
-    sku,
-    barcode,
-    onHand,
-    parLevel,
-    reorderPoint,
-    costPerUnit,
-    leadTimeDays,
-    usagePerDay
-  } = req.body;
-
-  if (!organizationId || !name || !category || !unit) {
-    return res.status(400).json({
-      error: "organizationId, name, category, and unit are required"
-    });
+  if (!name) {
+    return res.status(400).json({ error: "name is required" });
   }
 
-  const item = await itemStore.createItem({
-    organizationId,
-    vendorId: vendorId || null,
+  const item = {
+    id: crypto.randomUUID(),
     name,
-    category,
-    unit,
-    sku: sku || null,
-    barcode: barcode || null,
-    onHand: normalizeNumber(onHand),
-    parLevel: normalizeNumber(parLevel),
-    reorderPoint: normalizeNumber(reorderPoint),
-    costPerUnit: normalizeNumber(costPerUnit),
-    leadTimeDays: Math.round(normalizeNumber(leadTimeDays)),
-    usagePerDay: normalizeNumber(usagePerDay)
+    onHand: Number(onHand),
+    reorderPoint: Number(reorderPoint),
+    expiresAt: expiresAt ? new Date(expiresAt) : null
+  };
+
+  store.items.push(item);
+
+  return res.status(201).json({
+    message: "Item created",
+    item
   });
 
   return res.status(201).json({ item });
