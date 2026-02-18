@@ -29,6 +29,7 @@ model Location {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id])
+  items          Item[]
 }
 
 model User {
@@ -74,26 +75,31 @@ model Item {
   id             String             @id @default(uuid())
   organizationId String
   vendorId       String?
+  locationId     String?
   name           String
   category       String
   unit           String
   sku            String?
-  onHand         Float              @default(0)
-  parLevel       Float              @default(0)
-  reorderPoint   Float              @default(0)
-  costPerUnit    Float              @default(0)
-  leadTimeDays   Int                @default(0)
-  usagePerDay    Float              @default(0)
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  organization   Organization       @relation(fields: [organizationId], references: [id])
-  vendor         Vendor?            @relation(fields: [vendorId], references: [id])
+  onHand         Float    @default(0)
+  parLevel       Float    @default(0)
+  reorderPoint   Float    @default(0)
+  costPerUnit    Float    @default(0)
+  leadTimeDays   Int      @default(0)
+  usagePerDay    Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  vendor         Vendor?  @relation(fields: [vendorId], references: [id])
+  location       Location? @relation(fields: [locationId], references: [id])
   recipeLines    RecipeIngredient[]
   usageLogs      UsageLog[]
   salesLines     SalesIngredient[]
   priceHistory   PriceHistory[]
-  purchaseOrderLines PurchaseOrderItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+
+  @@index([organizationId, locationId])
 }
+
 
 model Recipe {
   id             String             @id @default(uuid())
@@ -210,40 +216,3 @@ model Notification {
   organization   Organization @relation(fields: [organizationId], references: [id])
 }
 
-model CountSession {
-  id             String             @id @default(uuid())
-  organizationId String
-  locationId     String?
-  scheduledFor   DateTime?
-  status         CountSessionStatus @default(OPEN)
-  notes          String?
-  startedAt      DateTime           @default(now())
-  completedAt    DateTime?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  organization   Organization       @relation(fields: [organizationId], references: [id])
-  items          CountSessionItem[]
-
-  @@index([organizationId, status])
-}
-
-enum CountSessionStatus {
-  OPEN
-  COMPLETED
-}
-
-model CountSessionItem {
-  id             String       @id @default(uuid())
-  countSessionId String
-  itemId         String
-  systemQty      Float
-  countedQty     Float
-  varianceQty    Float
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  countSession   CountSession @relation(fields: [countSessionId], references: [id], onDelete: Cascade)
-  item           Item         @relation(fields: [itemId], references: [id])
-
-  @@unique([countSessionId, itemId])
-  @@index([countSessionId, varianceQty])
-}

@@ -16,6 +16,14 @@ router.get("/", requireAuth, authorize("overview:read"), (req, res) => {
       "Enable notifications",
       "Expand analytics dashboards with profitability and cost controls"
     ],
+    phase15: {
+      capabilities: [
+        "Manage multiple restaurant locations",
+        "Track inventory by location_id",
+        "Transfer inventory between locations",
+        "Location analytics and consolidated reporting"
+      ]
+    },
     endpoints: [
       "GET /health",
       "POST /api/auth/login",
@@ -24,12 +32,13 @@ router.get("/", requireAuth, authorize("overview:read"), (req, res) => {
       "GET /api/auth/me",
       "GET /api/overview",
       "GET /api/items",
-      "GET /api/analytics/cogs",
-      "GET /api/analytics/inventory-value",
-      "GET /api/analytics/ingredient-costs",
-      "GET /api/analytics/waste-cost",
-      "GET /api/analytics/profit-margin",
-      "GET /api/analytics/inventory-turnover"
+      "GET /api/locations",
+      "POST /api/locations",
+      "GET /api/inventory?locationId=<id>",
+      "POST /api/inventory",
+      "POST /api/inventory/transfer",
+      "GET /api/reports/location/:locationId",
+      "GET /api/reports/consolidated"
     ]
   });
 });

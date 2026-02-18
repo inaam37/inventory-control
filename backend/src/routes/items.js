@@ -1,25 +1,22 @@
 const express = require("express");
 
-const itemStore = require("../lib/item-store");
-const asyncHandler = require("../lib/async-handler");
+const { state } = require("../data/store");
 
 const router = express.Router();
 
-function normalizeNumber(value, fallback = 0) {
-  if (value === undefined || value === null || value === "") {
-    return fallback;
-  }
+router.get("/", (req, res) => {
+  const items = state.inventory.map((record) => ({
+    itemName: record.itemName,
+    unit: record.unit,
+    quantity: record.quantity,
+    location_id: record.locationId
+  }));
 
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-router.get("/", asyncHandler(async (req, res) => {
-  const organizationId = req.query.organizationId;
-
-  if (!organizationId) {
-    return res.status(400).json({ error: "organizationId query param is required" });
-  }
+  res.json({
+    items,
+    message: "Item inventory now includes location_id for multi-location tracking."
+  });
+});
 
   const items = await itemStore.listByOrganization(organizationId);
 

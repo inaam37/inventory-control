@@ -1,297 +1,123 @@
 const express = require("express");
+const crypto = require("crypto");
 
-const prisma = require("../lib/prisma");
-const { createExpiringSoonFilter, startOfToday } = require("../lib/expiry");
+const {
+  state,
+  findLocationById,
+  getInventoryRecord,
+  upsertInventoryRecord
+} = require("../data/store");
 
 const router = express.Router();
 
-router.get("/expiring-soon", async (req, res) => {
-  const days = Number.parseInt(req.query.days, 10) || 3;
-  const organizationId = req.query.organizationId;
+router.get("/", (req, res) => {
+  const { locationId } = req.query;
 
-  if (!organizationId) {
+  const inventory = locationId
+    ? state.inventory.filter((record) => record.locationId === locationId)
+    : state.inventory;
+
+  res.json({ inventory, totalRecords: inventory.length });
+});
+
+router.post("/", (req, res) => {
+  const { itemName, unit, quantity, locationId } = req.body ?? {};
+
+  if (!itemName || !unit || typeof quantity !== "number" || !locationId) {
     return res.status(400).json({
-      error: "organizationId is required"
+      error: "Validation error",
+      message: "itemName, unit, quantity(number), and locationId are required"
     });
   }
 
-  try {
-    const items = await prisma.item.findMany({
-      where: {
-        organizationId,
-        inventoryBatches: {
-          some: {
-            expiryDate: createExpiringSoonFilter(days),
-            remainingQty: { gt: 0 }
-          }
-        }
-      },
-      include: {
-        inventoryBatches: {
-          where: {
-            expiryDate: createExpiringSoonFilter(days),
-            remainingQty: { gt: 0 }
-          },
-          orderBy: {
-            expiryDate: "asc"
-          }
-        }
-      },
-      orderBy: {
-        name: "asc"
-      }
+  if (!findLocationById(locationId)) {
+    return res.status(404).json({
+      error: "Location not found",
+      message: `No location exists for locationId ${locationId}`
     });
-
-    const payload = items.map((item) => ({
-      itemId: item.id,
-      name: item.name,
-      category: item.category,
-      unit: item.unit,
-      onHand: item.onHand,
-      expiringBatches: item.inventoryBatches.map((batch) => ({
-        batchId: batch.id,
-        expiryDate: batch.expiryDate,
-        remainingQty: batch.remainingQty,
-        receivedAt: batch.receivedAt
-      }))
-    }));
-
-    return res.json({
-      days,
-      count: payload.length,
-      items: payload
-    });
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to fetch expiring inventory", details: error.message });
   }
+
+  const record = upsertInventoryRecord({
+    locationId,
+    itemName,
+    unit,
+    quantityDelta: quantity
+  });
+
+  res.status(201).json({ message: "Inventory updated", record });
 });
 
-router.post("/:itemId/batches", async (req, res) => {
-  const { itemId } = req.params;
-  const { receivedQty, expiryDate, unitCost } = req.body;
+router.post("/transfer", (req, res) => {
+  const { fromLocationId, toLocationId, itemName, unit, quantity } = req.body ?? {};
 
-  if (!receivedQty || !expiryDate) {
-    return res.status(400).json({ error: "receivedQty and expiryDate are required" });
-  }
-
-  try {
-    const batch = await prisma.$transaction(async (tx) => {
-      const createdBatch = await tx.inventoryBatch.create({
-        data: {
-          itemId,
-          receivedQty,
-          remainingQty: receivedQty,
-          unitCost,
-          expiryDate: new Date(expiryDate)
-        }
-      });
-
-      await tx.item.update({
-        where: { id: itemId },
-        data: { onHand: { increment: receivedQty } }
-      });
-
-      return createdBatch;
-    });
-
-    return res.status(201).json(batch);
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to create inventory batch", details: error.message });
-  }
-});
-
-router.post("/:itemId/use", async (req, res) => {
-  const { itemId } = req.params;
-  const { quantity, usedDate, wasteQty = 0, wasteReason } = req.body;
-
-  if (!quantity || quantity <= 0) {
-    return res.status(400).json({ error: "quantity must be greater than 0" });
-  }
-
-  try {
-    const result = await prisma.$transaction(async (tx) => {
-      const item = await tx.item.findUnique({ where: { id: itemId } });
-
-      if (!item) {
-        throw new Error("Item not found");
-      }
-
-      let remainingToConsume = quantity;
-
-      const candidateBatches = await tx.inventoryBatch.findMany({
-        where: {
-          itemId,
-          remainingQty: { gt: 0 }
-        },
-        orderBy: [{ expiryDate: "asc" }, { receivedAt: "asc" }]
-      });
-
-      for (const batch of candidateBatches) {
-        if (remainingToConsume <= 0) {
-          break;
-        }
-
-        const consumedQty = Math.min(batch.remainingQty, remainingToConsume);
-        remainingToConsume -= consumedQty;
-
-        await tx.inventoryBatch.update({
-          where: { id: batch.id },
-          data: { remainingQty: { decrement: consumedQty } }
-        });
-      }
-
-      if (remainingToConsume > 0) {
-        throw new Error("Insufficient inventory in batches for FIFO consumption");
-      }
-
-      const totalMovement = quantity + wasteQty;
-
-      const usageLog = await tx.usageLog.create({
-        data: {
-          itemId,
-          usedQty: quantity,
-          wasteQty,
-          wasteReason,
-          isExpiredWaste: wasteReason ? wasteReason.toLowerCase().includes("expired") : false,
-          usedDate: usedDate ? new Date(usedDate) : new Date()
-        }
-      });
-
-      await tx.item.update({
-        where: { id: itemId },
-        data: {
-          onHand: { decrement: totalMovement }
-        }
-      });
-
-      return usageLog;
-    });
-
-    return res.status(201).json({
-      message: "FIFO usage applied",
-      usageLog: result
-    });
-  } catch (error) {
-    const statusCode = error.message.includes("Insufficient inventory") || error.message.includes("not found") ? 400 : 500;
-
-    return res.status(statusCode).json({
-      error: "Failed to apply FIFO usage",
-      details: error.message
+  if (!fromLocationId || !toLocationId || !itemName || !unit || typeof quantity !== "number") {
+    return res.status(400).json({
+      error: "Validation error",
+      message:
+        "fromLocationId, toLocationId, itemName, unit and quantity(number) are required"
     });
   }
-});
 
-router.get("/waste-report", async (req, res) => {
-  const organizationId = req.query.organizationId;
-
-  if (!organizationId) {
-    return res.status(400).json({ error: "organizationId is required" });
+  if (fromLocationId === toLocationId) {
+    return res.status(400).json({
+      error: "Validation error",
+      message: "Cannot transfer inventory to the same location"
+    });
   }
 
-  try {
-    const expiredWasteEntries = await prisma.usageLog.findMany({
-      where: {
-        isExpiredWaste: true,
-        item: {
-          organizationId
-        }
-      },
-      include: {
-        item: {
-          select: {
-            id: true,
-            name: true,
-            category: true,
-            unit: true,
-            costPerUnit: true
-          }
-        }
-      },
-      orderBy: {
-        usedDate: "desc"
-      }
+  if (quantity <= 0) {
+    return res.status(400).json({
+      error: "Validation error",
+      message: "quantity must be greater than zero"
     });
-
-    const totalWasteQty = expiredWasteEntries.reduce((sum, entry) => sum + entry.wasteQty, 0);
-    const estimatedWasteCost = expiredWasteEntries.reduce(
-      (sum, entry) => sum + (entry.wasteQty * (entry.item?.costPerUnit || 0)),
-      0
-    );
-
-    return res.json({
-      count: expiredWasteEntries.length,
-      totalWasteQty,
-      estimatedWasteCost,
-      entries: expiredWasteEntries
-    });
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to generate waste report", details: error.message });
-  }
-});
-
-router.post("/jobs/expire-check", async (req, res) => {
-  const organizationId = req.body.organizationId;
-  const days = Number.parseInt(req.body.days, 10) || 3;
-
-  if (!organizationId) {
-    return res.status(400).json({ error: "organizationId is required" });
   }
 
-  try {
-    const expiringItems = await prisma.item.findMany({
-      where: {
-        organizationId,
-        inventoryBatches: {
-          some: {
-            expiryDate: createExpiringSoonFilter(days),
-            remainingQty: { gt: 0 }
-          }
-        }
-      },
-      select: {
-        id: true,
-        name: true
-      }
-    });
+  const fromLocation = findLocationById(fromLocationId);
+  const toLocation = findLocationById(toLocationId);
 
-    const notifications = await Promise.all(
-      expiringItems.map((item) => prisma.notification.create({
-        data: {
-          organizationId,
-          type: "EXPIRY_ALERT",
-          message: `Item ${item.name} is expiring within ${days} day(s).`
-        }
-      }))
-    );
-
-    return res.json({
-      message: "Expiry alert job run complete",
-      alertsCreated: notifications.length
+  if (!fromLocation || !toLocation) {
+    return res.status(404).json({
+      error: "Location not found",
+      message: "Both fromLocationId and toLocationId must exist"
     });
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to run expiry alert job", details: error.message });
   }
-});
 
-router.get("/fifo/next/:itemId", async (req, res) => {
-  const { itemId } = req.params;
-
-  try {
-    const nextBatch = await prisma.inventoryBatch.findFirst({
-      where: {
-        itemId,
-        remainingQty: { gt: 0 },
-        expiryDate: {
-          gte: startOfToday()
-        }
-      },
-      orderBy: [{ expiryDate: "asc" }, { receivedAt: "asc" }]
+  const sourceRecord = getInventoryRecord(fromLocationId, itemName, unit);
+  if (!sourceRecord || sourceRecord.quantity < quantity) {
+    return res.status(400).json({
+      error: "Insufficient inventory",
+      message: `Not enough ${itemName} at source location`
     });
-
-    return res.json({ itemId, nextBatch });
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to resolve FIFO next batch", details: error.message });
   }
+
+  sourceRecord.quantity = Number((sourceRecord.quantity - quantity).toFixed(4));
+  sourceRecord.updatedAt = new Date().toISOString();
+
+  const destinationRecord = upsertInventoryRecord({
+    locationId: toLocationId,
+    itemName,
+    unit,
+    quantityDelta: quantity
+  });
+
+  const transfer = {
+    id: crypto.randomUUID(),
+    fromLocationId,
+    toLocationId,
+    itemName,
+    unit,
+    quantity,
+    createdAt: new Date().toISOString()
+  };
+
+  state.transfers.push(transfer);
+
+  res.status(201).json({
+    message: "Inventory transferred",
+    transfer,
+    sourceRecord,
+    destinationRecord
+  });
 });
 
 module.exports = router;
