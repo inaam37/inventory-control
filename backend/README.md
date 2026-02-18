@@ -30,6 +30,12 @@ Current endpoints are intentionally minimal to keep backend integration focused:
 - `GET /api/overview` — status + roadmap metadata
 - `GET /api/items` — placeholder list (wire to Prisma)
 - `POST /api/items` — placeholder create (wire to Prisma)
+- `GET /api/analytics/cogs` — Cost of Goods Sold grouped by period
+- `GET /api/analytics/inventory-value` — inventory valuation snapshot (supports `asOf`)
+- `GET /api/analytics/ingredient-costs` — ingredient cost trends from price history
+- `GET /api/analytics/waste-cost` — waste cost totals and period trend
+- `GET /api/analytics/profit-margin` — gross margin report by recipe/dish
+- `GET /api/analytics/inventory-turnover` — inventory turnover ratio and valuation context
 
 ## Project layout
 ```
@@ -41,6 +47,8 @@ backend/
     routes/
       overview.js
       items.js
+      analytics.js
+    prisma.js
 ```
 
 ## Next steps
