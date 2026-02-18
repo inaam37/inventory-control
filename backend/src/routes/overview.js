@@ -1,9 +1,30 @@
 const express = require("express");
 
-const { getOverview } = require("../controllers/overviewController");
+const { requireAuth } = require("../middleware/auth");
+const { authorize } = require("../middleware/authorize");
 
 const router = express.Router();
 
-router.get("/", getOverview);
+router.get("/", requireAuth, authorize("overview:read"), (req, res) => {
+  res.json({
+    message: "Backend scaffolding active",
+    nextSteps: [
+      "Connect Prisma client",
+      "Authentication enabled",
+      "Implement CRUD for items/vendors/recipes",
+      "Add purchase order workflows",
+      "Enable notifications"
+    ],
+    endpoints: [
+      "GET /health",
+      "POST /api/auth/login",
+      "POST /api/auth/logout",
+      "POST /api/auth/refresh",
+      "GET /api/auth/me",
+      "GET /api/overview",
+      "GET /api/items"
+    ]
+  });
+});
 
 module.exports = router;

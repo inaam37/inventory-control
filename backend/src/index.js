@@ -4,9 +4,7 @@ const dotenv = require("dotenv");
 
 const overviewRouter = require("./routes/overview");
 const itemsRouter = require("./routes/items");
-const { optionalAuth } = require("./middleware/authMiddleware");
-const errorHandler = require("./middleware/errorHandler");
-const { connectDatabase, disconnectDatabase } = require("./config/database");
+const authRouter = require("./routes/auth");
 
 dotenv.config();
 
@@ -24,6 +22,7 @@ app.get("/health", async (req, res) => {
   });
 });
 
+app.use("/api/auth", authRouter);
 app.use("/api/overview", overviewRouter);
 app.use("/api/items", itemsRouter);
 
