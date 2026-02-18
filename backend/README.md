@@ -29,16 +29,19 @@ DATABASE_URL="postgresql://user:password@localhost:5432/pantrypilot"
 DEFAULT_ORGANIZATION_ID="your-organization-uuid"
 ```
 
-## API endpoints
-This phase now supports item persistence (file-backed `ingredients-table`) and barcode workflows:
+## API scaffold
+Current endpoints include Phase 10 expiry tracking and FIFO workflows:
 
 - `GET /health` — service health check
 - `GET /api/overview` — status + roadmap metadata
-- `GET /api/items?organizationId=<id>` — list ingredients/items for an organization
-- `POST /api/items` — create ingredient/item (supports optional `barcode`)
-- `POST /api/barcode/generate/:ingredientId` — assign (if missing) and render barcode image
-- `POST /api/barcode/scan` — lookup ingredient by barcode and optional stock in/out adjustment
-- `POST /api/barcode/print-bulk` — generate printable barcode payloads for multiple ingredients
+- `GET /api/items` — placeholder list (wire to Prisma)
+- `POST /api/items` — placeholder create (wire to Prisma)
+- `GET /api/inventory/expiring-soon?organizationId=<id>&days=<n>` — items with batches expiring within n days (default 3)
+- `POST /api/inventory/:itemId/batches` — receive inventory with `receivedQty` and `expiryDate`
+- `POST /api/inventory/:itemId/use` — consume inventory using FIFO (earliest expiry first)
+- `GET /api/inventory/fifo/next/:itemId` — preview next batch selected by FIFO
+- `POST /api/inventory/jobs/expire-check` — manually trigger expiry alert generation
+- `GET /api/inventory/waste-report?organizationId=<id>` — report waste logged as expired
 
 ## Project layout
 ```
@@ -47,11 +50,13 @@ backend/
     schema.prisma
   src/
     index.js
+    jobs/
+      expiryAlerts.js
     lib/
-      async-handler.js
-      item-store.js
+      expiry.js
+      prisma.js
     routes/
-      barcode.js
+      inventory.js
       overview.js
       items.js
     index.js

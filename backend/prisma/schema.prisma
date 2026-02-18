@@ -86,15 +86,30 @@ model Item {
   costPerUnit    Float    @default(0)
   leadTimeDays   Int      @default(0)
   usagePerDay    Float    @default(0)
+  expiryDate     DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id])
   vendor         Vendor?  @relation(fields: [vendorId], references: [id])
   recipeLines    RecipeIngredient[]
   usageLogs      UsageLog[]
+  inventoryBatches InventoryBatch[]
   salesLines     SalesIngredient[]
   priceHistory   PriceHistory[]
   purchaseOrderItems PurchaseOrderItem[]
+}
+
+model InventoryBatch {
+  id             String   @id @default(uuid())
+  itemId         String
+  receivedQty    Float
+  remainingQty   Float
+  unitCost       Float?
+  expiryDate     DateTime
+  receivedAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  item           Item     @relation(fields: [itemId], references: [id])
 }
 
 model Recipe {
@@ -149,9 +164,10 @@ model UsageLog {
   usedQty     Float    @default(0)
   wasteQty    Float    @default(0)
   wasteReason String?
-  usedDate    DateTime
-  createdAt   DateTime @default(now())
-  item        Item     @relation(fields: [itemId], references: [id])
+  isExpiredWaste Boolean @default(false)
+  usedDate  DateTime
+  createdAt DateTime @default(now())
+  item      Item     @relation(fields: [itemId], references: [id])
 }
 
 model PriceHistory {
