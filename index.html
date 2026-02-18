@@ -1048,18 +1048,79 @@
     <section id="reports" class="stack hidden">
       <div class="card">
         <div class="section-title">
-          <h3>Food Cost & Profitability</h3>
-          <span class="muted">Recipe margin snapshots</span>
+          <h3>Business Reports</h3>
+          <span class="muted">Generate operational and finance-ready reports</span>
         </div>
-        <div id="profitReport" class="stack" style="margin-top: 12px;"></div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="reportType">Report type</label>
+            <select id="reportType">
+              <option value="inventory">Inventory Report</option>
+              <option value="waste">Waste Report</option>
+              <option value="variance">Variance Report</option>
+              <option value="supplier">Supplier Report</option>
+              <option value="recipeCosting">Recipe Costing</option>
+              <option value="cogs">COGS Report</option>
+            </select>
+          </div>
+          <div>
+            <label for="reportStartDate">Start date</label>
+            <input id="reportStartDate" type="date" />
+          </div>
+          <div>
+            <label for="reportEndDate">End date</label>
+            <input id="reportEndDate" type="date" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="generateReport">Generate Report</button>
+          <button class="ghost" id="exportReportCsv">Export CSV</button>
+          <button class="ghost" id="exportReportPdf">Export PDF</button>
+        </div>
+        <div id="reportSummary" class="muted" style="margin-top: 10px;">Choose a report and click Generate Report.</div>
+        <div style="overflow-x:auto; margin-top: 10px;">
+          <table>
+            <thead id="reportTableHead"></thead>
+            <tbody id="reportTableBody"></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="card">
         <div class="section-title">
-          <h3>Vendor Spend Summary</h3>
-          <span class="muted">Ordering recommendations by vendor</span>
+          <h3>Scheduled Email Reports</h3>
+          <span class="muted">Daily/weekly email queue for management</span>
         </div>
-        <div id="vendorSpend" class="stack" style="margin-top: 12px;"></div>
+        <div class="grid-3" style="margin-top: 12px;">
+          <div>
+            <label for="scheduledReportType">Report type</label>
+            <select id="scheduledReportType">
+              <option value="inventory">Inventory Report</option>
+              <option value="waste">Waste Report</option>
+              <option value="variance">Variance Report</option>
+              <option value="supplier">Supplier Report</option>
+              <option value="recipeCosting">Recipe Costing</option>
+              <option value="cogs">COGS Report</option>
+            </select>
+          </div>
+          <div>
+            <label for="scheduledFrequency">Frequency</label>
+            <select id="scheduledFrequency">
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </div>
+          <div>
+            <label for="scheduledEmail">Management email</label>
+            <input id="scheduledEmail" type="email" placeholder="management@restaurant.com" />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top: 12px;">
+          <button class="primary" id="saveReportSchedule">Save Schedule</button>
+          <button class="ghost" id="runScheduledReports">Run Due Reports</button>
+        </div>
+        <div id="scheduledReportList" class="stack" style="margin-top: 12px;"></div>
+        <div class="footer-note">Email sending is simulated locally; production use requires SMTP or transactional email integration.</div>
       </div>
 
       <div class="card">
@@ -1182,11 +1243,13 @@
       users: [],
       feedback: [],
       posUploads: [],
+      reportSchedules: [],
       settings: {
         safetyDays: 2,
         notifyEmail: "",
         notifyPhone: ""
       },
+      lastGeneratedReport: null,
       activeItemId: null,
       activeVendorId: null,
       activeRecipeId: null,
@@ -1389,8 +1452,21 @@
     const notifyPhone = document.getElementById("notifyPhone");
     const saveNotificationsBtn = document.getElementById("saveNotifications");
 
-    const profitReport = document.getElementById("profitReport");
-    const vendorSpend = document.getElementById("vendorSpend");
+    const reportType = document.getElementById("reportType");
+    const reportStartDate = document.getElementById("reportStartDate");
+    const reportEndDate = document.getElementById("reportEndDate");
+    const generateReportBtn = document.getElementById("generateReport");
+    const exportReportCsvBtn = document.getElementById("exportReportCsv");
+    const exportReportPdfBtn = document.getElementById("exportReportPdf");
+    const reportSummary = document.getElementById("reportSummary");
+    const reportTableHead = document.getElementById("reportTableHead");
+    const reportTableBody = document.getElementById("reportTableBody");
+    const scheduledReportType = document.getElementById("scheduledReportType");
+    const scheduledFrequency = document.getElementById("scheduledFrequency");
+    const scheduledEmail = document.getElementById("scheduledEmail");
+    const saveReportScheduleBtn = document.getElementById("saveReportSchedule");
+    const runScheduledReportsBtn = document.getElementById("runScheduledReports");
+    const scheduledReportList = document.getElementById("scheduledReportList");
     const feedbackFrom = document.getElementById("feedbackFrom");
     const feedbackTopic = document.getElementById("feedbackTopic");
     const feedbackNote = document.getElementById("feedbackNote");
@@ -1424,8 +1500,9 @@
         users: state.users,
         feedback: state.feedback,
         posUploads: state.posUploads,
-        settings: state.settings,
-        activeCountSession: state.activeCountSession
+        reportSchedules: state.reportSchedules,
+        lastGeneratedReport: state.lastGeneratedReport,
+        settings: state.settings
       }));
     }
 
@@ -1447,6 +1524,8 @@
           state.users = raw.users || [];
           state.feedback = raw.feedback || [];
           state.posUploads = raw.posUploads || [];
+          state.reportSchedules = raw.reportSchedules || [];
+          state.lastGeneratedReport = raw.lastGeneratedReport || null;
           state.settings = {
             safetyDays: Number(raw.settings?.safetyDays ?? 2),
             notifyEmail: raw.settings?.notifyEmail || "",
@@ -1469,6 +1548,8 @@
         state.users = [];
         state.feedback = [];
         state.posUploads = [];
+        state.reportSchedules = [];
+        state.lastGeneratedReport = null;
         state.settings = {
           safetyDays: 2,
           notifyEmail: "",
@@ -3202,54 +3283,344 @@
       alert("Notification settings saved.");
     }
 
-    function renderReports() {
-      profitReport.innerHTML = "";
-      if (!state.recipes.length) {
-        profitReport.innerHTML = "<div class='muted'>Add recipes to view profitability.</div>";
-      } else {
-        state.recipes.forEach(recipe => {
-          const cost = calculateRecipeCost(recipe);
-          const perServing = recipe.yield ? cost / recipe.yield : cost;
-          const price = recipe.menuPrice || 0;
-          const margin = price ? ((price - perServing) / price) * 100 : 0;
-          const card = document.createElement("div");
-          card.className = "card";
-          card.innerHTML = `
-            <div class="section-title">
-              <div>
-                <strong>${recipe.name}</strong>
-                <div class="muted">Menu: ${price ? currency(price) : "N/A"}</div>
-              </div>
-              <div>${price ? `${margin.toFixed(1)}% margin` : "N/A"}</div>
-            </div>
-            <div class="muted" style="margin-top: 8px;">Cost per serving: ${currency(perServing)}</div>
-          `;
-          profitReport.appendChild(card);
+    function getReportLabel(type) {
+      const labels = {
+        inventory: "Inventory Report",
+        waste: "Waste Report",
+        variance: "Variance Report",
+        supplier: "Supplier Report",
+        recipeCosting: "Recipe Costing",
+        cogs: "COGS Report"
+      };
+      return labels[type] || "Report";
+    }
+
+    function isDateWithinRange(dateValue, startDate, endDate) {
+      if (!dateValue) return true;
+      const current = new Date(dateValue).getTime();
+      const start = startDate ? new Date(startDate).getTime() : null;
+      const end = endDate ? new Date(endDate).getTime() : null;
+      if (start && current < start) return false;
+      if (end && current > end) return false;
+      return true;
+    }
+
+    function buildInventoryReportRows() {
+      return state.items.map(item => ({
+        Item: item.name,
+        Location: "Main Location",
+        Category: item.category,
+        Unit: item.unit,
+        "On Hand": Number(item.onHand || 0).toFixed(2),
+        "Cost/Unit": Number(item.cost || 0).toFixed(2),
+        "Stock Value": (Number(item.onHand || 0) * Number(item.cost || 0)).toFixed(2)
+      }));
+    }
+
+    function buildWasteReportRows(startDate, endDate) {
+      return state.usageLogs
+        .filter(entry => isDateWithinRange(entry.date, startDate, endDate) && Number(entry.wasteQty || 0) > 0)
+        .map(entry => {
+          const item = state.items.find(i => i.id === entry.itemId);
+          const wasteQty = Number(entry.wasteQty || 0);
+          const costPerUnit = Number(item?.cost || 0);
+          return {
+            Date: entry.date,
+            Ingredient: item?.name || "Unknown item",
+            Category: item?.category || "Uncategorized",
+            "Waste Qty": wasteQty.toFixed(2),
+            Unit: item?.unit || "unit",
+            "Waste Cost": (wasteQty * costPerUnit).toFixed(2),
+            Reason: entry.wasteReason || "No reason"
+          };
         });
-      }
+    }
 
-      const vendorTotals = {};
-      state.items.forEach(item => {
-        const vendor = getVendorName(item.vendorId);
-        const total = getSuggestedOrderQty(item) * Number(item.cost || 0);
-        vendorTotals[vendor] = (vendorTotals[vendor] || 0) + total;
+    function buildVarianceReportRows() {
+      const theoretical = calculateTheoreticalUsage();
+      const actual = calculateActualUsage();
+      return state.items.map(item => {
+        const theory = Number(theoretical[item.id] || 0);
+        const actualUsed = Number(actual.totals[item.id] || 0);
+        const variance = actualUsed - theory;
+        return {
+          Item: item.name,
+          Category: item.category,
+          "System Usage": theory.toFixed(2),
+          "Physical/Actual Usage": actualUsed.toFixed(2),
+          Variance: variance.toFixed(2),
+          Unit: item.unit,
+          "Variance Cost": (variance * Number(item.cost || 0)).toFixed(2)
+        };
       });
+    }
 
-      vendorSpend.innerHTML = "";
-      Object.entries(vendorTotals).forEach(([vendor, total]) => {
+    function buildSupplierReportRows(startDate, endDate) {
+      const byVendor = {};
+      state.poDrafts
+        .filter(po => isDateWithinRange(po.createdAt, startDate, endDate))
+        .forEach(po => {
+          const key = po.vendorId || "unknown";
+          if (!byVendor[key]) {
+            byVendor[key] = {
+              vendorName: getVendorName(po.vendorId),
+              orderCount: 0,
+              deliveredCount: 0,
+              totalCost: 0
+            };
+          }
+          byVendor[key].orderCount += 1;
+          if (po.status === "received") byVendor[key].deliveredCount += 1;
+          byVendor[key].totalCost += Number(po.total || 0);
+        });
+
+      return Object.values(byVendor).map(entry => {
+        const performance = entry.orderCount ? (entry.deliveredCount / entry.orderCount) * 100 : 0;
+        return {
+          Supplier: entry.vendorName,
+          Orders: entry.orderCount,
+          Delivered: entry.deliveredCount,
+          "Delivery Performance %": performance.toFixed(1),
+          "Total Cost": entry.totalCost.toFixed(2)
+        };
+      });
+    }
+
+    function buildRecipeCostingRows() {
+      return state.recipes.map(recipe => {
+        const cost = Number(calculateRecipeCost(recipe) || 0);
+        const servings = Number(recipe.yield || 1);
+        const costPerDish = servings > 0 ? cost / servings : cost;
+        const menuPrice = Number(recipe.menuPrice || 0);
+        const marginPct = menuPrice ? ((menuPrice - costPerDish) / menuPrice) * 100 : 0;
+        return {
+          Dish: recipe.name,
+          "Batch Cost": cost.toFixed(2),
+          Servings: servings,
+          "Cost per Dish": costPerDish.toFixed(2),
+          "Menu Price": menuPrice.toFixed(2),
+          "Profit Margin %": menuPrice ? marginPct.toFixed(1) : "N/A"
+        };
+      });
+    }
+
+    function buildCogsRows(startDate, endDate) {
+      const byPeriod = {};
+      state.sales
+        .filter(entry => isDateWithinRange(entry.date, startDate, endDate))
+        .forEach(entry => {
+          const recipe = state.recipes.find(r => r.id === entry.recipeId);
+          if (!recipe) return;
+          const period = (entry.date || "").slice(0, 7) || "Unknown";
+          const servings = Number(entry.servings || 0);
+          const batchCost = Number(calculateRecipeCost(recipe) || 0);
+          const costPerDish = recipe.yield ? batchCost / Number(recipe.yield || 1) : batchCost;
+          const cogs = costPerDish * servings;
+          const revenue = Number(recipe.menuPrice || 0) * servings;
+          if (!byPeriod[period]) {
+            byPeriod[period] = { period, dishes: 0, cogs: 0, revenue: 0 };
+          }
+          byPeriod[period].dishes += servings;
+          byPeriod[period].cogs += cogs;
+          byPeriod[period].revenue += revenue;
+        });
+
+      return Object.values(byPeriod).sort((a, b) => a.period.localeCompare(b.period)).map(entry => ({
+        Period: entry.period,
+        "Dishes Sold": entry.dishes,
+        COGS: entry.cogs.toFixed(2),
+        Revenue: entry.revenue.toFixed(2),
+        "COGS %": entry.revenue ? ((entry.cogs / entry.revenue) * 100).toFixed(1) : "0.0"
+      }));
+    }
+
+    function generateReportData(type, startDate, endDate) {
+      if (type === "inventory") return buildInventoryReportRows();
+      if (type === "waste") return buildWasteReportRows(startDate, endDate);
+      if (type === "variance") return buildVarianceReportRows();
+      if (type === "supplier") return buildSupplierReportRows(startDate, endDate);
+      if (type === "recipeCosting") return buildRecipeCostingRows();
+      if (type === "cogs") return buildCogsRows(startDate, endDate);
+      return [];
+    }
+
+    function renderReportTable(rows) {
+      reportTableHead.innerHTML = "";
+      reportTableBody.innerHTML = "";
+      if (!rows.length) {
+        reportTableBody.innerHTML = "<tr><td class='muted'>No rows found for this report and date range.</td></tr>";
+        return;
+      }
+      const columns = Object.keys(rows[0]);
+      const headRow = document.createElement("tr");
+      headRow.innerHTML = columns.map(col => `<th>${col}</th>`).join("");
+      reportTableHead.appendChild(headRow);
+      rows.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = columns.map(col => `<td>${row[col]}</td>`).join("");
+        reportTableBody.appendChild(tr);
+      });
+    }
+
+    function generateReport({ silent = false } = {}) {
+      const type = reportType.value;
+      const startDate = reportStartDate.value;
+      const endDate = reportEndDate.value;
+      const rows = generateReportData(type, startDate, endDate);
+      state.lastGeneratedReport = {
+        type,
+        typeLabel: getReportLabel(type),
+        startDate,
+        endDate,
+        generatedAt: new Date().toISOString(),
+        rows
+      };
+      renderReportTable(rows);
+      reportSummary.textContent = `${getReportLabel(type)} generated with ${rows.length} row(s).`;
+      if (!silent) saveState();
+      return state.lastGeneratedReport;
+    }
+
+    function exportReportCsv() {
+      if (!state.lastGeneratedReport) generateReport();
+      const report = state.lastGeneratedReport;
+      if (!report || !report.rows.length) {
+        alert("Generate a report with data before exporting CSV.");
+        return;
+      }
+      const columns = Object.keys(report.rows[0]);
+      const csvRows = [columns.join(",")];
+      report.rows.forEach(row => {
+        const line = columns.map(column => `"${String(row[column] ?? "").replaceAll("\"", "\"\"")}"`).join(",");
+        csvRows.push(line);
+      });
+      const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${report.type}-${Date.now()}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function exportReportPdf() {
+      if (!state.lastGeneratedReport) generateReport();
+      const report = state.lastGeneratedReport;
+      if (!report || !report.rows.length) {
+        alert("Generate a report with data before exporting PDF.");
+        return;
+      }
+      const columns = Object.keys(report.rows[0]);
+      const tableRows = report.rows
+        .map(row => `<tr>${columns.map(column => `<td style=\"padding:6px;border:1px solid #ddd;\">${row[column]}</td>`).join("")}</tr>`)
+        .join("");
+      const html = `
+        <html>
+          <head><title>${report.typeLabel}</title></head>
+          <body style="font-family:Arial, sans-serif; padding:24px;">
+            <h2>${report.typeLabel}</h2>
+            <p>Generated: ${new Date(report.generatedAt).toLocaleString()}</p>
+            <p>Date range: ${report.startDate || "All"} to ${report.endDate || "All"}</p>
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead>
+                <tr>${columns.map(column => `<th style=\"padding:6px;border:1px solid #ddd;background:#f5f5f5;\">${column}</th>`).join("")}</tr>
+              </thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+            <p style="margin-top:14px;">Use Print → Save as PDF.</p>
+          </body>
+        </html>
+      `;
+      const popup = window.open("", "_blank", "width=1000,height=700");
+      if (!popup) {
+        alert("Popup blocked. Allow popups to export PDF.");
+        return;
+      }
+      popup.document.write(html);
+      popup.document.close();
+      popup.focus();
+      popup.print();
+    }
+
+    function saveReportSchedule() {
+      if (!scheduledEmail.value.trim()) {
+        alert("Management email is required.");
+        return;
+      }
+      const now = new Date();
+      const nextRun = new Date(now);
+      nextRun.setDate(now.getDate() + (scheduledFrequency.value === "weekly" ? 7 : 1));
+      state.reportSchedules.unshift({
+        id: crypto.randomUUID(),
+        type: scheduledReportType.value,
+        frequency: scheduledFrequency.value,
+        email: scheduledEmail.value.trim(),
+        lastRunAt: null,
+        nextRunAt: nextRun.toISOString()
+      });
+      saveState();
+      renderScheduledReports();
+      scheduledEmail.value = "";
+    }
+
+    function renderScheduledReports() {
+      scheduledReportList.innerHTML = "";
+      if (!state.reportSchedules.length) {
+        scheduledReportList.innerHTML = "<div class='muted'>No scheduled reports yet.</div>";
+        return;
+      }
+      state.reportSchedules.forEach(schedule => {
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `
           <div class="section-title">
             <div>
-              <strong>${vendor}</strong>
-              <div class="muted">Suggested spend</div>
+              <strong>${getReportLabel(schedule.type)}</strong>
+              <div class="muted">${schedule.frequency} • ${schedule.email}</div>
             </div>
-            <div>${currency(total)}</div>
+            <div class="muted">Next: ${new Date(schedule.nextRunAt).toLocaleString()}</div>
           </div>
         `;
-        vendorSpend.appendChild(card);
+        scheduledReportList.appendChild(card);
       });
+    }
+
+    function runScheduledReports() {
+      const now = Date.now();
+      let sent = 0;
+      state.reportSchedules.forEach(schedule => {
+        const due = new Date(schedule.nextRunAt).getTime() <= now;
+        if (!due) return;
+        const report = {
+          type: schedule.type,
+          startDate: "",
+          endDate: ""
+        };
+        const rows = generateReportData(report.type, report.startDate, report.endDate);
+        schedule.lastRunAt = new Date().toISOString();
+        const nextRun = new Date();
+        nextRun.setDate(nextRun.getDate() + (schedule.frequency === "weekly" ? 7 : 1));
+        schedule.nextRunAt = nextRun.toISOString();
+        sent += 1;
+        console.log(`Mock email sent to ${schedule.email}: ${getReportLabel(schedule.type)} with ${rows.length} rows.`);
+      });
+      saveState();
+      renderScheduledReports();
+      alert(sent ? `Ran ${sent} scheduled report(s).` : "No reports are due yet.");
+    }
+
+    function renderReports() {
+      if (!state.lastGeneratedReport) {
+        reportTableHead.innerHTML = "";
+        reportTableBody.innerHTML = "";
+        reportSummary.textContent = "Choose a report and click Generate Report.";
+      } else {
+        reportType.value = state.lastGeneratedReport.type;
+        reportStartDate.value = state.lastGeneratedReport.startDate || "";
+        reportEndDate.value = state.lastGeneratedReport.endDate || "";
+        renderReportTable(state.lastGeneratedReport.rows || []);
+        reportSummary.textContent = `${state.lastGeneratedReport.typeLabel} generated with ${(state.lastGeneratedReport.rows || []).length} row(s).`;
+      }
+      renderScheduledReports();
     }
 
     function saveFeedback() {
@@ -3395,6 +3766,8 @@
         users: state.users,
         feedback: state.feedback,
         posUploads: state.posUploads,
+        reportSchedules: state.reportSchedules,
+        lastGeneratedReport: state.lastGeneratedReport,
         settings: state.settings,
         activeCountSession: state.activeCountSession,
         exportedAt: new Date().toISOString()
@@ -3432,6 +3805,8 @@
           state.users = data.users || [];
           state.feedback = data.feedback || [];
           state.posUploads = data.posUploads || [];
+          state.reportSchedules = data.reportSchedules || [];
+          state.lastGeneratedReport = data.lastGeneratedReport || null;
           state.settings = {
             safetyDays: Number(data.settings?.safetyDays ?? 2),
             notifyEmail: data.settings?.notifyEmail || "",
@@ -3469,6 +3844,8 @@
       state.users = [];
       state.feedback = [];
       state.posUploads = [];
+      state.reportSchedules = [];
+      state.lastGeneratedReport = null;
       state.settings = {
         safetyDays: 2,
         notifyEmail: "",
@@ -3559,6 +3936,12 @@
       event.target.value = "";
     });
     clearPosUploadsBtn.addEventListener("click", clearPosUploads);
+
+    generateReportBtn.addEventListener("click", () => generateReport());
+    exportReportCsvBtn.addEventListener("click", exportReportCsv);
+    exportReportPdfBtn.addEventListener("click", exportReportPdf);
+    saveReportScheduleBtn.addEventListener("click", saveReportSchedule);
+    runScheduledReportsBtn.addEventListener("click", runScheduledReports);
 
     exportJsonBtn.addEventListener("click", exportJson);
     importJsonInput.addEventListener("change", importJson);
