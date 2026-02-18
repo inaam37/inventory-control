@@ -32,22 +32,23 @@ model Location {
 }
 
 model User {
-  id             String   @id @default(uuid())
-  organizationId String
-  fullName       String
-  email          String   @unique
-  role           UserRole @default(MANAGER)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  id           String   @id @default(uuid())
+  email        String   @unique
+  password     String
+  role         UserRole @default(VIEWER)
+  restaurantId String   @map("restaurant_id")
+  name         String
+  phone        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  restaurant   Organization @relation(fields: [restaurantId], references: [id])
 }
 
 enum UserRole {
   ADMIN
   MANAGER
-  BUYER
-  CHEF
   STAFF
+  VIEWER
 }
 
 model Vendor {

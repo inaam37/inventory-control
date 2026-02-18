@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 
 const overviewRouter = require("./routes/overview");
 const itemsRouter = require("./routes/items");
+const authRouter = require("./routes/auth");
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", service: "pantrypilot-backend" });
 });
 
+app.use("/api/auth", authRouter);
 app.use("/api/overview", overviewRouter);
 app.use("/api/items", itemsRouter);
 
