@@ -1170,6 +1170,12 @@
             <input type="file" id="importJson" accept="application/json" style="display:none;" />
           </label>
         </div>
+        <div class="file-input" style="margin-top: 10px;">
+          <button class="ghost" id="exportItemsCsv">Export Items (CSV)</button>
+          <button class="ghost" id="exportVendorsCsv">Export Vendors (CSV)</button>
+          <button class="ghost" id="exportPurchasesCsv">Export Purchases (CSV)</button>
+          <button class="ghost" id="exportWasteCsv">Export Waste (CSV)</button>
+        </div>
         <div class="grid-2" style="margin-top: 16px;">
           <div>
             <label for="safetyDays">Safety stock buffer (days)</label>
@@ -1212,6 +1218,7 @@
 
   <datalist id="ingredientAutocomplete"></datalist>
 
+  <script src="csv-utils.js"></script>
   <script>
     const STORAGE_KEY = "pantrypilot_phase3";
 
@@ -1357,6 +1364,10 @@
 
     const exportJsonBtn = document.getElementById("exportJson");
     const importJsonInput = document.getElementById("importJson");
+    const exportItemsCsvBtn = document.getElementById("exportItemsCsv");
+    const exportVendorsCsvBtn = document.getElementById("exportVendorsCsv");
+    const exportPurchasesCsvBtn = document.getElementById("exportPurchasesCsv");
+    const exportWasteCsvBtn = document.getElementById("exportWasteCsv");
     const safetyDaysInput = document.getElementById("safetyDays");
 
     const recipeForm = {
@@ -2326,12 +2337,6 @@
       });
     }
 
-      const newCat = prompt(`Category (${CATEGORY_LIST_TEXT}):`, item.category ?? "Other");
-      if (newCat === null) return;
-
-      const newQty = Number(newQtyStr);
-      const newPrice = Number(newPriceStr);
-
     function generatePoDrafts() {
       const suggestions = state.items
         .map(item => ({
@@ -2347,14 +2352,25 @@
         grouped[vendorId].push(entry);
       });
 
-      item.name = newName.trim();
-      item.qty = newQty;
-      item.price = newPrice;
-      item.category = normalizeCategory(newCat);
-      item.updatedAt = Date.now();
+      const drafts = Object.entries(grouped).map(([vendorId, entries]) => ({
+        id: crypto.randomUUID(),
+        vendorId,
+        vendorName: getVendorName(vendorId),
+        createdAt: new Date().toISOString(),
+        status: "Draft",
+        items: entries.map(({ item, orderQty }) => ({
+          itemId: item.id,
+          name: item.name,
+          unit: item.unit,
+          qty: orderQty,
+          cost: Number(item.cost || 0)
+        }))
+      }));
 
+      state.poDrafts = [...drafts, ...state.poDrafts];
       saveState();
-      renderPoDrafts();
+      renderAll();
+
     }
 
     function createManualPo() {
@@ -3780,6 +3796,100 @@
       URL.revokeObjectURL(link.href);
     }
 
+    function getStoredStateSnapshot() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function getLatestCollection(collectionName) {
+      if (Array.isArray(state[collectionName])) {
+        return state[collectionName];
+      }
+      const stored = getStoredStateSnapshot();
+      return Array.isArray(stored[collectionName]) ? stored[collectionName] : [];
+    }
+
+    function exportItemsCsv() {
+      const rows = getLatestCollection("items");
+      const headers = [
+        { key: "id", label: "ID" },
+        { key: "name", label: "Name" },
+        { key: "category", label: "Category" },
+        { key: "unit", label: "Unit" },
+        { key: "onHand", label: "On Hand" },
+        { key: "par", label: "Par" },
+        { key: "reorderPoint", label: "Reorder Point" },
+        { key: "cost", label: "Cost" },
+        { key: "vendorId", label: "Vendor ID" },
+        { key: "leadTimeDays", label: "Lead Time Days" },
+        { key: "usagePerDay", label: "Usage Per Day" },
+        { key: "sku", label: "SKU" },
+        { key: "barcode", label: "Barcode" },
+        { key: "createdAt", label: "Created At" },
+        { key: "updatedAt", label: "Updated At" }
+      ];
+      downloadCSV("inventory_items.csv", toCSV(rows, headers));
+    }
+
+    function exportVendorsCsv() {
+      const rows = getLatestCollection("vendors");
+      const headers = [
+        { key: "id", label: "ID" },
+        { key: "name", label: "Name" },
+        { key: "phone", label: "Phone" },
+        { key: "email", label: "Email" },
+        { key: "notes", label: "Notes" },
+        { key: "updatedAt", label: "Updated At" }
+      ];
+      downloadCSV("inventory_vendors.csv", toCSV(rows, headers));
+    }
+
+    function exportPurchasesCsv() {
+      const rows = getLatestCollection("receivingLogs");
+      const headers = [
+        { key: "id", label: "ID" },
+        { key: "poId", label: "PO ID" },
+        { key: "vendorName", label: "Vendor Name" },
+        { key: "receivedDate", label: "Received Date" },
+        { key: "note", label: "Note" },
+        { key: "total", label: "Total" }
+      ];
+      downloadCSV("inventory_purchases.csv", toCSV(rows, headers));
+    }
+
+    function exportWasteCsv() {
+      const rows = getLatestCollection("usageLogs").filter(entry => entry.type === "waste");
+      const headers = [
+        { key: "id", label: "ID" },
+        { key: "itemId", label: "Item ID" },
+        { key: "wasteQty", label: "Waste Qty" },
+        { key: "wasteReason", label: "Waste Reason" },
+        { key: "date", label: "Date" },
+        { key: "type", label: "Type" }
+      ];
+      downloadCSV("inventory_waste.csv", toCSV(rows, headers));
+    }
+
+    function runCsvExportSmokeTest() {
+      const sampleRows = [{
+        name: " Fresh, Basil ",
+        note: "He said \"rush\"",
+        details: "Line1\nLine2"
+      }];
+      const sampleHeaders = [
+        { key: "name", label: "Name" },
+        { key: "note", label: "Note" },
+        { key: "details", label: "Details" }
+      ];
+      const csv = toCSV(sampleRows, sampleHeaders);
+      console.assert(csv.includes('" Fresh, Basil "'), "CSV should quote leading/trailing spaces and commas.");
+      console.assert(csv.includes('"He said ""rush"""'), "CSV should escape double quotes.");
+      console.assert(csv.includes('"Line1\nLine2"'), "CSV should quote values containing newlines.");
+    }
+
     function importJson(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -3945,6 +4055,10 @@
 
     exportJsonBtn.addEventListener("click", exportJson);
     importJsonInput.addEventListener("change", importJson);
+    exportItemsCsvBtn.addEventListener("click", exportItemsCsv);
+    exportVendorsCsvBtn.addEventListener("click", exportVendorsCsv);
+    exportPurchasesCsvBtn.addEventListener("click", exportPurchasesCsv);
+    exportWasteCsvBtn.addEventListener("click", exportWasteCsv);
     safetyDaysInput.addEventListener("input", () => {
       state.settings.safetyDays = Number(safetyDaysInput.value || 0);
       saveState();
@@ -3963,6 +4077,7 @@
     notifyPhone.value = state.settings.notifyPhone || "";
     snapshotDate.value = new Date().toISOString().slice(0, 10);
     renderRoleSummary();
+    runCsvExportSmokeTest();
     renderAll();
   </script>
 </body>
