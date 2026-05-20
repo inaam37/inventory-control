@@ -1,88 +1,114 @@
 const express = require("express");
-
-const { state, findLocationById } = require("../data/store");
+const { state } = require("../data/store");
 
 const router = express.Router();
 
-const sum = (values) => values.reduce((acc, value) => acc + value, 0);
-
-router.get("/location/:locationId", (req, res) => {
-  const { locationId } = req.params;
-  const location = findLocationById(locationId);
-
-  if (!location) {
-    return res.status(404).json({
-      error: "Location not found",
-      message: `No location exists for locationId ${locationId}`
-    });
-  }
-
-  const records = state.inventory.filter((record) => record.locationId === locationId);
-  const inventoryUnits = sum(records.map((record) => record.quantity));
-
-  return res.json({
-    location,
-    analytics: {
-      skuCount: records.length,
-      inventoryUnits,
-      lowStockItems: records.filter((record) => record.quantity <= 5)
-    },
-    ingredients: records
-  });
-});
-
-router.get("/consolidated", (req, res) => {
-  const ingredientTotals = state.inventory.reduce((acc, record) => {
-    const key = `${record.itemName.toLowerCase()}::${record.unit}`;
-    if (!acc[key]) {
-      acc[key] = {
-        itemName: record.itemName,
-        unit: record.unit,
-        totalQuantity: 0,
-        byLocation: []
-      };
+/**
+ * GET /summary (Manager/Chef view)
+ * Get financial summary of recipes
+ */
+router.get("/summary", (req, res) => {
+  try {
+    // Manager can see summary
+    if (!req.user?.permissions?.includes("reports:read")) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Insufficient permissions"
+      });
     }
 
-    acc[key].totalQuantity = Number((acc[key].totalQuantity + record.quantity).toFixed(4));
-    acc[key].byLocation.push({
-      locationId: record.locationId,
-      quantity: record.quantity
+    const recipeSummary = (state.recipes || []).map((recipe) => {
+      const totalCost = recipe.ingredients.reduce((sum, ingredient) => {
+        const item = state.inventory.find((i) => i.itemName === ingredient.itemName);
+        return sum + (item?.price || 0) * ingredient.quantity;
+      }, 0);
+
+      const costPerServing = recipe.yield ? totalCost / recipe.yield : 0;
+      const profitPerServing = recipe.menuPrice - costPerServing;
+      const profitMargin = recipe.menuPrice ? (profitPerServing / recipe.menuPrice) * 100 : 0;
+
+      return {
+        name: recipe.name,
+        menuPrice: recipe.menuPrice,
+        costPerServing: Number(costPerServing.toFixed(2)),
+        profitPerServing: Number(profitPerServing.toFixed(2)),
+        profitMargin: Number(profitMargin.toFixed(2))
+      };
     });
 
-    return acc;
-  }, {});
+    const totalInventoryValue = state.inventory.reduce(
+      (sum, item) => sum + item.quantity * item.price,
+      0
+    );
 
-  const transfersByLocation = state.locations.map((location) => {
-    const inbound = state.transfers.filter((transfer) => transfer.toLocationId === location.id);
-    const outbound = state.transfers.filter((transfer) => transfer.fromLocationId === location.id);
+    res.json({
+      inventorySummary: {
+        totalItems: state.inventory.length,
+        totalValue: Number(totalInventoryValue.toFixed(2))
+      },
+      recipes: recipeSummary,
+      topProfitRecipes: recipeSummary.sort((a, b) => b.profitMargin - a.profitMargin).slice(0, 5),
+      lowMarginRecipes: recipeSummary.filter((r) => r.profitMargin < 30)
+    });
+  } catch (error) {
+    console.error("Error generating summary:", error);
+    res.status(500).json({
+      error: "Failed to generate summary",
+      message: error.message
+    });
+  }
+});
 
-    return {
-      locationId: location.id,
-      locationName: location.name,
-      inboundTransfers: inbound.length,
-      outboundTransfers: outbound.length,
-      netTransferQuantity:
-        Number(
-          (
-            sum(inbound.map((transfer) => transfer.quantity)) -
-            sum(outbound.map((transfer) => transfer.quantity))
-          ).toFixed(4)
-        )
-    };
-  });
+/**
+ * GET /vendor-report
+ * Vendor report for ordering
+ */
+router.get("/vendor-report", (req, res) => {
+  try {
+    // Chef and Manager can see vendor reports
+    if (!req.user?.permissions?.includes("vendors:read")) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Insufficient permissions"
+      });
+    }
 
-  res.json({
-    organizationSummary: {
-      locationCount: state.locations.length,
-      skuCount: state.inventory.length,
-      totalInventoryUnits: Number(
-        state.inventory.reduce((total, record) => total + record.quantity, 0).toFixed(4)
-      ),
-      transferCount: state.transfers.length
-    },
-    ingredientTotals: Object.values(ingredientTotals),
-    transfersByLocation
-  });
+    // Group items by vendor (need vendor field in inventory)
+    const vendorGroups = {};
+    (state.inventory || []).forEach((item) => {
+      const vendor = item.vendor || "Unknown";
+      if (!vendorGroups[vendor]) {
+        vendorGroups[vendor] = [];
+      }
+      vendorGroups[vendor].push({
+        name: item.itemName,
+        currentQty: item.quantity,
+        price: item.price,
+        totalValue: item.quantity * item.price
+      });
+    });
+
+    const vendorReport = Object.entries(vendorGroups).map(([vendor, items]) => {
+      const totalValue = items.reduce((sum, item) => sum + item.totalValue, 0);
+      return {
+        vendor,
+        itemCount: items.length,
+        items,
+        totalValue: Number(totalValue.toFixed(2))
+      };
+    });
+
+    res.json({
+      generatedAt: new Date().toISOString(),
+      vendorReport
+    });
+  } catch (error) {
+    console.error("Error generating vendor report:", error);
+    res.status(500).json({
+      error: "Failed to generate vendor report",
+      message: error.message
+    });
+  }
 });
 
 module.exports = router;

@@ -1,136 +1,166 @@
 const express = require("express");
-
-const {
-  hashPassword,
-  comparePassword,
-  generateAccessToken,
-  generateRefreshToken,
-  verifyRefreshToken
-} = require("../lib/auth");
-const { ROLES } = require("../config/roles");
-const { requireAuth } = require("../middleware/auth");
-const { createUser, findByEmail, findById, toUserResponse } = require("../db/userStore");
+const crypto = require("crypto");
 
 const router = express.Router();
-const activeRefreshTokens = new Set();
 
-router.post("/register", async (req, res) => {
-  const { email, password, role = ROLES.VIEWER, restaurantId, name, phone } = req.body;
+// Mock user database
+const users = [
+  {
+    id: "chef-001",
+    username: "chef",
+    masterKey: "chef-master-key-123",
+    role: "CHEF",
+    permissions: ["inventory:read", "inventory:write", "recipes:read", "recipes:write", "import:write", "vendors:read"]
+  },
+  {
+    id: "manager-001",
+    username: "manager",
+    masterKey: "manager-key-456",
+    role: "MANAGER",
+    permissions: ["inventory:read", "recipes:read", "vendors:read", "reports:read"]
+  },
+  {
+    id: "vendor-001",
+    username: "vendor",
+    masterKey: "vendor-key-789",
+    role: "VENDOR",
+    permissions: ["vendors:read"]
+  }
+];
 
-  if (!email || !password || !restaurantId || !name) {
-    return res.status(400).json({
-      error: "email, password, restaurantId, and name are required"
+// Simple JWT token generation
+function generateToken(user) {
+  const payload = {
+    id: user.id,
+    username: user.username,
+    role: user.role,
+    permissions: user.permissions,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 86400 // 24 hours
+  };
+  
+  // In production, use proper JWT signing
+  return Buffer.from(JSON.stringify(payload)).toString("base64");
+}
+
+function verifyToken(token) {
+  try {
+    const payload = JSON.parse(Buffer.from(token, "base64").toString());
+    if (payload.exp < Math.floor(Date.now() / 1000)) {
+      return null; // Token expired
+    }
+    return payload;
+  } catch (error) {
+    return null;
+  }
+}
+
+// Login endpoint
+router.post("/login", (req, res) => {
+  try {
+    const { username, masterKey } = req.body;
+
+    if (!username || !masterKey) {
+      return res.status(400).json({
+        error: "Validation failed",
+        message: "username and masterKey are required"
+      });
+    }
+
+    const user = users.find((u) => u.username === username && u.masterKey === masterKey);
+    if (!user) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "Invalid credentials"
+      });
+    }
+
+    const token = generateToken(user);
+    res.json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        permissions: user.permissions
+      }
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({
+      error: "Login failed",
+      message: error.message
     });
   }
-
-  if (!Object.values(ROLES).includes(role)) {
-    return res.status(400).json({ error: `Role must be one of: ${Object.values(ROLES).join(", ")}` });
-  }
-
-  try {
-    const existingUser = await findByEmail(email);
-    if (existingUser) {
-      return res.status(409).json({ error: "User already exists" });
-    }
-
-    const hashedPassword = await hashPassword(password);
-    const user = await createUser({
-      email,
-      password: hashedPassword,
-      role,
-      restaurantId,
-      name,
-      phone
-    });
-
-    return res.status(201).json(toUserResponse(user));
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to register user", details: error.message });
-  }
 });
 
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: "email and password are required" });
-  }
-
+// Verify token endpoint
+router.post("/verify", (req, res) => {
   try {
-    const user = await findByEmail(email);
-    if (!user) {
-      return res.status(401).json({ error: "Invalid email or password" });
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "No token provided"
+      });
     }
 
-    const passwordMatches = await comparePassword(password, user.password);
-    if (!passwordMatches) {
-      return res.status(401).json({ error: "Invalid email or password" });
+    const payload = verifyToken(token);
+    if (!payload) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "Invalid or expired token"
+      });
     }
 
-    const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
-    activeRefreshTokens.add(refreshToken);
-
-    return res.json({
-      accessToken,
-      refreshToken,
-      tokenType: "Bearer",
-      user: toUserResponse(user)
+    res.json({
+      message: "Token valid",
+      user: payload
     });
   } catch (error) {
-    return res.status(500).json({ error: "Failed to login", details: error.message });
+    console.error("Token verification error:", error);
+    res.status(500).json({
+      error: "Verification failed",
+      message: error.message
+    });
   }
 });
 
-router.post("/refresh", async (req, res) => {
-  const { refreshToken } = req.body;
-
-  if (!refreshToken) {
-    return res.status(400).json({ error: "refreshToken is required" });
-  }
-
-  if (!activeRefreshTokens.has(refreshToken)) {
-    return res.status(401).json({ error: "Refresh token is not active" });
-  }
-
-  try {
-    const payload = verifyRefreshToken(refreshToken);
-    const user = await findById(payload.sub);
-
-    if (!user) {
-      return res.status(401).json({ error: "User no longer exists" });
+// Middleware to check permissions
+function requirePermission(permission) {
+  return (req, res, next) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "No token provided"
+      });
     }
 
-    const accessToken = generateAccessToken(user);
-
-    return res.json({ accessToken, tokenType: "Bearer" });
-  } catch (error) {
-    return res.status(401).json({ error: "Invalid refresh token" });
-  }
-});
-
-router.post("/logout", (req, res) => {
-  const { refreshToken } = req.body;
-
-  if (refreshToken) {
-    activeRefreshTokens.delete(refreshToken);
-  }
-
-  return res.status(204).send();
-});
-
-router.get("/me", requireAuth, async (req, res) => {
-  try {
-    const user = await findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    const payload = verifyToken(token);
+    if (!payload) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "Invalid or expired token"
+      });
     }
 
-    return res.json(toUserResponse(user));
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to fetch profile", details: error.message });
-  }
-});
+    if (!payload.permissions.includes(permission) && !payload.permissions.includes("*")) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: `Permission '${permission}' required"
+      });
+    }
 
-module.exports = router;
+    req.user = payload;
+    next();
+  };
+}
+
+module.exports = {
+  router,
+  requirePermission,
+  verifyToken,
+  generateToken
+};

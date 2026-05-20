@@ -45,9 +45,17 @@ router.get("/", (req, res) => {
   }
 });
 
-// POST create recipe
+// POST create recipe (Chef only)
 router.post("/", (req, res) => {
   try {
+    // Check if user is Chef
+    if (req.user?.role !== "CHEF") {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Only Chef can create recipes"
+      });
+    }
+
     const { name, yield: recipeYield, menuPrice = 0, ingredients = [], notes = "" } = req.body;
 
     if (!name || !recipeYield) {
@@ -68,6 +76,7 @@ router.post("/", (req, res) => {
         unit: ing.unit
       })),
       notes,
+      createdBy: req.user.id,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -97,9 +106,16 @@ router.post("/", (req, res) => {
   }
 });
 
-// PUT update recipe
+// PUT update recipe (Chef only)
 router.put("/:id", (req, res) => {
   try {
+    if (req.user?.role !== "CHEF") {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Only Chef can edit recipes"
+      });
+    }
+
     const { id } = req.params;
     const { name, yield: recipeYield, menuPrice, ingredients, notes } = req.body;
 
@@ -137,9 +153,16 @@ router.put("/:id", (req, res) => {
   }
 });
 
-// DELETE recipe
+// DELETE recipe (Chef only)
 router.delete("/:id", (req, res) => {
   try {
+    if (req.user?.role !== "CHEF") {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Only Chef can delete recipes"
+      });
+    }
+
     const { id } = req.params;
     const index = state.recipes.findIndex((r) => r.id === id);
 
