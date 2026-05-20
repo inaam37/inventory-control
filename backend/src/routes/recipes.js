@@ -1,289 +1,166 @@
 const express = require("express");
-
-const prisma = require("../prisma");
+const crypto = require("crypto");
+const { state } = require("../data/store");
 
 const router = express.Router();
 
-const normalizeQuantity = (value) => {
-  const qty = Number(value);
-  return Number.isFinite(qty) ? qty : NaN;
-};
+// Initialize recipes storage
+if (!state.recipes) {
+  state.recipes = [];
+}
 
-const calculateRecipeCost = async (recipeId, tx = prisma) => {
-  const ingredients = await tx.recipeIngredient.findMany({
-    where: { recipeId },
-    include: { item: true }
-  });
-
-  const total = ingredients.reduce((sum, ingredient) => {
-    return sum + ingredient.quantity * ingredient.item.costPerUnit;
-  }, 0);
-
-  await tx.recipe.update({
-    where: { id: recipeId },
-    data: { costToPrepare: total }
-  });
-
-  return total;
-};
-
-router.post("/", async (req, res) => {
+// GET all recipes with calculated costs
+router.get("/", (req, res) => {
   try {
-    const {
-      organizationId,
-      name,
-      ingredients = [],
-      quantities = [],
-      preparation_time,
-      yield: recipeYield,
-      menu_price,
-      notes
-    } = req.body;
+    const recipesWithCosts = state.recipes.map((recipe) => {
+      const totalCost = recipe.ingredients.reduce((sum, ingredient) => {
+        const item = state.inventory.find((i) => i.itemName === ingredient.itemName);
+        const ingredientCost = (item?.price || 0) * ingredient.quantity;
+        return sum + ingredientCost;
+      }, 0);
 
-    if (!organizationId || !name) {
-      return res.status(400).json({ error: "organizationId and name are required" });
-    }
+      const costPerServing = recipe.yield ? totalCost / recipe.yield : 0;
+      const profitMargin = recipe.menuPrice
+        ? ((recipe.menuPrice - costPerServing) / recipe.menuPrice) * 100
+        : 0;
 
-    if (!Array.isArray(ingredients) || !Array.isArray(quantities) || ingredients.length !== quantities.length) {
-      return res.status(400).json({ error: "ingredients and quantities must be arrays of matching length" });
-    }
-
-    const created = await prisma.$transaction(async (tx) => {
-      const recipe = await tx.recipe.create({
-        data: {
-          organizationId,
-          name,
-          preparationTime: Number(preparation_time) || 0,
-          yield: Number(recipeYield) || 1,
-          menuPrice: Number(menu_price) || 0,
-          notes: notes || null
-        }
-      });
-
-      for (let index = 0; index < ingredients.length; index += 1) {
-        const itemId = ingredients[index];
-        const quantity = normalizeQuantity(quantities[index]);
-        if (!itemId || Number.isNaN(quantity) || quantity <= 0) {
-          throw new Error("Invalid ingredient payload");
-        }
-
-        await tx.recipeIngredient.create({
-          data: {
-            recipeId: recipe.id,
-            itemId,
-            quantity
-          }
-        });
-      }
-
-      const costToPrepare = await calculateRecipeCost(recipe.id, tx);
-
-      return tx.recipe.findUnique({
-        where: { id: recipe.id },
-        include: {
-          ingredients: {
-            include: {
-              item: {
-                select: { id: true, name: true, unit: true, costPerUnit: true, onHand: true }
-              }
-            }
-          }
-        }
-      }).then((fullRecipe) => ({ ...fullRecipe, costToPrepare }));
-    });
-
-    return res.status(201).json({ recipe: created });
-  } catch (error) {
-    if (error.message === "Invalid ingredient payload") {
-      return res.status(400).json({ error: error.message });
-    }
-
-    return res.status(500).json({ error: "Failed to create recipe", detail: error.message });
-  }
-});
-
-router.post("/:id/ingredients/:ingredientId", async (req, res) => {
-  try {
-    const { id: recipeId, ingredientId } = req.params;
-    const quantity = normalizeQuantity(req.body.quantity);
-
-    if (Number.isNaN(quantity) || quantity <= 0) {
-      return res.status(400).json({ error: "quantity must be a positive number" });
-    }
-
-    const recipe = await prisma.recipe.findUnique({ where: { id: recipeId } });
-    if (!recipe) {
-      return res.status(404).json({ error: "Recipe not found" });
-    }
-
-    const item = await prisma.item.findUnique({ where: { id: ingredientId } });
-    if (!item) {
-      return res.status(404).json({ error: "Ingredient item not found" });
-    }
-
-    const line = await prisma.recipeIngredient.upsert({
-      where: {
-        recipeId_itemId: {
-          recipeId,
-          itemId: ingredientId
-        }
-      },
-      update: { quantity: { increment: quantity } },
-      create: {
-        recipeId,
-        itemId: ingredientId,
-        quantity
-      }
-    });
-
-    const costToPrepare = await calculateRecipeCost(recipeId);
-
-    return res.status(201).json({ ingredient: line, costToPrepare });
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to add ingredient", detail: error.message });
-  }
-});
-
-router.get("/:id/can-make", async (req, res) => {
-  try {
-    const { id: recipeId } = req.params;
-    const servings = Math.max(1, Number(req.query.servings) || 1);
-
-    const recipe = await prisma.recipe.findUnique({
-      where: { id: recipeId },
-      include: {
-        ingredients: {
-          include: {
-            item: {
-              select: { id: true, name: true, unit: true, onHand: true }
-            }
-          }
-        }
-      }
-    });
-
-    if (!recipe) {
-      return res.status(404).json({ error: "Recipe not found" });
-    }
-
-    const requirements = recipe.ingredients.map((ingredient) => {
-      const required = ingredient.quantity * servings;
       return {
-        itemId: ingredient.item.id,
-        itemName: ingredient.item.name,
-        unit: ingredient.item.unit,
-        required,
-        onHand: ingredient.item.onHand,
-        shortBy: Math.max(0, required - ingredient.item.onHand),
-        sufficient: ingredient.item.onHand >= required
+        ...recipe,
+        totalCost: Number(totalCost.toFixed(2)),
+        costPerServing: Number(costPerServing.toFixed(2)),
+        profitMargin: Number(profitMargin.toFixed(2))
       };
     });
 
-    return res.json({
-      recipeId,
-      servings,
-      canMake: requirements.every((line) => line.sufficient),
-      requirements
+    res.json({
+      recipes: recipesWithCosts,
+      count: recipesWithCosts.length
     });
   } catch (error) {
-    return res.status(500).json({ error: "Failed to check recipe availability", detail: error.message });
+    console.error("Error fetching recipes:", error);
+    res.status(500).json({
+      error: "Failed to fetch recipes",
+      message: error.message
+    });
   }
 });
 
-router.post("/:id/sell", async (req, res) => {
+// POST create recipe
+router.post("/", (req, res) => {
   try {
-    const { id: recipeId } = req.params;
-    const servings = Math.max(1, Number(req.body.servings) || 1);
-    const soldDate = req.body.soldDate ? new Date(req.body.soldDate) : new Date();
+    const { name, yield: recipeYield, menuPrice = 0, ingredients = [], notes = "" } = req.body;
 
-    const result = await prisma.$transaction(async (tx) => {
-      const recipe = await tx.recipe.findUnique({
-        where: { id: recipeId },
-        include: {
-          ingredients: {
-            include: {
-              item: true
-            }
-          }
-        }
+    if (!name || !recipeYield) {
+      return res.status(400).json({
+        error: "Validation failed",
+        message: "name and yield are required"
       });
+    }
 
-      if (!recipe) {
-        throw new Error("NOT_FOUND");
+    const newRecipe = {
+      id: crypto.randomUUID(),
+      name,
+      yield: Number(recipeYield),
+      menuPrice: Number(menuPrice),
+      ingredients: ingredients.map((ing) => ({
+        itemName: ing.itemName,
+        quantity: Number(ing.quantity),
+        unit: ing.unit
+      })),
+      notes,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    state.recipes.push(newRecipe);
+
+    // Calculate costs
+    const totalCost = newRecipe.ingredients.reduce((sum, ingredient) => {
+      const item = state.inventory.find((i) => i.itemName === ingredient.itemName);
+      return sum + (item?.price || 0) * ingredient.quantity;
+    }, 0);
+
+    res.status(201).json({
+      message: "Recipe created successfully",
+      recipe: {
+        ...newRecipe,
+        totalCost: Number(totalCost.toFixed(2)),
+        costPerServing: Number((totalCost / newRecipe.yield).toFixed(2))
       }
-
-      const shortages = [];
-      for (const ingredient of recipe.ingredients) {
-        const required = ingredient.quantity * servings;
-        if (ingredient.item.onHand < required) {
-          shortages.push({
-            itemId: ingredient.item.id,
-            itemName: ingredient.item.name,
-            required,
-            onHand: ingredient.item.onHand,
-            shortBy: required - ingredient.item.onHand
-          });
-        }
-      }
-
-      if (shortages.length > 0) {
-        const out = new Error("INSUFFICIENT_INVENTORY");
-        out.shortages = shortages;
-        throw out;
-      }
-
-      const salesLog = await tx.salesLog.create({
-        data: {
-          recipeId,
-          servings,
-          soldDate
-        }
-      });
-
-      for (const ingredient of recipe.ingredients) {
-        const usedQty = ingredient.quantity * servings;
-
-        await tx.item.update({
-          where: { id: ingredient.item.id },
-          data: {
-            onHand: {
-              decrement: usedQty
-            }
-          }
-        });
-
-        await tx.salesIngredient.create({
-          data: {
-            salesLogId: salesLog.id,
-            itemId: ingredient.item.id,
-            quantity: usedQty
-          }
-        });
-      }
-
-      const updatedInventory = await tx.recipeIngredient.findMany({
-        where: { recipeId },
-        include: {
-          item: {
-            select: { id: true, name: true, onHand: true, unit: true }
-          }
-        }
-      });
-
-      return { salesLog, updatedInventory };
     });
-
-    return res.status(201).json(result);
   } catch (error) {
-    if (error.message === "NOT_FOUND") {
-      return res.status(404).json({ error: "Recipe not found" });
+    console.error("Error creating recipe:", error);
+    res.status(500).json({
+      error: "Failed to create recipe",
+      message: error.message
+    });
+  }
+});
+
+// PUT update recipe
+router.put("/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, yield: recipeYield, menuPrice, ingredients, notes } = req.body;
+
+    const recipe = state.recipes.find((r) => r.id === id);
+    if (!recipe) {
+      return res.status(404).json({
+        error: "Not found",
+        message: `Recipe ${id} not found`
+      });
     }
 
-    if (error.message === "INSUFFICIENT_INVENTORY") {
-      return res.status(409).json({ error: "Not enough ingredients to complete sale", shortages: error.shortages });
+    if (name) recipe.name = name;
+    if (recipeYield) recipe.yield = Number(recipeYield);
+    if (menuPrice !== undefined) recipe.menuPrice = Number(menuPrice);
+    if (ingredients) {
+      recipe.ingredients = ingredients.map((ing) => ({
+        itemName: ing.itemName,
+        quantity: Number(ing.quantity),
+        unit: ing.unit
+      }));
+    }
+    if (notes !== undefined) recipe.notes = notes;
+    recipe.updatedAt = new Date().toISOString();
+
+    res.json({
+      message: "Recipe updated successfully",
+      recipe
+    });
+  } catch (error) {
+    console.error("Error updating recipe:", error);
+    res.status(500).json({
+      error: "Failed to update recipe",
+      message: error.message
+    });
+  }
+});
+
+// DELETE recipe
+router.delete("/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const index = state.recipes.findIndex((r) => r.id === id);
+
+    if (index === -1) {
+      return res.status(404).json({
+        error: "Not found",
+        message: `Recipe ${id} not found`
+      });
     }
 
-    return res.status(500).json({ error: "Failed to process sale", detail: error.message });
+    const deleted = state.recipes.splice(index, 1);
+    res.json({
+      message: "Recipe deleted successfully",
+      recipe: deleted[0]
+    });
+  } catch (error) {
+    console.error("Error deleting recipe:", error);
+    res.status(500).json({
+      error: "Failed to delete recipe",
+      message: error.message
+    });
   }
 });
 

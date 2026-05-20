@@ -4,6 +4,8 @@ const dotenv = require("dotenv");
 
 const overviewRouter = require("./routes/overview");
 const itemsRouter = require("./routes/items");
+const recipesRouter = require("./routes/recipes");
+const importRouter = require("./routes/import");
 const adminRouter = require("./routes/admin");
 const cacheResponse = require("./middleware/cacheResponse");
 
@@ -33,6 +35,8 @@ app.get("/health", (req, res) => {
 
 app.use("/api/overview", cacheResponse("overview", cacheTtlSeconds), overviewRouter);
 app.use("/api/items", cacheResponse("items", cacheTtlSeconds), itemsRouter);
+app.use("/api/recipes", cacheResponse("recipes", cacheTtlSeconds), recipesRouter);
+app.use("/api/import", importRouter);
 app.use("/api/admin", adminRouter);
 
 app.use((err, req, res, next) => {
