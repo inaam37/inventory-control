@@ -127,7 +127,8 @@
     "reportSchedules",
     "lastGeneratedReport",
     "settings",
-    "activeCountSession"
+    "activeCountSession",
+    "stockTransactions"
   ];
   const PHASE2_CURRENCIES = ["CAD", "USD", "EUR", "GBP"];
 
@@ -136,7 +137,8 @@
       safetyDays: 2,
       currency: "CAD",
       notifyEmail: "",
-      notifyPhone: ""
+      notifyPhone: "",
+      blockNegativeStock: false
     };
   }
 
@@ -160,7 +162,8 @@
       reportSchedules: [],
       lastGeneratedReport: null,
       settings: phase2DefaultSettings(),
-      activeCountSession: null
+      activeCountSession: null,
+      stockTransactions: []
     };
   }
 
@@ -437,11 +440,417 @@
     event.target.value = "";
   }
 
+  function phase3EnsureState() {
+    if (typeof state === "undefined") return;
+    if (!Array.isArray(state.stockTransactions)) state.stockTransactions = [];
+    state.settings = { ...phase2DefaultSettings(), blockNegativeStock: false, ...(state.settings || {}) };
+  }
+
+  function phase3RoundQty(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return 0;
+    return Math.round(number * 10000) / 10000;
+  }
+
+  function phase3SignedQty(type, qty) {
+    const numericQty = Number(qty || 0);
+    if (type === "stock-out" || type === "waste") return -Math.abs(numericQty);
+    if (type === "stock-in") return Math.abs(numericQty);
+    return numericQty;
+  }
+
+  function recordStockTransaction({ itemId, type, qty, unit, date, sourceId, note, userId, previousQty, newQty }) {
+    phase3EnsureState();
+    const item = state.items.find(entry => entry.id === itemId);
+    const signedQty = phase3RoundQty(phase3SignedQty(type, qty));
+    const transaction = {
+      id: crypto.randomUUID(),
+      itemId,
+      itemName: item ? item.name : "Unknown item",
+      type,
+      qty: signedQty,
+      unit: unit || item?.unit || "",
+      date: date || new Date().toISOString().slice(0, 10),
+      sourceId: sourceId || "",
+      note: note || "",
+      userId: userId || "Staff",
+      previousQty: phase3RoundQty(previousQty),
+      newQty: phase3RoundQty(newQty),
+      createdAt: Date.now()
+    };
+    state.stockTransactions.unshift(transaction);
+    return transaction;
+  }
+
+  function phase3MoveStock(item, { type, qty, date, sourceId, note, userId }) {
+    if (!item) return null;
+    const previousQty = phase3RoundQty(item.onHand);
+    const signedQty = phase3SignedQty(type, qty);
+    const newQty = phase3RoundQty(previousQty + signedQty);
+    item.onHand = newQty;
+    item.updatedAt = Date.now();
+    return recordStockTransaction({
+      itemId: item.id,
+      type,
+      qty: signedQty,
+      unit: item.unit,
+      date,
+      sourceId,
+      note,
+      userId,
+      previousQty,
+      newQty
+    });
+  }
+
+  function phase3ConfirmNegativeStock(item, qty, feedbackElement, actionLabel) {
+    const previousQty = Number(item.onHand || 0);
+    const newQty = previousQty - Number(qty || 0);
+    if (newQty >= 0) return true;
+    const message = `${item.name} would go negative (${phase3RoundQty(newQty)} ${item.unit}).`;
+    if (state.settings?.blockNegativeStock) {
+      setFormFeedback(feedbackElement, `${message} Stock movement blocked by settings.`, "error");
+      return false;
+    }
+    const ok = confirm(`${message} Continue with this ${actionLabel}?`);
+    if (!ok) setFormFeedback(feedbackElement, "Stock movement canceled.", "error");
+    return ok;
+  }
+
+  function phase3ApplyCounts() {
+    const inputs = countList.querySelectorAll("input[data-count-id]");
+    let updated = 0;
+    inputs.forEach(input => {
+      if (input.value === "") return;
+      const item = state.items.find(entry => entry.id === input.dataset.countId);
+      if (!item) return;
+      const previousQty = phase3RoundQty(item.onHand);
+      const newQty = phase3RoundQty(input.value);
+      const difference = phase3RoundQty(newQty - previousQty);
+      item.onHand = newQty;
+      item.updatedAt = Date.now();
+      if (difference !== 0) {
+        recordStockTransaction({
+          itemId: item.id,
+          type: "count-adjustment",
+          qty: difference,
+          unit: item.unit,
+          date: new Date().toISOString().slice(0, 10),
+          sourceId: state.activeCountSession?.id || "",
+          note: "Inventory count adjustment",
+          userId: state.activeCountSession?.startedBy || "Staff",
+          previousQty,
+          newQty
+        });
+      }
+      updated += 1;
+    });
+
+    if (updated > 0) {
+      state.activeCountSession = null;
+      saveState();
+      setFormFeedback(countFormFeedback, `Applied counts for ${updated} item(s).`, "success");
+      renderAll();
+    } else {
+      setFormFeedback(countFormFeedback, "No counts entered.", "error");
+    }
+  }
+
+  function phase3MarkReceived() {
+    clearInvalidFields([receivePoSelect, receiveDate]);
+    if (!receivePoSelect.value) {
+      receivePoSelect.classList.add("invalid");
+      setFormFeedback(stockInFeedback, "Select a purchase order to receive.", "error");
+      return;
+    }
+    const po = state.poDrafts.find(entry => entry.id === receivePoSelect.value);
+    if (!po) return;
+    if (po.status === "Received" || state.receivingLogs.some(entry => entry.poId === po.id)) {
+      const ok = confirm("This purchase order has already been received. Receive it again and add stock a second time?");
+      if (!ok) {
+        setFormFeedback(stockInFeedback, "Receiving skipped. PO was already received.", "error");
+        return;
+      }
+    }
+    if (receiveDate.value && Number.isNaN(new Date(receiveDate.value).getTime())) {
+      receiveDate.classList.add("invalid");
+      setFormFeedback(stockInFeedback, "Enter a valid receiving date.", "error");
+      return;
+    }
+
+    const receivedDate = receiveDate.value || new Date().toISOString().slice(0, 10);
+    po.status = "Received";
+    po.updatedAt = new Date().toISOString();
+    po.items.forEach(line => {
+      const item = state.items.find(entry => entry.id === line.itemId);
+      if (!item) return;
+      phase3MoveStock(item, {
+        type: "stock-in",
+        qty: Number(line.qty || 0),
+        date: receivedDate,
+        sourceId: po.id,
+        note: `Received PO from ${po.vendorName}`,
+        userId: "Staff"
+      });
+    });
+
+    state.receivingLogs.unshift({
+      id: crypto.randomUUID(),
+      poId: po.id,
+      vendorName: po.vendorName,
+      receivedDate,
+      note: receiveNote.value.trim(),
+      total: po.items.reduce((sum, item) => sum + item.qty * item.cost, 0)
+    });
+    receiveDate.value = "";
+    receiveNote.value = "";
+    receiveBarcode.value = "";
+    setFormFeedback(stockInFeedback, `Shipment received for ${po.vendorName}.`, "success");
+    saveState();
+    renderAll();
+  }
+
+  function phase3LogUsage() {
+    clearInvalidFields([usageItemSearch, usageQty, usageDate]);
+    const matchedItem = findItemByNameOrBarcode(usageItemSearch.value, usageBarcode.value);
+    if (!matchedItem) {
+      usageItemSearch.classList.add("invalid");
+      setFormFeedback(usageFormFeedback, "Choose a valid ingredient from autocomplete or barcode.", "error");
+      return;
+    }
+    const usedQty = Number(usageQty.value || 0);
+    if (usedQty <= 0) {
+      usageQty.classList.add("invalid");
+      setFormFeedback(usageFormFeedback, "Enter a stock-out quantity greater than zero.", "error");
+      return;
+    }
+    if (!phase3ConfirmNegativeStock(matchedItem, usedQty, usageFormFeedback, "stock-out")) return;
+    const date = usageDate.value || new Date().toISOString().slice(0, 10);
+    const entry = {
+      id: crypto.randomUUID(),
+      itemId: matchedItem.id,
+      usedQty,
+      wasteQty: 0,
+      wasteReason: "",
+      type: "stock-out",
+      date
+    };
+    state.usageLogs.unshift(entry);
+    phase3MoveStock(matchedItem, {
+      type: "stock-out",
+      qty: usedQty,
+      date,
+      sourceId: entry.id,
+      note: "Usage stock-out",
+      userId: "Staff"
+    });
+    saveState();
+    usageQty.value = "";
+    usageDate.value = "";
+    usageItemSearch.value = "";
+    usageBarcode.value = "";
+    usageStatus.textContent = "Stock out logged";
+    setFormFeedback(usageFormFeedback, `Stock out logged for ${matchedItem.name}.`, "success");
+    renderAll();
+  }
+
+  function phase3LogWaste() {
+    clearInvalidFields([wasteItemSearch, wasteQty, wasteDate, wasteReason]);
+    const matchedItem = findItemByNameOrBarcode(wasteItemSearch.value);
+    if (!matchedItem) {
+      wasteItemSearch.classList.add("invalid");
+      setFormFeedback(wasteFormFeedback, "Select a valid ingredient to log waste.", "error");
+      return;
+    }
+    const qty = Number(wasteQty.value || 0);
+    if (qty <= 0) {
+      wasteQty.classList.add("invalid");
+      setFormFeedback(wasteFormFeedback, "Waste quantity must be greater than zero.", "error");
+      return;
+    }
+    if (!wasteReason.value.trim()) {
+      wasteReason.classList.add("invalid");
+      setFormFeedback(wasteFormFeedback, "Provide a waste reason.", "error");
+      return;
+    }
+    if (!phase3ConfirmNegativeStock(matchedItem, qty, wasteFormFeedback, "waste entry")) return;
+    const date = wasteDate.value || new Date().toISOString().slice(0, 10);
+    const entry = {
+      id: crypto.randomUUID(),
+      itemId: matchedItem.id,
+      usedQty: 0,
+      wasteQty: qty,
+      wasteReason: wasteReason.value.trim(),
+      type: "waste",
+      date
+    };
+    state.usageLogs.unshift(entry);
+    phase3MoveStock(matchedItem, {
+      type: "waste",
+      qty,
+      date,
+      sourceId: entry.id,
+      note: wasteReason.value.trim(),
+      userId: "Staff"
+    });
+    saveState();
+    wasteItemSearch.value = "";
+    wasteQty.value = "";
+    wasteReason.value = "";
+    wasteDate.value = "";
+    setFormFeedback(wasteFormFeedback, `Waste logged for ${matchedItem.name}.`, "success");
+    renderAll();
+  }
+
+  function phase3EnsureItemActivityPanel() {
+    if (document.getElementById("itemActivityList")) return;
+    const itemListCard = document.getElementById("itemsTable")?.closest(".card");
+    if (!itemListCard) return;
+    const card = document.createElement("div");
+    card.className = "card";
+    card.id = "itemActivityCard";
+    card.innerHTML = `
+      <div class="section-title">
+        <h3>Item Activity</h3>
+        <span class="muted" id="itemActivitySummary">Select an item to view movement</span>
+      </div>
+      <div id="itemActivityList" class="stack" style="margin-top: 12px;"></div>
+    `;
+    itemListCard.after(card);
+  }
+
+  function phase3FormatQty(value, unit) {
+    const number = phase3RoundQty(value);
+    return `${number > 0 ? "+" : ""}${number} ${unit || ""}`.trim();
+  }
+
+  function renderItemActivity(itemId = state.activeItemId) {
+    phase3EnsureItemActivityPanel();
+    const list = document.getElementById("itemActivityList");
+    const summary = document.getElementById("itemActivitySummary");
+    if (!list || !summary) return;
+    const item = state.items.find(entry => entry.id === itemId);
+    if (!item) {
+      summary.textContent = "Select an item to view movement";
+      list.innerHTML = "<div class='muted'>No item selected.</div>";
+      return;
+    }
+    const transactions = (state.stockTransactions || [])
+      .filter(entry => entry.itemId === item.id)
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+      .slice(0, 12);
+    summary.textContent = `${item.name} movement history`;
+    if (!transactions.length) {
+      list.innerHTML = "<div class='muted'>No stock movements recorded for this item yet.</div>";
+      return;
+    }
+    list.innerHTML = "";
+    transactions.forEach(entry => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="section-title">
+          <div>
+            <strong>${entry.type}</strong>
+            <div class="muted">${entry.date || formatDate(entry.createdAt)}</div>
+          </div>
+          <span class="pill ${Number(entry.qty) < 0 ? "alert" : "ok"}">${phase3FormatQty(entry.qty, entry.unit)}</span>
+        </div>
+        <div class="grid-3" style="margin-top: 10px;">
+          <div><div class="muted">Previous qty</div><strong>${entry.previousQty} ${entry.unit}</strong></div>
+          <div><div class="muted">New qty</div><strong>${entry.newQty} ${entry.unit}</strong></div>
+          <div><div class="muted">Note</div><strong>${entry.note || "No note"}</strong></div>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function phase3ExportStockTransactionsCsv() {
+    const headers = [
+      { key: "id", label: "ID" },
+      { key: "itemId", label: "Item ID" },
+      { key: "itemName", label: "Item Name" },
+      { key: "type", label: "Type" },
+      { key: "qty", label: "Qty" },
+      { key: "unit", label: "Unit" },
+      { key: "previousQty", label: "Previous Qty" },
+      { key: "newQty", label: "New Qty" },
+      { key: "date", label: "Date" },
+      { key: "sourceId", label: "Source ID" },
+      { key: "note", label: "Note" },
+      { key: "userId", label: "User ID" },
+      { key: "createdAt", label: "Created At" }
+    ];
+    downloadCSV("stock_transactions.csv", toCSV(state.stockTransactions || [], headers));
+  }
+
+  function phase3EnsureStockExport() {
+    if (document.getElementById("exportStockTransactionsCsv")) return;
+    const exportWasteButton = document.getElementById("exportWasteCsv");
+    const button = document.createElement("button");
+    button.className = "ghost";
+    button.id = "exportStockTransactionsCsv";
+    button.type = "button";
+    button.textContent = "Export Stock Transactions (CSV)";
+    button.addEventListener("click", phase3ExportStockTransactionsCsv);
+    if (exportWasteButton?.parentNode) {
+      exportWasteButton.parentNode.appendChild(button);
+    }
+  }
+
+  function phase3InstallStockMovement() {
+    phase3EnsureState();
+    phase3EnsureItemActivityPanel();
+    phase3EnsureStockExport();
+    window.recordStockTransaction = recordStockTransaction;
+    window.renderItemActivity = renderItemActivity;
+    window.exportStockTransactionsCsv = phase3ExportStockTransactionsCsv;
+
+    try {
+      applyCountsBtn.removeEventListener("click", applyCounts);
+      applyCounts = phase3ApplyCounts;
+      window.applyCounts = phase3ApplyCounts;
+      applyCountsBtn.addEventListener("click", phase3ApplyCounts);
+    } catch {}
+
+    try {
+      markReceivedBtn.removeEventListener("click", markReceived);
+      markReceived = phase3MarkReceived;
+      window.markReceived = phase3MarkReceived;
+      markReceivedBtn.addEventListener("click", phase3MarkReceived);
+    } catch {}
+
+    try {
+      saveUsageBtn.removeEventListener("click", logUsage);
+      logUsage = phase3LogUsage;
+      window.logUsage = phase3LogUsage;
+      saveUsageBtn.addEventListener("click", phase3LogUsage);
+    } catch {}
+
+    try {
+      logWasteBtn.removeEventListener("click", logWaste);
+      logWaste = phase3LogWaste;
+      window.logWaste = phase3LogWaste;
+      logWasteBtn.addEventListener("click", phase3LogWaste);
+    } catch {}
+
+    try {
+      const originalFillItemForm = fillItemForm;
+      fillItemForm = function phase3FillItemForm(item) {
+        originalFillItemForm(item);
+        renderItemActivity(item.id);
+      };
+      window.fillItemForm = fillItemForm;
+    } catch {}
+  }
+
   function phase2InstallPersistence() {
     if (typeof state === "undefined" || typeof STORAGE_KEY === "undefined") return;
 
     phase2EnsureSaveStatus();
     phase2EnsureDataTools();
+    phase3InstallStockMovement();
 
     const saveImpl = function saveState() {
       phase2SetSaveStatus("unsaved");
