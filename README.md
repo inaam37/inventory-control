@@ -53,6 +53,33 @@ Completed on 2026-05-25 against the local static app runtime.
 - Passed: Clear all data and currency controls are present in Data Tools.
 - Note: The in-app browser refused local URLs in this sandbox, so the Phase 2 pass used a local runtime harness plus script parsing. Run the manual checklist below in a normal browser before release.
 
+## Phase 3 Stock Movement
+
+- Added a `stockTransactions` ledger to persisted local state.
+- Added `recordStockTransaction({ itemId, type, qty, unit, date, sourceId, note, userId })` with previous/new quantity tracking.
+- Count sheets now record `count-adjustment` ledger entries for quantity differences.
+- Receiving a PO now increases item `onHand` and records one `stock-in` transaction per received line.
+- Already received POs are protected from accidental double receiving unless the user confirms.
+- Usage and waste now reduce item `onHand` and record `stock-out` / `waste` transactions.
+- Negative stock movement warns the user; it can be blocked through `settings.blockNegativeStock`.
+- Added an Item Activity panel that shows recent movement date, type, quantity, previous quantity, new quantity, and note for the selected item.
+- Added a Stock Transactions CSV export.
+
+## Phase 3 Smoke Test Results
+
+Completed on 2026-05-25 against the local static app runtime.
+
+- Passed: Original app script and helper start together with stock movement controls installed.
+- Passed: Receiving a PO increased stock from 10 to 14.
+- Passed: Duplicate receiving was prevented when confirmation was declined.
+- Passed: Usage reduced stock from 14 to 11 and created a `stock-out` transaction.
+- Passed: Waste reduced stock from 11 to 9 and created a `waste` transaction with reason.
+- Passed: Count adjustment changed stock from 9 to 8 and created a `count-adjustment` transaction for `-1`.
+- Passed: Item Activity rendered all four stock movements with previous/new quantities.
+- Passed: Saved JSON includes `stockTransactions`.
+- Passed: Stock Transactions CSV export control is present.
+- Note: The in-app browser refused local URLs in this sandbox, so the Phase 3 pass used a local runtime harness plus script parsing. Run the manual checklist below in a normal browser before release.
+
 ## Developer Smoke Test Checklist
 
 - Page loads with zero console errors.
@@ -67,3 +94,9 @@ Completed on 2026-05-25 against the local static app runtime.
 - CAD shows by default.
 - Duplicate barcode is blocked with form feedback.
 - Data Tools exports/imports JSON without dropping persistent fields.
+- Receiving a PO increases stock and writes `stock-in` entries.
+- Usage decreases stock and writes `stock-out` entries.
+- Waste decreases stock and writes `waste` entries.
+- Count sheets write `count-adjustment` entries for changed quantities.
+- Clicking an item shows Item Activity with previous/new quantities.
+- Stock Transactions CSV exports.
