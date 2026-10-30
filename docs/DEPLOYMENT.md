@@ -24,3 +24,11 @@ Excel/AI importing is disabled. CSV parsing is deterministic and all rows are va
 Choose durable transactional storage and an authenticated hosting environment; migrate the browser state rather than creating another independent source of truth. Implement restaurant-scoped users, enforced roles, server validation for all mutations, idempotent receipts, backups with tested restore, TLS and session management, and an audit trail for corrections/returns. Add integration tests for user isolation and concurrent receipts. Do not expose the existing in-memory scaffold to the internet.
 
 The removed `.env` remains in old commits. If its values were real, rotate them. Do not rewrite shared history without a deliberate migration plan and explicit approval.
+
+## Release package and verification
+
+Run `npm run build` to generate `dist/` from the shared app-file allowlist. Only the supported HTML/JavaScript, vendored sanitizer, its license and `.nojekyll` are included. Backend code, environment files, tests and handoffs are excluded. Netlify/Vercel configuration builds and serves `dist/`.
+
+GitHub Pages can continue publishing from the repository root: `.nojekyll` disables Jekyll processing and all browser asset links remain relative for the `/inventory-control/` project path. `npm run test:deployment` validates the generated package at that path on desktop/mobile.
+
+The GitHub Actions validation workflow runs on this PR and pushes to main with read-only repository permissions. It runs the engine, syntax/sanitizer, build, browser, packaged-subpath, API and dependency checks. It does not publish a site. Review approval alone does not merge; use **Merge pull request → Confirm merge** when checks pass. Existing host settings determine publication after that.

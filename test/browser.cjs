@@ -4,13 +4,14 @@ const fs=require('node:fs');
 const {createServer}=require('../scripts/serve.cjs');
 (async()=>{
   const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));
-  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+  let browser;
+  try {
+  browser=await chromium.launch({headless:true,args:['--no-sandbox']});
   const context=await browser.newContext({viewport:{width:1440,height:1000},acceptDownloads:true});
   const page=await context.newPage();page.setDefaultTimeout(10000);const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   page.on('dialog',d=>d.accept());
   const url=`http://127.0.0.1:${server.address().port}`;
-  try{
     await page.goto(url);await page.waitForFunction(()=>window.renderManager);
     await page.locator('[data-view="manager"]').click();
     console.log('Stage: menu loaded');
@@ -81,5 +82,5 @@ const {createServer}=require('../scripts/serve.cjs');
     if(process.env.QA_SCREENSHOT)await page.screenshot({path:process.env.QA_SCREENSHOT,fullPage:false});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth + 1),'Mobile viewport must not overflow horizontally');
     assert.deepEqual(errors,[]);console.log('Browser journey PASS: menu, form entry, quotes, comparison, pack orders, duplicate drafts, partial/duplicate/full receipts, persistence, JSON backup/restore, corrupt-data recovery, XSS, tab conflict, mobile layout.');
-  }finally{await browser.close();await new Promise(r=>server.close(r));}
+  }finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

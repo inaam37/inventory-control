@@ -24,8 +24,16 @@ Repository `inaam37/inventory-control`, default branch `main`, base commit `8caf
 - 14 deterministic inventory/import/backup tests pass.
 - 11 API/auth tests pass.
 - Browser workflow passes with synthetic data: quote import/comparison, inventory creation, whole-pack orders, duplicate draft prevention, partial/full/duplicate receipts, saved count drafts, adjustments, usage/waste, negative-stock blocking, recipe costing/mapping, sales/report generation, reload persistence, JSON backup/restore, corrupted local-state recovery, XSS and tab-conflict checks, and a 390-pixel mobile viewport without horizontal overflow.
-- 58 JavaScript sources parse; HTML sink checks and the vendored dependency consistency check pass.
+- 61 JavaScript sources parse; HTML sink checks and the vendored dependency consistency check pass.
 - Root and backend npm audit reports show zero known vulnerabilities at the time checked. This is not a guarantee against all security flaws.
+
+## Finalization additions
+
+- Added read-only GitHub Actions validation for the PR and main pushes.
+- Added a shared app-file allowlist, `dist/` build, `.nojekyll`, and Netlify/Vercel static-output configuration.
+- Packaged deployment test passes at `/inventory-control/` on desktop/mobile: all assets load, 110 menu entries render, and private paths return 404.
+- `npm run verify` passes all engine, syntax, build, browser, packaged deployment and API checks.
+- Browser test cleanup also closes its test server if browser startup fails.
 
 ## Operational blockers / limitations
 

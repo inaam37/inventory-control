@@ -27,9 +27,11 @@
 ```sh
 npm ci
 npm test                       # 14 engine tests
-npm run check                  # 58 JS sources + safe HTML sink/library checks
+npm run check                  # 61 JS sources + safe HTML sink/library checks
 npx playwright install chromium --only-shell
 npm run test:browser            # complete synthetic manager workflow
+npm run build
+npm run test:deployment         # packaged app at the GitHub Pages project path
 cd backend
 npm ci
 npm test                       # 11 API/auth tests

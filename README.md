@@ -31,14 +31,24 @@ See [the manager manual](docs/USER_MANUAL.md), [source evidence](docs/SOURCES.md
 ```sh
 npm test
 npm run check
+npm run build
 npx playwright install chromium --only-shell
 npm run test:browser
+npm run test:deployment
 cd backend
 npm ci
 npm test
 ```
 
 The browser journey uses synthetic test data only. It checks menu loading, inventory entry, supplier quote normalization/selection, pack ordering, duplicate draft prevention, partial/full/duplicate receipts, count draft recovery, usage/waste and negative-stock protection, recipe costing/mapping, sales/reporting, reload persistence, backup/restore, corrupt-data preservation, XSS sanitization, concurrent-tab conflicts, and a 390 px mobile viewport.
+
+## Final merge and static hosting
+
+PR #35 includes an automated `Validate inventory app` check. After it passes, use **Merge pull request → Confirm merge** to put this version on main. Approving a review alone does not merge or publish code. The `.nojekyll` marker supports root-based GitHub Pages publishing.
+
+`npm run build` creates an allowlisted `dist/` containing only the static app and sanitizer license; Netlify and Vercel use that directory. `npm run test:deployment` checks the packaged app at `/inventory-control/` on desktop and mobile. The pipeline does not deploy or create paid resources. Export your existing browser JSON before using the update.
+
+See [the release checklist](docs/RELEASE_CHECKLIST.md).
 
 ## Data and security boundaries
 
