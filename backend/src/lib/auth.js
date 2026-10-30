@@ -4,11 +4,13 @@ const ACCESS_TOKEN_TTL_SECONDS = Number(process.env.JWT_ACCESS_TTL_SECONDS || 90
 const REFRESH_TOKEN_TTL_SECONDS = Number(process.env.JWT_REFRESH_TTL_SECONDS || 604800);
 
 function getJwtSecret() {
-  return process.env.JWT_SECRET || "dev-access-secret";
+  if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is required");
+  return process.env.JWT_SECRET;
 }
 
 function getJwtRefreshSecret() {
-  return process.env.JWT_REFRESH_SECRET || "dev-refresh-secret";
+  if (!process.env.JWT_REFRESH_SECRET) throw new Error("JWT_REFRESH_SECRET is required");
+  return process.env.JWT_REFRESH_SECRET;
 }
 
 function base64UrlEncode(value) {
@@ -48,13 +50,13 @@ function verifySignedToken(token, secret) {
     .update(unsignedToken)
     .digest("base64url");
 
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+  if (signature.length !== expectedSignature.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
     throw new Error("Invalid signature");
   }
 
   const payload = JSON.parse(base64UrlDecode(encodedPayload));
   const now = Math.floor(Date.now() / 1000);
-  if (payload.exp <= now) {
+  if (!Number.isFinite(payload.exp) || payload.exp <= now) {
     throw new Error("Token expired");
   }
 

@@ -1,6 +1,7 @@
 (function () {
   function escapeCsvValue(value) {
-    const text = String(value ?? "");
+    let text = String(value ?? "");
+    if (/^[\s]*[=+@-]/.test(text) && typeof value !== "number") text = "\'" + text;
     const escaped = text.replace(/"/g, '""');
     const needsQuotes = /[",\n\r]/.test(text) || text.trim() !== text;
     return needsQuotes ? `"${escaped}"` : escaped;
@@ -59,9 +60,9 @@
         return a.item.name.localeCompare(b.item.name);
       });
 
-    orderList.innerHTML = "";
+    orderList.innerHTML = safeHTML("");
     if (!suggestions.length) {
-      orderList.innerHTML = "<div class='muted'>No items need ordering right now. Stock levels look healthy.</div>";
+      orderList.innerHTML = safeHTML("<div class='muted'>No items need ordering right now. Stock levels look healthy.</div>");
       return;
     }
 
@@ -69,7 +70,7 @@
       const estimatedValue = orderQty * Number(item.cost || 0);
       const card = document.createElement("div");
       card.className = "card";
-      card.innerHTML = `
+      card.innerHTML = safeHTML(`
         <div class="section-title">
           <div>
             <strong>${item.name}</strong>
@@ -103,12 +104,12 @@
             <strong>${currency(estimatedValue)}</strong>
           </div>
         </div>
-      `;
+      `);
       orderList.appendChild(card);
     });
   };
 
-  const PHASE2_SCHEMA_VERSION = 1;
+  const PHASE2_SCHEMA_VERSION = 2;
   const PHASE2_STORAGE_FIELDS = [
     "items",
     "vendors",
@@ -128,7 +129,9 @@
     "lastGeneratedReport",
     "settings",
     "activeCountSession",
-    "stockTransactions"
+    "stockTransactions",
+    "supplierQuotes",
+    "menuCatalog"
   ];
   const PHASE2_CURRENCIES = ["CAD", "USD", "EUR", "GBP"];
 
@@ -138,7 +141,7 @@
       currency: "CAD",
       notifyEmail: "",
       notifyPhone: "",
-      blockNegativeStock: false
+      blockNegativeStock: true
     };
   }
 
@@ -163,7 +166,9 @@
       lastGeneratedReport: null,
       settings: phase2DefaultSettings(),
       activeCountSession: null,
-      stockTransactions: []
+      stockTransactions: [],
+      supplierQuotes: [],
+      menuCatalog: (window.FARMHOUSE_MENU || []).map(entry => ({ ...entry }))
     };
   }
 
@@ -258,11 +263,16 @@
 
   function safeSaveState(snapshot = phase2StateSnapshot()) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+      if (window.inventoryRecoveryRequired) throw new Error("Stored data needs recovery; original data has been preserved.");
+      const current = localStorage.getItem(STORAGE_KEY);
+      if (window.inventoryLoadedValue !== undefined && current !== window.inventoryLoadedValue) throw new Error("Another tab changed inventory. Export your work, then reload before editing.");
+      const serialized = JSON.stringify(snapshot);
+      localStorage.setItem(STORAGE_KEY, serialized);
+      window.inventoryLoadedValue = serialized;
       phase2SetSaveStatus("saved");
       return true;
     } catch (error) {
-      phase2SetSaveStatus("failed", "Unable to save changes in this browser. Export JSON before closing.");
+      phase2SetSaveStatus("failed", error.message + " Export JSON before closing.");
       console.error("PantryPilot save failed:", error);
       return false;
     }
@@ -301,6 +311,9 @@
         const ok = confirm("This deletes local browser data only for PantryPilot on this device. Continue?");
         if (!ok) return;
         localStorage.removeItem(STORAGE_KEY);
+        window.inventoryLoadedValue = null;
+        window.inventoryRecoveryRequired = false;
+        document.querySelector(".startup-error")?.remove();
         phase2ApplyState(migrateState({ schemaVersion: PHASE2_SCHEMA_VERSION }));
         safeSaveState();
         phase2ResetForms();
@@ -355,7 +368,7 @@
   }
 
   function phase2BuildUsageItemOptions() {
-    ingredientAutocomplete.innerHTML = "";
+    ingredientAutocomplete.innerHTML = safeHTML("");
     [...state.items]
       .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")))
       .forEach(item => {
@@ -426,14 +439,22 @@
           alert("Invalid file format.");
           return;
         }
-        phase2ApplyState(migrateState(data));
-        saveState();
+        InventoryEngine.validateBackup(data);
+        if (!confirm("Replace this browser inventory with the selected backup? A recovery copy of current data will be kept locally.")) return;
+        const before = localStorage.getItem(STORAGE_KEY);
+        if (before) localStorage.setItem(STORAGE_KEY + "_before_restore", before);
+        const snapshot = migrateState(data);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+        window.inventoryLoadedValue = JSON.stringify(snapshot);
+        window.inventoryRecoveryRequired = false;
+        document.querySelector(".startup-error")?.remove();
+        phase2ApplyState(snapshot);
         phase2ResetForms();
         phase2SyncSettingsControls();
         if (typeof renderAll === "function") renderAll();
         alert("Data imported successfully.");
-      } catch {
-        alert("Could not read that file.");
+      } catch (error) {
+        alert("Restore failed: " + error.message);
       }
     };
     reader.readAsText(file);
@@ -443,7 +464,7 @@
   function phase3EnsureState() {
     if (typeof state === "undefined") return;
     if (!Array.isArray(state.stockTransactions)) state.stockTransactions = [];
-    state.settings = { ...phase2DefaultSettings(), blockNegativeStock: false, ...(state.settings || {}) };
+    state.settings = { ...phase2DefaultSettings(), blockNegativeStock: true, ...(state.settings || {}) };
   }
 
   function phase3RoundQty(value) {
@@ -519,6 +540,7 @@
 
   function phase3ApplyCounts() {
     const inputs = countList.querySelectorAll("input[data-count-id]");
+    if ([...inputs].some(input => input.value !== "" && (!Number.isFinite(Number(input.value)) || Number(input.value) < 0))) { setFormFeedback(countFormFeedback, "Counts must be finite and non-negative. Nothing was applied.", "error"); return; }
     let updated = 0;
     inputs.forEach(input => {
       if (input.value === "") return;
@@ -566,11 +588,16 @@
     const po = state.poDrafts.find(entry => entry.id === receivePoSelect.value);
     if (!po) return;
     if (po.status === "Received" || state.receivingLogs.some(entry => entry.poId === po.id)) {
-      const ok = confirm("This purchase order has already been received. Receive it again and add stock a second time?");
-      if (!ok) {
-        setFormFeedback(stockInFeedback, "Receiving skipped. PO was already received.", "error");
-        return;
-      }
+      setFormFeedback(stockInFeedback, "Receiving blocked: this PO was already received. Use a new order for a new delivery.", "error");
+      return;
+    }
+    if (po.items.some(line => Number(line.receivedQty || 0) > 0)) {
+      setFormFeedback(stockInFeedback, "This order is partially received. Finish it in Manager workspace.", "error");
+      return;
+    }
+    if (po.items.some(line => !state.items.some(i => i.id === line.itemId) || !Number.isFinite(Number(line.qty)) || Number(line.qty) <= 0)) {
+      setFormFeedback(stockInFeedback, "Order has an invalid or deleted item. Nothing was received.", "error");
+      return;
     }
     if (receiveDate.value && Number.isNaN(new Date(receiveDate.value).getTime())) {
       receiveDate.classList.add("invalid");
@@ -619,7 +646,7 @@
       return;
     }
     const usedQty = Number(usageQty.value || 0);
-    if (usedQty <= 0) {
+    if (!Number.isFinite(usedQty) || usedQty <= 0) {
       usageQty.classList.add("invalid");
       setFormFeedback(usageFormFeedback, "Enter a stock-out quantity greater than zero.", "error");
       return;
@@ -663,7 +690,7 @@
       return;
     }
     const qty = Number(wasteQty.value || 0);
-    if (qty <= 0) {
+    if (!Number.isFinite(qty) || qty <= 0) {
       wasteQty.classList.add("invalid");
       setFormFeedback(wasteFormFeedback, "Waste quantity must be greater than zero.", "error");
       return;
@@ -709,13 +736,13 @@
     const card = document.createElement("div");
     card.className = "card";
     card.id = "itemActivityCard";
-    card.innerHTML = `
+    card.innerHTML = safeHTML(`
       <div class="section-title">
         <h3>Item Activity</h3>
         <span class="muted" id="itemActivitySummary">Select an item to view movement</span>
       </div>
       <div id="itemActivityList" class="stack" style="margin-top: 12px;"></div>
-    `;
+    `);
     itemListCard.after(card);
   }
 
@@ -732,7 +759,7 @@
     const item = state.items.find(entry => entry.id === itemId);
     if (!item) {
       summary.textContent = "Select an item to view movement";
-      list.innerHTML = "<div class='muted'>No item selected.</div>";
+      list.innerHTML = safeHTML("<div class='muted'>No item selected.</div>");
       return;
     }
     const transactions = (state.stockTransactions || [])
@@ -741,14 +768,14 @@
       .slice(0, 12);
     summary.textContent = `${item.name} movement history`;
     if (!transactions.length) {
-      list.innerHTML = "<div class='muted'>No stock movements recorded for this item yet.</div>";
+      list.innerHTML = safeHTML("<div class='muted'>No stock movements recorded for this item yet.</div>");
       return;
     }
-    list.innerHTML = "";
+    list.innerHTML = safeHTML("");
     transactions.forEach(entry => {
       const card = document.createElement("div");
       card.className = "card";
-      card.innerHTML = `
+      card.innerHTML = safeHTML(`
         <div class="section-title">
           <div>
             <strong>${entry.type}</strong>
@@ -761,7 +788,7 @@
           <div><div class="muted">New qty</div><strong>${entry.newQty} ${entry.unit}</strong></div>
           <div><div class="muted">Note</div><strong>${entry.note || "No note"}</strong></div>
         </div>
-      `;
+      `);
       list.appendChild(card);
     });
   }
@@ -885,13 +912,16 @@
     } catch {}
 
     try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      window.inventoryLoadedValue = localStorage.getItem(STORAGE_KEY);
+      const stored = JSON.parse(window.inventoryLoadedValue);
+      if (stored) InventoryEngine.validateBackup(stored);
       phase2ApplyState(migrateState(stored || phase2StateSnapshot()));
     } catch {
       phase2ApplyState(migrateState(phase2StateSnapshot()));
     }
 
-    safeSaveState();
+    if (!window.inventoryRecoveryRequired) safeSaveState();
+    else showStartupBanner("Stored inventory is invalid. Original data is preserved. Restore a valid JSON backup in Data Tools.");
     phase2SyncSettingsControls();
     if (typeof renderAll === "function") renderAll();
   }

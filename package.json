@@ -1,0 +1,16 @@
+{
+  "name": "pantrypilot-workspace",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/engine.test.js",
+    "test:browser": "node test/browser.cjs",
+    "check": "node scripts/check-syntax.cjs",
+    "start": "node scripts/serve.cjs"
+  },
+  "devDependencies": {
+    "acorn": "^8.19.0",
+    "dompurify": "^3.4.17",
+    "playwright": "1.56.1"
+  }
+}

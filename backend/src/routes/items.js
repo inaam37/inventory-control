@@ -44,6 +44,7 @@ router.post("/", (req, res) => {
       });
     }
 
+    if (![quantity, price].every(v => Number.isFinite(Number(v)) && Number(v) >= 0) || ![name,category,unit].every(v => typeof v === "string" && v.trim())) return res.status(400).json({error:"Validation failed"});
     const newItem = {
       id: crypto.randomUUID(),
       name,
@@ -98,6 +99,7 @@ router.put("/:id", (req, res) => {
       });
     }
 
+    if ([quantity,price].some(v => v !== undefined && (!Number.isFinite(Number(v)) || Number(v) < 0)) || (name !== undefined && (typeof name !== "string" || !name.trim()))) return res.status(400).json({error:"Validation failed"});
     if (quantity !== undefined) item.quantity = Number(quantity);
     if (price !== undefined) item.price = Number(price);
     if (name !== undefined) item.itemName = name;

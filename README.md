@@ -1,102 +1,55 @@
-# PantryPilot Inventory Control
+# PantryPilot — Farmhouse inventory workspace
 
-PantryPilot is a static browser-based prototype for restaurant inventory management. It stores data in `localStorage` and supports inventory items, vendors, count sheets, ordering suggestions, purchase order drafts, recipes, usage tracking, price history, reports, and data export/import workflows.
+A working **single-browser manager app**, with CAD supplier quote comparison, pack-aware order drafts, partial receiving, a stock ledger, count drafts, usage/waste, recipe costing, reports, and JSON backup/restore. The public Farmhouse menu catalogue contains **110 service-specific prices** checked October 30, 2026.
 
-## Running Locally
+This is a local operating tool, **not a deployed multi-user system**. Browser storage is the source of truth. The separate API scaffold is in-memory and does not sync with the browser. No supplier orders, email/SMS, POS sync, invoice OCR, or paid AI calls are connected.
 
-Open `index.html` in a browser, or serve the folder with any simple static web server so `index.html` and `csv-utils.js` are loaded from the same directory.
+## Run
 
-## Phase 1 Stabilization
+```sh
+npm ci
+npm start
+```
 
-- Restored the missing ordering suggestions renderer.
-- Repaired ingredient autocomplete setup so it only uses `state.items`.
-- Added CSV helper functions required by startup and export buttons.
-- Added a visible startup error banner if initialization fails.
+Open `http://127.0.0.1:8000`. The local server binds to this computer and serves only the supported app assets. Opening `index.html` directly may work, but use a server for consistent storage and downloads. Avoid private/incognito mode. Export a full JSON backup before clearing browser storage, changing devices, or updating the app. GitHub Pages can serve the same static app; each browser has its own independent data.
 
-## Phase 1 Smoke Test Results
+## Manager workflow
 
-Completed on 2026-05-25 against the local static app.
+1. **Inventory:** add each ingredient in its stock unit (kg, g, l, ml, each). Enter on-hand, par, supplier, net order pack size and **cost per stock unit**, never case cost in the unit-cost box.
+2. **Manager workspace:** import a mapped GFS/Sysco quote CSV, preview every row, then import. Choose a verified quote to set the item's supplier, SKU, unit cost and net pack quantity. No real supplier prices are bundled.
+3. **Recipes:** enter chef-confirmed ingredient quantities in those same stock units and batch yield. Map recipes to service-specific menu entries in the Manager workspace. Missing quantities/costs show `Uncosted`.
+4. **Count Sheets:** enter actual stock, then Apply Counts. Draft entries survive reload and adjustments write to the ledger.
+5. **Manager workspace:** review order suggestions. Open orders reduce the suggested need; quantities round up to whole packs. Generate drafts once, then review them in Purchase Orders. Nothing is sent.
+6. Receive each delivery using its invoice/reference and actual quantities in stock units. Partial deliveries retain the remaining balance. Duplicate references and over-receiving are rejected.
+7. **Usage & Variance:** record cooking stock-outs and waste. Sales record theoretical usage only; they do not deduct stock again.
+8. **Reports / Data Tools:** export CSV, printable reports and full JSON backups. Restore validates before replacing and keeps a local before-restore recovery copy.
 
-- Passed: Page loads with zero console errors.
-- Passed: Navigation tabs work.
-- Passed: Save Item works.
-- Passed: Save Vendor works.
-- Passed: Count sheet opens.
-- Passed: Ordering Suggestions loads.
-- Passed: Generate PO Drafts works.
-- Passed: Reports page opens.
-- Passed: Refresh keeps saved `localStorage` data.
+See [the manager manual](docs/USER_MANUAL.md), [source evidence](docs/SOURCES.md), [current status](docs/STATUS.md), and [Claude handoff](CLAUDE_HANDOFF.md).
 
-## Phase 2 Persistence
+## Verification
 
-- Added a versioned local state schema with `schemaVersion: 1`.
-- Added `migrateState(raw)` so older saved browser data loads with current defaults.
-- Added guarded local saves through `safeSaveState()`, including a visible save status indicator.
-- Preserved all persistent collections in local save/export/import flows, including count sessions, reports, uploads, invoices, and settings.
-- Added a visible Clear all data control with confirmation that it only deletes local browser data.
-- Defaulted currency settings to CAD and wired currency formatting to the configured setting.
-- Blocked duplicate inventory item names and barcodes while still allowing edits to the same item.
+```sh
+npm test
+npm run check
+npx playwright install chromium --only-shell
+npm run test:browser
+cd backend
+npm ci
+npm test
+```
 
-## Phase 2 Smoke Test Results
+The browser journey uses synthetic test data only. It checks menu loading, inventory entry, supplier quote normalization/selection, pack ordering, duplicate draft prevention, partial/full/duplicate receipts, count draft recovery, usage/waste and negative-stock protection, recipe costing/mapping, sales/reporting, reload persistence, backup/restore, corrupt-data preservation, XSS sanitization, concurrent-tab conflicts, and a 390 px mobile viewport.
 
-Completed on 2026-05-25 against the local static app runtime.
+## Data and security boundaries
 
-- Passed: Persistence schema parses with zero JavaScript syntax errors.
-- Passed: Original app script and helper start together with no startup reference errors.
-- Passed: Saved JSON includes every required persistent field.
-- Passed: `schemaVersion: 1` is written to local state.
-- Passed: CAD is the default currency setting.
-- Passed: Active count session data is included in saved state.
-- Passed: Duplicate barcode validation shows form feedback and marks the barcode field invalid.
-- Passed: Usage item autocomplete is rebuilt from `state.items` and sorted alphabetically.
-- Passed: Save quota/security failure path shows `Save failed` with a visible warning.
-- Passed: Clear all data and currency controls are present in Data Tools.
-- Note: The in-app browser refused local URLs in this sandbox, so the Phase 2 pass used a local runtime harness plus script parsing. Run the manual checklist below in a normal browser before release.
+- The repository is public. Never commit invoices, negotiated pricing, credentials, sales exports, private recipes or browser backups.
+- Staff Directory entries are labels, not login accounts or enforced permissions.
+- Existing browser data is migrated to schema 2. Invalid stored data is preserved instead of overwritten. Another-tab changes block stale saves and display an export/reload warning; simultaneous races across tabs are not a replacement for database transactions. Use one editing tab.
+- Legacy HTML sinks are sanitized with vendored DOMPurify. CSV exports neutralize spreadsheet-formula prefixes. A content security policy blocks app network requests.
+- A tracked `.env` file was removed. **If any values from that file were ever used as real credentials, rotate them:** deleting the current file does not remove Git history.
+- Backend demo login keys and unsigned tokens were removed. The optional scaffold requires a private `MANAGER_KEY` of at least 24 characters, uses signed one-hour sessions, and enforces write permissions. It is still not a production deployment.
+- No money was spent and no paid API calls are part of these changes.
 
-## Phase 3 Stock Movement
+## Other folders
 
-- Added a `stockTransactions` ledger to persisted local state.
-- Added `recordStockTransaction({ itemId, type, qty, unit, date, sourceId, note, userId })` with previous/new quantity tracking.
-- Count sheets now record `count-adjustment` ledger entries for quantity differences.
-- Receiving a PO now increases item `onHand` and records one `stock-in` transaction per received line.
-- Already received POs are protected from accidental double receiving unless the user confirms.
-- Usage and waste now reduce item `onHand` and record `stock-out` / `waste` transactions.
-- Negative stock movement warns the user; it can be blocked through `settings.blockNegativeStock`.
-- Added an Item Activity panel that shows recent movement date, type, quantity, previous quantity, new quantity, and note for the selected item.
-- Added a Stock Transactions CSV export.
-
-## Phase 3 Smoke Test Results
-
-Completed on 2026-05-25 against the local static app runtime.
-
-- Passed: Original app script and helper start together with stock movement controls installed.
-- Passed: Receiving a PO increased stock from 10 to 14.
-- Passed: Duplicate receiving was prevented when confirmation was declined.
-- Passed: Usage reduced stock from 14 to 11 and created a `stock-out` transaction.
-- Passed: Waste reduced stock from 11 to 9 and created a `waste` transaction with reason.
-- Passed: Count adjustment changed stock from 9 to 8 and created a `count-adjustment` transaction for `-1`.
-- Passed: Item Activity rendered all four stock movements with previous/new quantities.
-- Passed: Saved JSON includes `stockTransactions`.
-- Passed: Stock Transactions CSV export control is present.
-- Note: The in-app browser refused local URLs in this sandbox, so the Phase 3 pass used a local runtime harness plus script parsing. Run the manual checklist below in a normal browser before release.
-
-## Developer Smoke Test Checklist
-
-- Page loads with zero console errors.
-- Navigation tabs work.
-- Save Item works.
-- Save Vendor works.
-- Count sheet opens.
-- Ordering Suggestions loads.
-- Generate PO Drafts works.
-- Reports page opens.
-- Start count session persists after refresh.
-- CAD shows by default.
-- Duplicate barcode is blocked with form feedback.
-- Data Tools exports/imports JSON without dropping persistent fields.
-- Receiving a PO increases stock and writes `stock-in` entries.
-- Usage decreases stock and writes `stock-out` entries.
-- Waste decreases stock and writes `waste` entries.
-- Count sheets write `count-adjustment` entries for changed quantities.
-- Clicking an item shows Item Activity with previous/new quantities.
-- Stock Transactions CSV exports.
+`backend/` is an optional API scaffold, not the browser app's database. `frontend/`, `admin.html`, and `inventory-control-shareable.html` are legacy prototypes and are not part of the supported manager workflow. `PROMPT.md` is historical context; current instructions are in `CLAUDE_HANDOFF.md`.
