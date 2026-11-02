@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'none'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>PantryPilot — Inventory Control</title>
@@ -75,6 +76,8 @@
     }
 
     .card {
+      min-width: 0;
+      overflow-wrap: anywhere;
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 16px;
@@ -82,7 +85,7 @@
       box-shadow: var(--shadow);
     }
 
-    .stack { display: grid; gap: 16px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
     .grid-2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
     .grid-3 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 
@@ -218,19 +221,30 @@
       .nav { justify-content: center; }
       .ingredient-row { grid-template-columns: 1fr; }
     }
+  @media (max-width:640px) {
+      main { margin-top:0; padding:0 12px 24px; }
+      header { padding:20px 16px; }
+      header h1 { font-size:24px; }
+      .nav { justify-content:flex-start; flex-wrap:nowrap; overflow-x:auto; position:sticky; top:0; z-index:2; background:var(--bg); padding:10px 0; }
+      .nav button { flex:0 0 auto; }
+      .grid-2, .grid-3 { grid-template-columns:minmax(0,1fr); }
+      .card { padding:16px; }
+    }
+    @media print { header, .nav, button, #saveStatus { display:none !important; } .hidden { display:none !important; } .card { break-inside:avoid; box-shadow:none; } }
   </style>
 </head>
 <body>
   <header>
     <div class="wrap">
       <h1>PantryPilot Inventory Control</h1>
-      <p>Phase 3+ — inventory, vendors, purchasing, recipes, usage, variance, and stakeholder-ready workflows.</p>
+      <p>Farmhouse manager workspace • CAD • stock, supplier quotes, receiving and menu costs</p>
     </div>
   </header>
 
   <main>
     <div class="nav" id="nav">
-      <button class="active" data-view="dashboard">Dashboard</button>
+      <button class="active" data-view="manager">Manager workspace</button>
+      <button data-view="dashboard">Dashboard</button>
       <button data-view="inventory">Inventory</button>
       <button data-view="counts">Count Sheets</button>
       <button data-view="vendors">Vendors</button>
@@ -239,12 +253,13 @@
       <button data-view="recipes">Recipes</button>
       <button data-view="usage">Usage & Variance</button>
       <button data-view="pricing">Price History</button>
-      <button data-view="accounts">Accounts & Roles</button>
+      <button data-view="accounts">Staff Directory</button>
       <button data-view="reports">Reports</button>
       <button data-view="data">Data Tools</button>
     </div>
 
-    <section id="dashboard" class="stack">
+    <section id="manager" class="stack"></section>
+    <section id="dashboard" class="stack hidden">
       <div class="grid-3">
         <div class="card">
           <div class="muted">Total inventory value</div>
@@ -252,7 +267,7 @@
           <div class="footer-note">On-hand × cost</div>
         </div>
         <div class="card">
-          <div class="muted">Inventory value on date</div>
+          <div class="muted">Current stock added by date</div>
           <h2 id="summaryValueOnDate">$0.00</h2>
           <div class="grid-2" style="margin-top: 8px;">
             <div>
@@ -427,6 +442,7 @@
             <label for="itemUsage">Avg daily usage</label>
             <input id="itemUsage" type="number" min="0" step="0.1" placeholder="8" />
           </div>
+          <div><label for="itemPackSize">Order pack net quantity (in stock unit)</label><input id="itemPackSize" type="number" min="0.000001" step="any" value="1" /><small>Example: a 10 kg case = 10 when stock is kg. Cost is always per stock unit.</small></div>
           <div>
             <label for="itemSku">Internal SKU</label>
             <input id="itemSku" placeholder="TOM-001" />
@@ -838,7 +854,7 @@
       <div class="card">
         <div class="section-title">
           <h3>Recipe Sales Log</h3>
-          <span class="muted">Track servings sold for theoretical usage</span>
+          <span class="muted">Sales estimate theoretical usage only. Record cooking stock-out separately; sales do not deduct stock.</span>
         </div>
         <div class="grid-3" style="margin-top: 12px;">
           <div>
@@ -992,8 +1008,8 @@
     <section id="accounts" class="stack hidden">
       <div class="card">
         <div class="section-title">
-          <h3>Accounts & Roles</h3>
-          <span class="muted">Add employees and assign permissions</span>
+          <h3>Staff Directory</h3>
+          <span class="muted">Record staff roles for reference. These entries do not grant or restrict access.</span>
         </div>
         <div class="grid-3" style="margin-top: 12px;">
           <div>
@@ -1049,7 +1065,7 @@
       <div class="card">
         <div class="section-title">
           <h3>Business Reports</h3>
-          <span class="muted">Generate operational and finance-ready reports</span>
+          <span class="muted">Operational estimates from entered data; check missing costs before using totals.</span>
         </div>
         <div class="grid-3" style="margin-top: 12px;">
           <div>
@@ -1060,7 +1076,7 @@
               <option value="variance">Variance Report</option>
               <option value="supplier">Supplier Report</option>
               <option value="recipeCosting">Recipe Costing</option>
-              <option value="cogs">COGS Report</option>
+              <option value="cogs">Theoretical Recipe Cost</option>
             </select>
           </div>
           <div>
@@ -1088,8 +1104,8 @@
 
       <div class="card">
         <div class="section-title">
-          <h3>Scheduled Email Reports</h3>
-          <span class="muted">Daily/weekly email queue for management</span>
+          <h3>Local Report Reminders</h3>
+          <span class="muted">Runs only while this app is open. No email is sent.</span>
         </div>
         <div class="grid-3" style="margin-top: 12px;">
           <div>
@@ -1100,7 +1116,7 @@
               <option value="variance">Variance Report</option>
               <option value="supplier">Supplier Report</option>
               <option value="recipeCosting">Recipe Costing</option>
-              <option value="cogs">COGS Report</option>
+              <option value="cogs">Theoretical Recipe Cost</option>
             </select>
           </div>
           <div>
@@ -1199,7 +1215,7 @@
               <button class="ghost" id="clearPosUploads">Clear Uploads</button>
             </div>
             <div id="posList" class="stack" style="margin-top: 10px;"></div>
-            <div class="footer-note">Automated POS sync needs API credentials.</div>
+            <div class="footer-note">Files here are logged only; sales are entered in Usage & Variance. No POS sync is connected.</div>
           </div>
           <div class="card">
             <div class="section-title">
@@ -1218,7 +1234,12 @@
 
   <datalist id="ingredientAutocomplete"></datalist>
 
+  <script src="vendor/purify.min.js"></script>
+  <script src="safe-html.js"></script>
+  <script src="inventory-engine.js"></script>
+  <script src="farmhouse-menu.js"></script>
   <script src="csv-utils.js"></script>
+  <script defer src="manager.js"></script>
   <script>
     const STORAGE_KEY = "pantrypilot_phase3";
 
@@ -1236,6 +1257,8 @@
     ];
 
     const state = {
+      supplierQuotes: [],
+      menuCatalog: (window.FARMHOUSE_MENU || []).map(entry => ({ ...entry })),
       items: [],
       vendors: [],
       recipes: [],
@@ -1265,6 +1288,7 @@
 
     const nav = document.getElementById("nav");
     const views = [
+      "manager",
       "dashboard",
       "inventory",
       "counts",
@@ -1521,6 +1545,7 @@
       try {
         const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
         if (raw) {
+          InventoryEngine.validateBackup(raw);
           state.items = raw.items || [];
           state.vendors = raw.vendors || [];
           state.recipes = raw.recipes || [];
@@ -1545,6 +1570,7 @@
           state.activeCountSession = raw.activeCountSession || null;
         }
       } catch {
+        window.inventoryRecoveryRequired = true;
         state.items = [];
         state.vendors = [];
         state.recipes = [];
@@ -1580,7 +1606,7 @@
     }
 
     function buildCategoryOptions() {
-      itemForm.category.innerHTML = "";
+      itemForm.category.innerHTML = safeHTML("");
       DEFAULT_CATEGORIES.forEach(cat => {
         const option = document.createElement("option");
         option.value = cat;
@@ -1590,7 +1616,7 @@
     }
 
     function buildVendorOptions() {
-      itemForm.vendor.innerHTML = "";
+      itemForm.vendor.innerHTML = safeHTML("");
       const defaultOption = document.createElement("option");
       defaultOption.value = "";
       defaultOption.textContent = "Unassigned";
@@ -1602,7 +1628,7 @@
         itemForm.vendor.appendChild(option);
       });
 
-      priceVendor.innerHTML = "";
+      priceVendor.innerHTML = safeHTML("");
       const priceDefault = document.createElement("option");
       priceDefault.value = "";
       priceDefault.textContent = "Select vendor";
@@ -1615,7 +1641,7 @@
       });
 
       if (manualPoVendor) {
-        manualPoVendor.innerHTML = "";
+        manualPoVendor.innerHTML = safeHTML("");
         const manualDefault = document.createElement("option");
         manualDefault.value = "";
         manualDefault.textContent = "Select vendor";
@@ -1630,7 +1656,7 @@
     }
 
     function buildRecipeOptions() {
-      saleRecipe.innerHTML = "";
+      saleRecipe.innerHTML = safeHTML("");
       const defaultOption = document.createElement("option");
       defaultOption.value = "";
       defaultOption.textContent = "Select recipe";
@@ -1644,7 +1670,7 @@
     }
 
     function buildUsageItemOptions() {
-      ingredientAutocomplete.innerHTML = "";
+      ingredientAutocomplete.innerHTML = safeHTML("");
       state.items.forEach(item => {
         const option = document.createElement("option");
         option.value = item.name;
@@ -1695,10 +1721,7 @@
     }
 
     function getSuggestedOrderQty(item) {
-      const onHand = Number(item.onHand);
-      const par = Number(item.par);
-      if (!Number.isFinite(onHand) || !Number.isFinite(par)) return 0;
-      return Math.max(0, par - onHand);
+      return InventoryEngine.suggestion(item, state.poDrafts).qty;
     }
 
     function getSuggestedPar(item) {
@@ -1724,6 +1747,7 @@
     }
 
     function resetItemForm() {
+      document.getElementById("itemPackSize").value = "1";
       state.activeItemId = null;
       Object.values(itemForm).forEach(field => field.value = "");
       itemForm.unit.value = "each";
@@ -1736,6 +1760,7 @@
     }
 
     function fillItemForm(item) {
+      document.getElementById("itemPackSize").value = item.packSize || 1;
       itemForm.name.value = item.name;
       itemForm.category.value = item.category;
       itemForm.unit.value = item.unit;
@@ -1775,6 +1800,8 @@
     }
 
     function saveItem() {
+      const packSize = Number(document.getElementById("itemPackSize").value);
+      if (!Number.isFinite(packSize) || packSize <= 0) { setFormFeedback(itemFormFeedback, "Pack net quantity must be greater than zero.", "error"); return; }
       const error = validateItem();
       if (error) {
         setFormFeedback(itemFormFeedback, error, "error");
@@ -1782,6 +1809,7 @@
       }
 
       const itemData = {
+        ...(state.items.find(item => item.id === state.activeItemId) || {}),
         id: state.activeItemId || crypto.randomUUID(),
         name: itemForm.name.value.trim(),
         category: itemForm.category.value,
@@ -1793,12 +1821,16 @@
         vendorId: itemForm.vendor.value,
         leadTimeDays: Number(itemForm.lead.value || 0),
         usagePerDay: Number(itemForm.usage.value || 0),
+        packSize: Number(document.getElementById("itemPackSize").value || 1),
         sku: itemForm.sku.value.trim(),
         barcode: itemForm.barcode.value.trim(),
         createdAt: state.activeItemId ? (state.items.find(item => item.id === state.activeItemId)?.createdAt || Date.now()) : Date.now(),
         updatedAt: Date.now()
       };
 
+      const previousItem = state.items.find(i => i.id === state.activeItemId);
+      if (previousItem && previousItem.unit !== itemData.unit && (Number(previousItem.onHand) !== 0 || state.recipes.some(r => r.ingredients.some(l => l.itemId === previousItem.id)) || state.poDrafts.some(po => po.items.some(l => l.itemId === previousItem.id)) || state.supplierQuotes?.some(q => q.itemId === previousItem.id))) { setFormFeedback(itemFormFeedback, "Stock units are used by recipes, quotes and orders. Create a new item for a new unit, or keep the current unit.", "error"); return; }
+      if (previousItem && itemData.onHand !== previousItem.onHand) recordStockTransaction({itemId: itemData.id, type: "count-adjustment", qty: itemData.onHand - previousItem.onHand, unit:itemData.unit, date:new Date().toISOString().slice(0,10), sourceId:"item-edit", note:"On-hand edited in Inventory", previousQty:previousItem.onHand, newQty:itemData.onHand});
       if (state.activeItemId) {
         const index = state.items.findIndex(item => item.id === state.activeItemId);
         if (index >= 0) state.items[index] = itemData;
@@ -1816,6 +1848,7 @@
       if (!state.activeItemId) return;
       const item = state.items.find(i => i.id === state.activeItemId);
       if (!item) return;
+      if (state.recipes.some(r => r.ingredients.some(l => l.itemId === item.id)) || state.poDrafts.some(po => po.items.some(l => l.itemId === item.id)) || state.stockTransactions?.some(t => t.itemId === item.id)) { alert("This item has recipes, orders or stock history. Keep it for traceability; set par to zero if no longer ordered."); return; }
       const ok = confirm(`Delete ${item.name}?`);
       if (!ok) return;
       state.items = state.items.filter(i => i.id !== item.id);
@@ -1848,7 +1881,7 @@
       });
 
       itemCountEl.textContent = `${filtered.length} items`;
-      itemsTable.innerHTML = "";
+      itemsTable.innerHTML = safeHTML("");
 
       const sortMode = addedDateSort.value;
       const sorted = [...filtered].sort((a, b) => {
@@ -1865,7 +1898,7 @@
           const dataIssues = [missingCost, missingVendor, missingPar].filter(Boolean).length;
           const dataLabel = dataIssues === 0 ? "Complete" : `${dataIssues} missing`;
           const row = document.createElement("tr");
-          row.innerHTML = `
+          row.innerHTML = safeHTML(`
             <td>
               <strong>${item.name}</strong><br />
               <span class="muted">${item.unit} • ${item.sku || "No SKU"} • ${item.barcode || "No barcode"}</span>
@@ -1880,7 +1913,7 @@
             <td><span class="pill ${status.tone}">${status.label}</span></td>
             <td><span class="pill ${dataIssues === 0 ? "ok" : "warn"}">${dataLabel}</span></td>
             <td>${currency(getItemValue(item))}</td>
-          `;
+          `);
           row.style.cursor = "pointer";
           row.addEventListener("click", () => {
             state.activeItemId = item.id;
@@ -1913,9 +1946,9 @@
 
     function renderSnapshots() {
       snapshotCount.textContent = `${state.inventorySnapshots.length} snapshots`;
-      snapshotList.innerHTML = "";
+      snapshotList.innerHTML = safeHTML("");
       if (!state.inventorySnapshots.length) {
-        snapshotList.innerHTML = "<div class='muted'>No snapshots saved yet.</div>";
+        snapshotList.innerHTML = safeHTML("<div class='muted'>No snapshots saved yet.</div>");
         return;
       }
       state.inventorySnapshots.forEach(snapshot => {
@@ -1923,7 +1956,7 @@
         const itemCount = snapshot.items?.length || 0;
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${snapshot.periodType} close • ${displayDate}</strong>
@@ -1935,7 +1968,7 @@
             <button class="ghost" data-export-snapshot="${snapshot.id}">Export PDF</button>
             <button class="danger" data-delete-snapshot="${snapshot.id}">Delete</button>
           </div>
-        `;
+        `);
         snapshotList.appendChild(card);
       });
 
@@ -1966,7 +1999,7 @@
 
     function renderComparisonOptions() {
       const buildOptions = (selectEl) => {
-        selectEl.innerHTML = "";
+        selectEl.innerHTML = safeHTML("");
         const currentOption = document.createElement("option");
         currentOption.value = "current";
         currentOption.textContent = "Current inventory";
@@ -2010,7 +2043,7 @@
     function renderComparison() {
       const leftData = getComparisonData(compareLeft.value);
       const rightData = getComparisonData(compareRight.value);
-      compareTable.innerHTML = "";
+      compareTable.innerHTML = safeHTML("");
 
       if (!leftData || !rightData) {
         compareSummary.textContent = "Select two inventory periods to compare.";
@@ -2055,12 +2088,12 @@
           removed += 1;
         }
         const row = document.createElement("tr");
-        row.innerHTML = `
+        row.innerHTML = safeHTML(`
           <td>${name}</td>
           <td>${leftQty.toFixed(2)} ${unit}</td>
           <td>${rightQty.toFixed(2)} ${unit}</td>
           <td>${diff > 0 ? "+" : ""}${diff.toFixed(2)} ${unit}</td>
-        `;
+        `);
         compareTable.appendChild(row);
       });
 
@@ -2147,7 +2180,7 @@
         alert("Popup blocked. Allow popups to export PDF.");
         return;
       }
-      printWindow.document.write(html);
+      printWindow.document.write(safeHTML(html));
       printWindow.document.close();
       printWindow.focus();
       printWindow.print();
@@ -2156,17 +2189,17 @@
     function renderCounts() {
       const query = countSearch.value.trim().toLowerCase();
       const filtered = state.items.filter(item => item.name.toLowerCase().includes(query));
-      countList.innerHTML = "";
+      countList.innerHTML = safeHTML("");
 
       if (!filtered.length) {
-        countList.innerHTML = "<div class='muted'>No items match this search.</div>";
+        countList.innerHTML = safeHTML("<div class='muted'>No items match this search.</div>");
         return;
       }
 
       filtered.forEach(item => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${item.name}</strong>
@@ -2178,7 +2211,17 @@
             <label>New count</label>
             <input type="number" min="0" step="0.1" data-count-id="${item.id}" placeholder="${item.onHand}" />
           </div>
-        `;
+        `);
+        const countInput = card.querySelector("input[data-count-id]");
+        const draftCount = state.activeCountSession?.counts?.[item.id];
+        if (draftCount !== undefined) countInput.value = draftCount;
+        countInput.addEventListener("input", () => {
+          if (countInput.value !== "" && (!Number.isFinite(Number(countInput.value)) || Number(countInput.value) < 0)) return;
+          if (!state.activeCountSession) state.activeCountSession = {id: crypto.randomUUID(), startedAt: Date.now(), startedBy: "Manager", counts: {}};
+          if (!state.activeCountSession.counts) state.activeCountSession.counts = {};
+          state.activeCountSession.counts[item.id] = countInput.value;
+          saveState();
+        });
         countList.appendChild(card);
       });
     }
@@ -2232,22 +2275,22 @@
     }
 
     function renderSchedules() {
-      scheduleList.innerHTML = "";
+      scheduleList.innerHTML = safeHTML("");
       if (!state.schedules.length) {
-        scheduleList.innerHTML = "<div class='muted'>No schedules yet.</div>";
+        scheduleList.innerHTML = safeHTML("<div class='muted'>No schedules yet.</div>");
         return;
       }
       state.schedules.forEach(schedule => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${schedule.name}</strong>
               <div class="muted">${schedule.frequency} • Next: ${schedule.nextDate || "TBD"}</div>
             </div>
           </div>
-        `;
+        `);
         scheduleList.appendChild(card);
       });
     }
@@ -2303,17 +2346,17 @@
 
     function renderVendors() {
       vendorCount.textContent = `${state.vendors.length} vendors`;
-      vendorList.innerHTML = "";
+      vendorList.innerHTML = safeHTML("");
 
       if (!state.vendors.length) {
-        vendorList.innerHTML = "<div class='muted'>No vendors yet. Add your first supplier above.</div>";
+        vendorList.innerHTML = safeHTML("<div class='muted'>No vendors yet. Add your first supplier above.</div>");
         return;
       }
 
       state.vendors.forEach(vendor => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${vendor.name}</strong>
@@ -2322,7 +2365,7 @@
             <button class="ghost" data-vendor-id="${vendor.id}">Edit</button>
           </div>
           <div class="muted" style="margin-top: 8px;">${vendor.notes || "No notes"}</div>
-        `;
+        `);
         card.querySelector("button").addEventListener("click", () => {
           state.activeVendorId = vendor.id;
           vendorForm.name.value = vendor.name;
@@ -2338,6 +2381,7 @@
     }
 
     function generatePoDrafts() {
+      if (state.items.some(i => getSuggestedOrderQty(i) > 0 && (!i.vendorId || Number(i.cost) <= 0))) { alert("Assign a supplier and verified unit cost to each suggested item before generating orders."); return; }
       const suggestions = state.items
         .map(item => ({
           item,
@@ -2388,11 +2432,12 @@
         setFormFeedback(manualPoFeedback, "Select a valid ingredient.", "error");
         return;
       }
-      if (qty <= 0) {
+      if (!Number.isFinite(qty) || qty <= 0) {
         manualPoQty.classList.add("invalid");
         setFormFeedback(manualPoFeedback, "Quantity must be greater than zero.", "error");
         return;
       }
+      if (Number(item.cost) <= 0 || !Number.isFinite(Number(item.cost))) { setFormFeedback(manualPoFeedback, "Confirm a unit cost before creating this order.", "error"); return; }
       const vendorName = getVendorName(vendorId);
       state.poDrafts.unshift({
         id: crypto.randomUUID(),
@@ -2430,9 +2475,9 @@
 
     function renderPoDrafts() {
       poCount.textContent = `${state.poDrafts.length} drafts`;
-      poList.innerHTML = "";
+      poList.innerHTML = safeHTML("");
       if (!state.poDrafts.length) {
-        poList.innerHTML = "<div class='muted'>No PO drafts yet.</div>";
+        poList.innerHTML = safeHTML("<div class='muted'>No PO drafts yet.</div>");
         return;
       }
       state.poDrafts.forEach(po => {
@@ -2441,7 +2486,7 @@
         const statusTone = po.status === "Received" ? "ok" : po.status === "Sent" ? "warn" : "alert";
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${po.vendorName}</strong>
@@ -2453,14 +2498,14 @@
             </div>
           </div>
           <div style="margin-top: 8px;">${itemsHtml}</div>
-        `;
+        `);
         poList.appendChild(card);
       });
     }
 
     function renderPoSelectors() {
-      poSelect.innerHTML = "";
-      receivePoSelect.innerHTML = "";
+      poSelect.innerHTML = safeHTML("");
+      receivePoSelect.innerHTML = safeHTML("");
       const placeholder = document.createElement("option");
       placeholder.value = "";
       placeholder.textContent = "Select PO";
@@ -2483,6 +2528,7 @@
       }
       const po = state.poDrafts.find(entry => entry.id === poSelect.value);
       if (!po) return;
+      if (["Received", "Partially Received"].includes(po.status) || poStatusSelect.value === "Received") { alert("Delivery status is set by receiving stock. Use Manager workspace to receive this order."); return; }
       po.status = poStatusSelect.value;
       po.updatedAt = new Date().toISOString();
       saveState();
@@ -2530,15 +2576,15 @@
     }
 
     function renderReceivingLogs() {
-      receivingList.innerHTML = "";
+      receivingList.innerHTML = safeHTML("");
       if (!state.receivingLogs.length) {
-        receivingList.innerHTML = "<div class='muted'>No receipts logged yet.</div>";
+        receivingList.innerHTML = safeHTML("<div class='muted'>No receipts logged yet.</div>");
         return;
       }
       state.receivingLogs.slice(0, 10).forEach(entry => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${entry.vendorName}</strong>
@@ -2547,7 +2593,7 @@
             <div><strong>${currency(entry.total)}</strong></div>
           </div>
           <div class="muted" style="margin-top: 8px;">${entry.note || "No notes"}</div>
-        `;
+        `);
         receivingList.appendChild(card);
       });
     }
@@ -2572,22 +2618,22 @@
     }
 
     function renderInvoices() {
-      invoiceList.innerHTML = "";
+      invoiceList.innerHTML = safeHTML("");
       if (!state.invoices.length) {
-        invoiceList.innerHTML = "<div class='muted'>No invoices uploaded.</div>";
+        invoiceList.innerHTML = safeHTML("<div class='muted'>No invoices uploaded.</div>");
         return;
       }
       state.invoices.forEach(invoice => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${invoice.name}</strong>
               <div class="muted">Uploaded ${new Date(invoice.uploadedAt).toLocaleString()}</div>
             </div>
           </div>
-        `;
+        `);
         invoiceList.appendChild(card);
       });
     }
@@ -2617,15 +2663,15 @@
         .sort((a, b) => getSuggestedOrderQty(b.item) - getSuggestedOrderQty(a.item));
 
       alertCount.textContent = `${alerts.length} alerts`;
-      alertsList.innerHTML = "";
+      alertsList.innerHTML = safeHTML("");
 
       if (!alerts.length) {
-        alertsList.innerHTML = "<div class='muted'>No alerts — everything looks stocked.</div>";
+        alertsList.innerHTML = safeHTML("<div class='muted'>No alerts — everything looks stocked.</div>");
       } else {
         alerts.forEach(({ item, status }) => {
           const card = document.createElement("div");
           card.className = "card";
-          card.innerHTML = `
+          card.innerHTML = safeHTML(`
             <div class="section-title">
               <div>
                 <strong>${item.name}</strong>
@@ -2634,7 +2680,7 @@
               <span class="pill ${status.tone}">${status.label}</span>
             </div>
             <div class="muted" style="margin-top: 8px;">On-hand: ${item.onHand} • Reorder point: ${item.reorderPoint}</div>
-          `;
+          `);
           alertsList.appendChild(card);
         });
       }
@@ -2651,15 +2697,15 @@
         .sort((a, b) => b.suggestedPar - a.suggestedPar);
 
       managerCount.textContent = `${managerAlerts.length} alerts`;
-      managerList.innerHTML = "";
+      managerList.innerHTML = safeHTML("");
 
       if (!managerAlerts.length) {
-        managerList.innerHTML = "<div class='muted'>No par changes needed right now.</div>";
+        managerList.innerHTML = safeHTML("<div class='muted'>No par changes needed right now.</div>");
       } else {
         managerAlerts.slice(0, 6).forEach(({ item, suggestedPar }) => {
           const card = document.createElement("div");
           card.className = "card";
-          card.innerHTML = `
+          card.innerHTML = safeHTML(`
             <div class="section-title">
               <div>
                 <strong>${item.name}</strong>
@@ -2668,7 +2714,7 @@
               <span class="pill warn">Raise par</span>
             </div>
             <div class="muted" style="margin-top: 8px;">Usage: ${item.usagePerDay || 0} / day • Lead: ${item.leadTimeDays || 0} days</div>
-          `;
+          `);
           managerList.appendChild(card);
         });
       }
@@ -2677,9 +2723,9 @@
         `${item.name}: raise par to ${suggestedPar.toFixed(1)} ${item.unit}`
       ));
       notificationCount.textContent = `${notifications.length} messages`;
-      notificationList.innerHTML = notifications.length
+      notificationList.innerHTML = safeHTML(notifications.length
         ? notifications.map(msg => `<div class="card">${msg}</div>`).join("")
-        : "<div class='muted'>No notifications queued.</div>";
+        : "<div class='muted'>No notifications queued.</div>");
 
       const dataIssues = state.items
         .map(item => {
@@ -2693,14 +2739,14 @@
         .filter(Boolean);
 
       dataQualityCount.textContent = `${dataIssues.length} issues`;
-      dataQualityList.innerHTML = "";
+      dataQualityList.innerHTML = safeHTML("");
       if (!dataIssues.length) {
-        dataQualityList.innerHTML = "<div class='muted'>All items have complete data.</div>";
+        dataQualityList.innerHTML = safeHTML("<div class='muted'>All items have complete data.</div>");
       } else {
         dataIssues.slice(0, 6).forEach(({ item, issues }) => {
           const card = document.createElement("div");
           card.className = "card";
-          card.innerHTML = `
+          card.innerHTML = safeHTML(`
             <div class="section-title">
               <div>
                 <strong>${item.name}</strong>
@@ -2708,7 +2754,7 @@
               </div>
               <span class="pill warn">Needs review</span>
             </div>
-          `;
+          `);
           dataQualityList.appendChild(card);
         });
       }
@@ -2718,14 +2764,14 @@
         .sort((a, b) => b.value - a.value)
         .slice(0, 5);
 
-      topValueList.innerHTML = "";
+      topValueList.innerHTML = safeHTML("");
       if (!topItems.length) {
-        topValueList.innerHTML = "<div class='muted'>Add items to see value insights.</div>";
+        topValueList.innerHTML = safeHTML("<div class='muted'>Add items to see value insights.</div>");
       } else {
         topItems.forEach(({ item, value }) => {
           const card = document.createElement("div");
           card.className = "card";
-          card.innerHTML = `
+          card.innerHTML = safeHTML(`
             <div class="section-title">
               <div>
                 <strong>${item.name}</strong>
@@ -2734,7 +2780,7 @@
               <div>${currency(value)}</div>
             </div>
             <div class="muted" style="margin-top: 8px;">${item.onHand} ${item.unit} @ ${currency(item.cost)} / unit</div>
-          `;
+          `);
           topValueList.appendChild(card);
         });
       }
@@ -2761,7 +2807,7 @@
     function createIngredientRow(ingredient = { itemId: "", qty: "" }) {
       const row = document.createElement("div");
       row.className = "ingredient-row";
-      row.innerHTML = `
+      row.innerHTML = safeHTML(`
         <div>
           <label>Item</label>
           <select class="ingredient-item"></select>
@@ -2771,7 +2817,7 @@
           <input class="ingredient-qty" type="number" min="0" step="0.1" />
         </div>
         <button class="danger" type="button">Remove</button>
-      `;
+      `);
 
       const select = row.querySelector("select");
       const qtyInput = row.querySelector("input");
@@ -2804,7 +2850,7 @@
       recipeForm.yield.value = "";
       recipeForm.price.value = "";
       recipeForm.notes.value = "";
-      ingredientsList.innerHTML = "";
+      ingredientsList.innerHTML = safeHTML("");
       addIngredientRow();
       deleteRecipeBtn.disabled = true;
       recipeStatus.textContent = "Add a new recipe";
@@ -2827,11 +2873,8 @@
     }
 
     function calculateRecipeCost(recipe) {
-      return recipe.ingredients.reduce((sum, ingredient) => {
-        const item = state.items.find(i => i.id === ingredient.itemId);
-        if (!item) return sum;
-        return sum + Number(item.cost || 0) * Number(ingredient.qty || 0);
-      }, 0);
+      const result = InventoryEngine.recipeCost(recipe, state.items);
+      return result.complete ? result.batchCost : NaN;
     }
 
     function fillRecipeForm(recipe) {
@@ -2839,7 +2882,7 @@
       recipeForm.yield.value = recipe.yield;
       recipeForm.price.value = recipe.menuPrice || "";
       recipeForm.notes.value = recipe.notes;
-      ingredientsList.innerHTML = "";
+      ingredientsList.innerHTML = safeHTML("");
       recipe.ingredients.forEach(ingredient => {
         ingredientsList.appendChild(createIngredientRow(ingredient));
       });
@@ -2860,6 +2903,7 @@
         return;
       }
       const ingredients = getIngredientData();
+      if (ingredients.some(l => !Number.isFinite(l.qty) || l.qty <= 0) || !Number.isFinite(Number(recipeForm.yield.value || 1)) || !Number.isFinite(Number(recipeForm.price.value || 0)) || Number(recipeForm.price.value || 0) < 0) { setFormFeedback(recipeFormFeedback, "Enter valid positive ingredient quantities and yield, and a non-negative price.", "error"); return; }
       if (!ingredients.length) {
         setFormFeedback(recipeFormFeedback, "Add at least one ingredient.", "error");
         return;
@@ -2892,6 +2936,7 @@
       if (!state.activeRecipeId) return;
       const recipe = state.recipes.find(r => r.id === state.activeRecipeId);
       if (!recipe) return;
+      if (state.sales.some(s => s.recipeId === recipe.id)) { alert("This recipe has sales history. Keep it for reporting and create a new recipe for changes."); return; }
       const ok = confirm(`Delete ${recipe.name}?`);
       if (!ok) return;
       state.recipes = state.recipes.filter(r => r.id !== recipe.id);
@@ -2902,10 +2947,10 @@
 
     function renderRecipes() {
       recipeCount.textContent = `${state.recipes.length} recipes`;
-      recipeList.innerHTML = "";
+      recipeList.innerHTML = safeHTML("");
 
       if (!state.recipes.length) {
-        recipeList.innerHTML = "<div class='muted'>No recipes yet. Add your first recipe above.</div>";
+        recipeList.innerHTML = safeHTML("<div class='muted'>No recipes yet. Add your first recipe above.</div>");
         return;
       }
 
@@ -2919,7 +2964,7 @@
           const item = state.items.find(i => i.id === ingredient.itemId);
           return `<div class="muted">${item ? item.name : "Unknown"}: ${ingredient.qty}</div>`;
         }).join("");
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${recipe.name}</strong>
@@ -2938,12 +2983,12 @@
             </div>
             <div>
               <div class="muted">Food cost %</div>
-              <strong>${recipe.menuPrice ? `${(100 - margin).toFixed(1)}%` : "N/A"}</strong>
+              <strong>${Number.isFinite(cost) && recipe.menuPrice ? `${(100 - margin).toFixed(1)}%` : "Uncosted"}</strong>
             </div>
           </div>
           <div style="margin-top: 8px;">${ingredientsHtml}</div>
           <div class="muted" style="margin-top: 8px;">${recipe.notes || "No notes"}</div>
-        `;
+        `);
         card.querySelector("button").addEventListener("click", () => {
           state.activeRecipeId = recipe.id;
           fillRecipeForm(recipe);
@@ -2959,10 +3004,12 @@
         return;
       }
       const servings = Number(saleServings.value || 0);
-      if (servings <= 0) {
+      if (!Number.isFinite(servings) || servings <= 0) {
         alert("Enter servings sold.");
         return;
       }
+      const recipe = state.recipes.find(r => r.id === saleRecipe.value);
+      if (!recipe || !InventoryEngine.recipeCost(recipe, state.items).complete) { alert("Confirm recipe quantities, yield and ingredient costs before logging sales."); return; }
       const entry = {
         id: crypto.randomUUID(),
         recipeId: saleRecipe.value,
@@ -2986,16 +3033,16 @@
     }
 
     function renderSales() {
-      salesList.innerHTML = "";
+      salesList.innerHTML = safeHTML("");
       if (!state.sales.length) {
-        salesList.innerHTML = "<div class='muted'>No sales logged yet.</div>";
+        salesList.innerHTML = safeHTML("<div class='muted'>No sales logged yet.</div>");
         return;
       }
       state.sales.slice(0, 10).forEach(entry => {
         const recipe = state.recipes.find(r => r.id === entry.recipeId);
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${recipe ? recipe.name : "Unknown recipe"}</strong>
@@ -3003,7 +3050,7 @@
             </div>
             <div><strong>${entry.servings}</strong> servings</div>
           </div>
-        `;
+        `);
         salesList.appendChild(card);
       });
     }
@@ -3088,16 +3135,16 @@
     }
 
     function renderUsageLogs() {
-      usageList.innerHTML = "";
+      usageList.innerHTML = safeHTML("");
       if (!state.usageLogs.length) {
-        usageList.innerHTML = "<div class='muted'>No usage logs yet.</div>";
+        usageList.innerHTML = safeHTML("<div class='muted'>No usage logs yet.</div>");
         return;
       }
       state.usageLogs.slice(0, 10).forEach(entry => {
         const item = state.items.find(i => i.id === entry.itemId);
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${item ? item.name : "Unknown item"}</strong>
@@ -3106,7 +3153,7 @@
             <div class="muted">Used: ${entry.usedQty} • Waste: ${entry.wasteQty || 0}</div>
           </div>
           <div class="muted" style="margin-top: 8px;">${entry.wasteReason || "No waste reason"}</div>
-        `;
+        `);
         usageList.appendChild(card);
       });
     }
@@ -3137,10 +3184,10 @@
     function renderVariance() {
       const theoretical = calculateTheoreticalUsage();
       const actual = calculateActualUsage();
-      varianceTable.innerHTML = "";
+      varianceTable.innerHTML = safeHTML("");
 
       if (!state.items.length) {
-        varianceTable.innerHTML = "<tr><td colspan='5' class='muted'>Add items and usage to see variance.</td></tr>";
+        varianceTable.innerHTML = safeHTML("<tr><td colspan='5' class='muted'>Add items and usage to see variance.</td></tr>");
         return;
       }
 
@@ -3150,13 +3197,13 @@
         const waste = actual.wasteTotals[item.id] || 0;
         const variance = actualUsed - theory;
         const row = document.createElement("tr");
-        row.innerHTML = `
+        row.innerHTML = safeHTML(`
           <td>${item.name}</td>
           <td>${theory.toFixed(2)} ${item.unit}</td>
           <td>${actualUsed.toFixed(2)} ${item.unit}</td>
           <td>${waste.toFixed(2)} ${item.unit}</td>
           <td>${variance.toFixed(2)} ${item.unit}</td>
-        `;
+        `);
         varianceTable.appendChild(row);
       });
     }
@@ -3172,22 +3219,22 @@
         .sort((a, b) => b.qty - a.qty)
         .slice(0, 5);
 
-      wasteSummary.innerHTML = "";
+      wasteSummary.innerHTML = safeHTML("");
       if (!entries.length) {
-        wasteSummary.innerHTML = "<div class='muted'>No waste logged yet.</div>";
+        wasteSummary.innerHTML = safeHTML("<div class='muted'>No waste logged yet.</div>");
         return;
       }
       entries.forEach(entry => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${entry.name}</strong>
               <div class="muted">Waste: ${entry.qty.toFixed(2)}</div>
             </div>
           </div>
-        `;
+        `);
         wasteSummary.appendChild(card);
       });
     }
@@ -3221,9 +3268,9 @@
     }
 
     function renderPriceHistory() {
-      priceHistoryList.innerHTML = "";
+      priceHistoryList.innerHTML = safeHTML("");
       if (!state.priceHistory.length) {
-        priceHistoryList.innerHTML = "<div class='muted'>No price history logged.</div>";
+        priceHistoryList.innerHTML = safeHTML("<div class='muted'>No price history logged.</div>");
         return;
       }
       state.priceHistory.slice(0, 10).forEach(entry => {
@@ -3231,7 +3278,7 @@
         const vendor = getVendorName(entry.vendorId);
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${item ? item.name : "Unknown item"}</strong>
@@ -3240,7 +3287,7 @@
             <div><strong>${currency(entry.amount)}</strong></div>
           </div>
           <div class="muted" style="margin-top: 8px;">${entry.note || "No notes"}</div>
-        `;
+        `);
         priceHistoryList.appendChild(card);
       });
     }
@@ -3272,22 +3319,22 @@
     }
 
     function renderUsers() {
-      userList.innerHTML = "";
+      userList.innerHTML = safeHTML("");
       if (!state.users.length) {
-        userList.innerHTML = "<div class='muted'>No users added.</div>";
+        userList.innerHTML = safeHTML("<div class='muted'>No users added.</div>");
         return;
       }
       state.users.forEach(user => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${user.name}</strong>
               <div class="muted">${user.role} • ${user.email || "No email"}</div>
             </div>
           </div>
-        `;
+        `);
         userList.appendChild(card);
       });
     }
@@ -3306,7 +3353,7 @@
         variance: "Variance Report",
         supplier: "Supplier Report",
         recipeCosting: "Recipe Costing",
-        cogs: "COGS Report"
+        cogs: "Theoretical Recipe Cost"
       };
       return labels[type] || "Report";
     }
@@ -3328,8 +3375,8 @@
         Category: item.category,
         Unit: item.unit,
         "On Hand": Number(item.onHand || 0).toFixed(2),
-        "Cost/Unit": Number(item.cost || 0).toFixed(2),
-        "Stock Value": (Number(item.onHand || 0) * Number(item.cost || 0)).toFixed(2)
+        "Cost/Unit": Number(item.cost) > 0 ? Number(item.cost).toFixed(2) : "Uncosted",
+        "Stock Value": Number(item.cost) > 0 ? (Number(item.onHand || 0) * Number(item.cost)).toFixed(2) : "Uncosted"
       }));
     }
 
@@ -3404,18 +3451,18 @@
 
     function buildRecipeCostingRows() {
       return state.recipes.map(recipe => {
-        const cost = Number(calculateRecipeCost(recipe) || 0);
+        const cost = calculateRecipeCost(recipe);
         const servings = Number(recipe.yield || 1);
         const costPerDish = servings > 0 ? cost / servings : cost;
         const menuPrice = Number(recipe.menuPrice || 0);
         const marginPct = menuPrice ? ((menuPrice - costPerDish) / menuPrice) * 100 : 0;
         return {
           Dish: recipe.name,
-          "Batch Cost": cost.toFixed(2),
+          "Batch Cost": Number.isFinite(cost) ? cost.toFixed(2) : "Uncosted",
           Servings: servings,
-          "Cost per Dish": costPerDish.toFixed(2),
+          "Cost per Dish": Number.isFinite(costPerDish) ? costPerDish.toFixed(2) : "Uncosted",
           "Menu Price": menuPrice.toFixed(2),
-          "Profit Margin %": menuPrice ? marginPct.toFixed(1) : "N/A"
+          "Profit Margin %": Number.isFinite(cost) && menuPrice ? marginPct.toFixed(1) : "Uncosted"
         };
       });
     }
@@ -3429,7 +3476,7 @@
           if (!recipe) return;
           const period = (entry.date || "").slice(0, 7) || "Unknown";
           const servings = Number(entry.servings || 0);
-          const batchCost = Number(calculateRecipeCost(recipe) || 0);
+          const batchCost = calculateRecipeCost(recipe);
           const costPerDish = recipe.yield ? batchCost / Number(recipe.yield || 1) : batchCost;
           const cogs = costPerDish * servings;
           const revenue = Number(recipe.menuPrice || 0) * servings;
@@ -3444,9 +3491,9 @@
       return Object.values(byPeriod).sort((a, b) => a.period.localeCompare(b.period)).map(entry => ({
         Period: entry.period,
         "Dishes Sold": entry.dishes,
-        COGS: entry.cogs.toFixed(2),
+        "Theoretical Cost": Number.isFinite(entry.cogs) ? entry.cogs.toFixed(2) : "Uncosted",
         Revenue: entry.revenue.toFixed(2),
-        "COGS %": entry.revenue ? ((entry.cogs / entry.revenue) * 100).toFixed(1) : "0.0"
+        "Theoretical Cost %": Number.isFinite(entry.cogs) && entry.revenue ? ((entry.cogs / entry.revenue) * 100).toFixed(1) : "Uncosted"
       }));
     }
 
@@ -3461,19 +3508,19 @@
     }
 
     function renderReportTable(rows) {
-      reportTableHead.innerHTML = "";
-      reportTableBody.innerHTML = "";
+      reportTableHead.innerHTML = safeHTML("");
+      reportTableBody.innerHTML = safeHTML("");
       if (!rows.length) {
-        reportTableBody.innerHTML = "<tr><td class='muted'>No rows found for this report and date range.</td></tr>";
+        reportTableBody.innerHTML = safeHTML("<tr><td class='muted'>No rows found for this report and date range.</td></tr>");
         return;
       }
       const columns = Object.keys(rows[0]);
       const headRow = document.createElement("tr");
-      headRow.innerHTML = columns.map(col => `<th>${col}</th>`).join("");
+      headRow.innerHTML = safeHTML(columns.map(col => `<th>${col}</th>`).join(""));
       reportTableHead.appendChild(headRow);
       rows.forEach(row => {
         const tr = document.createElement("tr");
-        tr.innerHTML = columns.map(col => `<td>${row[col]}</td>`).join("");
+        tr.innerHTML = safeHTML(columns.map(col => `<td>${row[col]}</td>`).join(""));
         reportTableBody.appendChild(tr);
       });
     }
@@ -3551,7 +3598,7 @@
         alert("Popup blocked. Allow popups to export PDF.");
         return;
       }
-      popup.document.write(html);
+      popup.document.write(safeHTML(html));
       popup.document.close();
       popup.focus();
       popup.print();
@@ -3579,15 +3626,15 @@
     }
 
     function renderScheduledReports() {
-      scheduledReportList.innerHTML = "";
+      scheduledReportList.innerHTML = safeHTML("");
       if (!state.reportSchedules.length) {
-        scheduledReportList.innerHTML = "<div class='muted'>No scheduled reports yet.</div>";
+        scheduledReportList.innerHTML = safeHTML("<div class='muted'>No scheduled reports yet.</div>");
         return;
       }
       state.reportSchedules.forEach(schedule => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${getReportLabel(schedule.type)}</strong>
@@ -3595,7 +3642,7 @@
             </div>
             <div class="muted">Next: ${new Date(schedule.nextRunAt).toLocaleString()}</div>
           </div>
-        `;
+        `);
         scheduledReportList.appendChild(card);
       });
     }
@@ -3626,8 +3673,8 @@
 
     function renderReports() {
       if (!state.lastGeneratedReport) {
-        reportTableHead.innerHTML = "";
-        reportTableBody.innerHTML = "";
+        reportTableHead.innerHTML = safeHTML("");
+        reportTableBody.innerHTML = safeHTML("");
         reportSummary.textContent = "Choose a report and click Generate Report.";
       } else {
         reportType.value = state.lastGeneratedReport.type;
@@ -3666,15 +3713,15 @@
     }
 
     function renderFeedback() {
-      feedbackList.innerHTML = "";
+      feedbackList.innerHTML = safeHTML("");
       if (!state.feedback.length) {
-        feedbackList.innerHTML = "<div class='muted'>No feedback captured yet.</div>";
+        feedbackList.innerHTML = safeHTML("<div class='muted'>No feedback captured yet.</div>");
         return;
       }
       state.feedback.forEach(entry => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${entry.topic}</strong>
@@ -3682,7 +3729,7 @@
             </div>
           </div>
           <div class="muted" style="margin-top: 8px;">${entry.note || "No notes"}</div>
-        `;
+        `);
         feedbackList.appendChild(card);
       });
     }
@@ -3707,22 +3754,22 @@
     }
 
     function renderPosUploads() {
-      posList.innerHTML = "";
+      posList.innerHTML = safeHTML("");
       if (!state.posUploads.length) {
-        posList.innerHTML = "<div class='muted'>No POS uploads yet.</div>";
+        posList.innerHTML = safeHTML("<div class='muted'>No POS uploads yet.</div>");
         return;
       }
       state.posUploads.forEach(entry => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
+        card.innerHTML = safeHTML(`
           <div class="section-title">
             <div>
               <strong>${entry.name}</strong>
               <div class="muted">${new Date(entry.uploadedAt).toLocaleString()}</div>
             </div>
           </div>
-        `;
+        `);
         posList.appendChild(card);
       });
     }
@@ -3737,6 +3784,12 @@
     }
 
     function renderAll() {
+      ingredientsList.querySelectorAll(".ingredient-item").forEach(select => {
+        const value = select.value;
+        select.replaceChildren(new Option("Select item", ""));
+        state.items.forEach(item => select.add(new Option(item.name, item.id)));
+        select.value = value;
+      });
       buildVendorOptions();
       buildRecipeOptions();
       buildUsageItemOptions();
@@ -3764,6 +3817,7 @@
       renderFeedback();
       renderPosUploads();
       renderDashboard();
+      if (window.renderManager) window.renderManager();
     }
 
     function exportJson() {

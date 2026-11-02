@@ -1,14 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const multer = require("multer");
+dotenv.config();
 
 const { router: authRouter, requirePermission } = require("./routes/auth");
 const overviewRouter = require("./routes/overview");
 const itemsRouter = require("./routes/items");
 const recipesRouter = require("./routes/recipes");
 const importRouter = require("./routes/import");
-const excelImportRouter = require("./routes/excel-import");
+
 const reportsRouter = require("./routes/reports");
 const adminRouter = require("./routes/admin");
 const cacheResponse = require("./middleware/cacheResponse");
@@ -16,11 +16,12 @@ const cacheResponse = require("./middleware/cacheResponse");
 dotenv.config();
 
 const app = express();
-const upload = multer({ storage: multer.memoryStorage() });
 
-app.use(cors({ origin: true }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+app.disable("x-powered-by");
+app.use(cors({ origin: process.env.FRONTEND_ORIGIN || false }));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: false, limit: "1mb" }));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -44,10 +45,10 @@ app.use("/api/auth", authRouter);
 
 // Protected routes with permission middleware
 app.use("/api/overview", requirePermission("inventory:read"), cacheResponse("overview", cacheTtlSeconds), overviewRouter);
-app.use("/api/items", requirePermission("inventory:read"), cacheResponse("items", cacheTtlSeconds), itemsRouter);
-app.use("/api/recipes", requirePermission("recipes:read"), cacheResponse("recipes", cacheTtlSeconds), recipesRouter);
+app.use("/api/items", (req, res, next) => requirePermission(req.method === "GET" ? "inventory:read" : "inventory:write")(req, res, next), itemsRouter);
+app.use("/api/recipes", (req, res, next) => requirePermission(req.method === "GET" ? "recipes:read" : "recipes:write")(req, res, next), recipesRouter);
 app.use("/api/import", requirePermission("import:write"), importRouter);
-app.use("/api/excel-import", upload.single("file"), requirePermission("import:write"), excelImportRouter);
+app.use("/api/excel-import", requirePermission("import:write"), require("./routes/excel-import"));
 app.use("/api/reports", requirePermission("reports:read"), reportsRouter);
 app.use("/api/admin", adminRouter);
 
@@ -62,7 +63,7 @@ app.use((err, req, res, next) => {
 
   return res.status(500).json({
     error: "Internal server error",
-    message: err.message
+    message: "Request could not be processed"
   });
 });
 

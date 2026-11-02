@@ -1,0 +1,19 @@
+{
+  "name": "pantrypilot-workspace",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/engine.test.js",
+    "test:browser": "node test/browser.cjs",
+    "check": "node scripts/check-syntax.cjs",
+    "start": "node scripts/serve.cjs",
+    "build": "node scripts/build.cjs",
+    "test:deployment": "node test/deployment.cjs",
+    "verify": "npm test && npm run check && npm run build && npm run test:browser && npm run test:deployment && npm test --prefix backend"
+  },
+  "devDependencies": {
+    "acorn": "^8.19.0",
+    "dompurify": "^3.4.17",
+    "playwright": "1.56.1"
+  }
+}

@@ -12,50 +12,15 @@ const router = express.Router();
  * Olive Oil,2,litre,$30
  */
 function parseInventoryCSV(csvContent) {
-  const lines = csvContent.split("\n").filter((line) => line.trim());
-  if (lines.length < 2) {
-    throw new Error("CSV must have header row and at least one data row");
-  }
-
-  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
-  const items = [];
-
-  // Find column indices (flexible header matching)
-  const nameIdx = headers.findIndex(
-    (h) => h.includes("name") || h.includes("item")
-  );
-  const quantityIdx = headers.findIndex((h) => h.includes("quantity") || h.includes("qty"));
-  const unitIdx = headers.findIndex((h) => h.includes("unit"));
-  const priceIdx = headers.findIndex((h) => h.includes("price") || h.includes("cost"));
-
-  if (nameIdx === -1) {
-    throw new Error("CSV must have 'Item Name' or 'Name' column");
-  }
-
-  for (let i = 1; i < lines.length; i++) {
-    const row = lines[i].split(",").map((cell) => cell.trim());
-
-    if (row.length < 2 || !row[nameIdx]) continue;
-
-    const name = row[nameIdx];
-    const quantity = quantityIdx !== -1 ? parseFloat(row[quantityIdx]) || 0 : 0;
-    const unit = unitIdx !== -1 ? row[unitIdx] : "each";
-    const priceStr = priceIdx !== -1 ? row[priceIdx] : "0";
-    const price = parseFloat(priceStr.replace(/[$,]/g, "")) || 0;
-
-    items.push({
-      id: crypto.randomUUID(),
-      itemName: name,
-      quantity,
-      unit,
-      price,
-      locationId: "loc-main",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    });
-  }
-
-  return items;
+  const { parseCSV } = require('../../../inventory-engine');
+  return parseCSV(csvContent).map((row, index) => {
+    const name = row['Item Name'] || row.Name || row.name;
+    const unit = row.Unit || row.unit;
+    const quantity = row.Quantity ?? row.quantity;
+    const price = row.Price ?? row.price;
+    if (!name || !unit || [quantity,price].some(v => v === undefined || v === '' || !Number.isFinite(Number(v)) || Number(v) < 0)) throw new Error(`Invalid CSV row ${index+2}`);
+    return {id:crypto.randomUUID(),itemName:name,unit,quantity:Number(quantity),price:Number(price),locationId:'loc-main',createdAt:new Date().toISOString()};
+  });
 }
 
 /**

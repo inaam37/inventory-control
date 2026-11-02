@@ -1,2 +1,13 @@
 backend/node_modules/
 backend/data/ingredients-table.json
+
+node_modules/
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+test-results/
+playwright-report/
+
+dist/

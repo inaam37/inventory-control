@@ -1,102 +1,22 @@
-const test = require("node:test");
-const assert = require("node:assert/strict");
-
-const app = require("../src/app");
-
-let server;
-let baseUrl;
-
-test.before(() => {
-  server = app.listen(0);
-  const { port } = server.address();
-  baseUrl = `http://127.0.0.1:${port}`;
-});
-
-test.after(() => {
-  server.close();
-});
-
-test("GET /health returns service health", async () => {
-  const response = await fetch(`${baseUrl}/health`);
-  const body = await response.json();
-
-  assert.equal(response.status, 200);
-  assert.equal(body.status, "ok");
-  assert.equal(body.service, "pantrypilot-backend");
-});
-
-test("GET /api/overview returns roadmap details", async () => {
-  const response = await fetch(`${baseUrl}/api/overview`);
-  const body = await response.json();
-
-  assert.equal(response.status, 200);
-  assert.match(body.message, /Backend scaffolding active/);
-  assert.equal(Array.isArray(body.endpoints), true);
-});
-
-test("GET /api/items returns collection", async () => {
-  const response = await fetch(`${baseUrl}/api/items`);
-  const body = await response.json();
-
-  assert.equal(response.status, 200);
-  assert.equal(Array.isArray(body.items), true);
-});
-
-test("POST /api/items validates required fields", async () => {
-  const response = await fetch(`${baseUrl}/api/items`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: "Flour" })
-  });
-
-  const body = await response.json();
-  assert.equal(response.status, 400);
-  assert.equal(body.error, "Validation failed");
-});
-
-test("POST /api/items creates new item", async () => {
-  const response = await fetch(`${baseUrl}/api/items`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: "Flour",
-      category: "Dry Goods",
-      unit: "kg",
-      onHand: 12
-    })
-  });
-
-  const body = await response.json();
-  assert.equal(response.status, 201);
-  assert.equal(body.item.name, "Flour");
-});
-
-test("GET /api/admin/status rejects missing token", async () => {
-  const response = await fetch(`${baseUrl}/api/admin/status`);
-  assert.equal(response.status, 401);
-});
-
-test("GET /api/admin/status returns data with valid token", async () => {
-  process.env.ADMIN_TOKEN = "test-token";
-
-  const response = await fetch(`${baseUrl}/api/admin/status`, {
-    headers: { "x-admin-token": "test-token" }
-  });
-
-  const body = await response.json();
-  assert.equal(response.status, 200);
-  assert.equal(typeof body.cacheEntries, "number");
-});
-
-test("POST /api/admin/cache/invalidate clears cache", async () => {
-  process.env.ADMIN_TOKEN = "test-token";
-
-  const response = await fetch(`${baseUrl}/api/admin/cache/invalidate`, {
-    method: "POST",
-    headers: { "x-admin-token": "test-token" }
-  });
-
-  const body = await response.json();
-  assert.equal(response.status, 200);
-  assert.match(body.message, /cache cleared/i);
-});
+const {test,before,after}=require('node:test');
+const assert=require('node:assert/strict');
+const crypto=require('node:crypto');
+process.env.NODE_ENV='test';
+process.env.MANAGER_KEY=crypto.randomBytes(32).toString('hex');
+process.env.ADMIN_TOKEN=crypto.randomBytes(32).toString('hex');
+const app=require('../src/app');
+let server,url,token;
+before(async()=>{server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));url=`http://127.0.0.1:${server.address().port}`;const res=await request('/api/auth/login',{method:'POST',body:{username:'manager',masterKey:process.env.MANAGER_KEY}});assert.equal(res.status,200);token=(await res.json()).token;});
+after(()=>new Promise(r=>server.close(r)));
+function request(path,{method='GET',body,auth=false,headers={}}={}){return fetch(url+path,{method,headers:{'Content-Type':'application/json',...(auth?{Authorization:`Bearer ${token}`} : {}),...headers},...(body?{body:JSON.stringify(body)}:{})});}
+test('health responds without credentials',async()=>assert.equal((await request('/health')).status,200));
+test('protected resources reject anonymous requests',async()=>{for(const path of ['/api/items','/api/recipes','/api/reports','/api/overview','/api/admin/status'])assert.equal((await request(path)).status,401);});
+test('old forged base64 auth is rejected',async()=>{const forged=Buffer.from(JSON.stringify({role:'CHEF',permissions:['*'],exp:9999999999})).toString('base64');assert.equal((await request('/api/items',{headers:{Authorization:`Bearer ${forged}`}})).status,401);});
+test('tampered signed sessions are rejected',async()=>{const parts=token.split('.');const p=JSON.parse(Buffer.from(parts[0],'base64url'));p.exp+=9999;const forged=Buffer.from(JSON.stringify(p)).toString('base64url')+'.'+parts[1];assert.equal((await request('/api/items',{headers:{Authorization:`Bearer ${forged}`}})).status,401);});
+test('manager creates and reads an item',async()=>{const res=await request('/api/items',{method:'POST',auth:true,body:{name:'Flour',category:'Dry Storage',unit:'kg',quantity:12,price:2}});assert.equal(res.status,201);const data=await (await request('/api/items',{auth:true})).json();assert.equal(data.items.some(i=>i.itemName==='Flour'),true);});
+test('invalid quantity and price do not mutate inventory',async()=>{for(const patch of [{quantity:-1},{price:'nope'},{name:123}])assert.equal((await request('/api/items',{method:'POST',auth:true,body:{name:'Oil',category:'Dry Storage',unit:'l',quantity:1,price:1,...patch}})).status,400);});
+test('CSV refuses malformed inventory rows atomically',async()=>{assert.equal((await request('/api/import/csv',{method:'POST',auth:true,body:{csv:'Name,Quantity,Unit,Price\nOil,1,l,2\nBad,-1,kg,3'}})).status,400);});
+test('Excel AI route is disabled and makes no paid calls',async()=>assert.equal((await request('/api/excel-import/excel',{method:'POST',auth:true})).status,501));
+test('overview states persistence limitations',async()=>{const res=await request('/api/overview',{auth:true});assert.equal(res.status,200);assert.match((await res.json()).message,/in-memory/);});
+test('admin token is required and not equivalent to manager session',async()=>{assert.equal((await request('/api/admin/status',{auth:true})).status,401);assert.equal((await request('/api/admin/status',{headers:{'x-admin-token':process.env.ADMIN_TOKEN}})).status,200);});
+test('login fails closed when no private key is configured',async()=>{const key=process.env.MANAGER_KEY;delete process.env.MANAGER_KEY;try{assert.equal((await request('/api/auth/login',{method:'POST',body:{username:'chef',masterKey:'chef-master-key-123'}})).status,503);}finally{process.env.MANAGER_KEY=key;}});

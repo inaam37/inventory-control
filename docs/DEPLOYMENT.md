@@ -1,57 +1,34 @@
-# Deployment Runbook (Phase 20)
+# Running and deployment boundaries
 
-## Architecture
-- **Backend**: Express API (Deploy to Heroku, AWS Elastic Beanstalk, or DigitalOcean App Platform)
-- **Database**: Managed PostgreSQL (Heroku Postgres, AWS RDS, or DigitalOcean Managed DB)
-- **Frontend**: Static site on Vercel or Netlify
-- **Monitoring**: Sentry for backend error logging + tracing
+## Supported app
 
-## 1) Production database setup
-1. Provision PostgreSQL instance.
-2. Set `DATABASE_URL` in backend environment.
-3. Run migration deploy script:
+From the repository root run `npm ci` and `npm start`. Open `http://127.0.0.1:8000`. The server binds only to localhost and allows only the supported static app assets. Production dependencies are not needed by the browser: DOMPurify is vendored and no CDN scripts or paid APIs are loaded.
 
-```bash
-cd backend
-npm ci
-DATABASE_URL="postgresql://..." ./scripts/setup-production-db.sh
-```
+A static host or GitHub Pages can serve the root app files, but it does **not** provide a shared database, staff authentication or remote backups. Each browser/profile has independent localStorage. Keep operational data out of the public source tree. Test restore with a synthetic backup before changing hosts or origins, since browser storage is origin-specific.
 
-## 2) Backend deployment (Heroku example)
-1. Create Heroku app.
-2. Add Heroku Postgres addon.
-3. Configure env vars:
-   - `DATABASE_URL`
-   - `ADMIN_TOKEN`
-   - `SENTRY_DSN`
-   - `CACHE_TTL_SECONDS`
-4. Deploy backend directory and ensure Procfile runs `node src/index.js`.
-5. Run smoke checks:
+## Optional backend scaffold
 
-```bash
-curl https://<backend-url>/health
-curl https://<backend-url>/api/overview
-```
+`backend/` is not connected to the browser workspace. Its current mounted inventory store is in-memory; process restarts lose that API data. Do not use it for a restaurant's production records.
 
-## 3) Frontend deployment (Vercel or Netlify)
-- Deploy repository root as static site.
-- Ensure `index.html` and `admin.html` are published.
-- Add rewrite rules from `vercel.json` / `netlify.toml`.
+For local development only:
 
-## 4) Monitoring setup
-1. Create Sentry project (Node/Express).
-2. Copy DSN and set `SENTRY_DSN` in backend env.
-3. Optional: set `SENTRY_TRACES_SAMPLE_RATE=0.1`.
-4. Trigger test error (internal only) and verify event appears.
+1. `cd backend` and `npm ci`.
+2. Copy `.env.example` to an ignored `.env` locally.
+3. Set a unique random `MANAGER_KEY` of at least 24 characters, optionally `MANAGER_USERNAME`, and a separate private `ADMIN_TOKEN` if admin routes are needed. Set `FRONTEND_ORIGIN` to an explicitly allowed local origin. Never publish keys.
+4. Run `npm run dev`. Login is disabled without the manager key. Tokens are signed, valid for one hour and invalidated on restart.
 
-## 5) Performance & caching
-- API response caching enabled for GET overview/items.
-- Request duration is logged for backend observability.
-- Tune `CACHE_TTL_SECONDS` based on refresh frequency.
+Excel/AI importing is disabled. CSV parsing is deterministic and all rows are validated before API mutation. No subscription is treated as permission to bill an API.
 
-## 6) Release checklist
-- Run backend tests (`npm test`).
-- Confirm migrations applied.
-- Confirm admin endpoints protected by `x-admin-token`.
-- Validate Sentry receives test events.
-- Validate frontend/admin pages load in production.
+## Before a shared staff rollout
+
+Choose durable transactional storage and an authenticated hosting environment; migrate the browser state rather than creating another independent source of truth. Implement restaurant-scoped users, enforced roles, server validation for all mutations, idempotent receipts, backups with tested restore, TLS and session management, and an audit trail for corrections/returns. Add integration tests for user isolation and concurrent receipts. Do not expose the existing in-memory scaffold to the internet.
+
+The removed `.env` remains in old commits. If its values were real, rotate them. Do not rewrite shared history without a deliberate migration plan and explicit approval.
+
+## Release package and verification
+
+Run `npm run build` to generate `dist/` from the shared app-file allowlist. Only the supported HTML/JavaScript, vendored sanitizer, its license and `.nojekyll` are included. Backend code, environment files, tests and handoffs are excluded. Netlify/Vercel configuration builds and serves `dist/`.
+
+GitHub Pages can continue publishing from the repository root: `.nojekyll` disables Jekyll processing and all browser asset links remain relative for the `/inventory-control/` project path. `npm run test:deployment` validates the generated package at that path on desktop/mobile.
+
+The GitHub Actions validation workflow runs on this PR and pushes to main with read-only repository permissions. It runs the engine, syntax/sanitizer, build, browser, packaged-subpath, API and dependency checks. It does not publish a site. Review approval alone does not merge; use **Merge pull request → Confirm merge** when checks pass. Existing host settings determine publication after that.
